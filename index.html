@@ -354,6 +354,53 @@ function scurve(rows,elId,monthly){
     hit.addEventListener("mouseleave",hideTip);},0);
   return leg+g;
 }
+let scSel=["all"];
+const SC_SERIES=[["all","Overall",r=>true,"var(--blue)"],
+ ["e","Engineering",r=>r[C.dept]==="engineering","var(--s-plan)"],
+ ["p","Procurement",r=>r[C.dept]==="supply"||r[C.dept]==="services","var(--good)"],
+ ["c","Construction",r=>r[C.dept]==="execution"||r[C.dept]==="tnc"||r[C.dept]==="hoto","var(--warn)"]];
+function scurveMulti(rows,elId,monthly){
+  if(scSel.length===1&&scSel[0]==="all")return scurve(rows,elId,monthly);
+  const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
+  const ms=DATA.months,n=ms.length;
+  const D=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);
+  const series=sels.map(x=>{const rs=rows.filter(x[2]);
+    let plan=ms.map(m=>planPct(rs,m.wd)),fc=ms.map(m=>fcPct(rs,m.wd)),act=ms.filter(m=>m.wd<=SW).map(m=>actPctAt(rs,m.wd));
+    if(monthly){plan=D(plan);fc=D(fc);act=D(act)}
+    return {name:x[1],col:x[3],plan,fc,act,cnt:rs.length}});
+  const Wc=860,Hc=190,padL=32,padR=10,padT=8,padB=20,iw=Wc-padL-padR,ih=Hc-padT-padB;
+  const ymax=Math.max(5,...series.flatMap(x=>[...x.plan,...x.fc,...x.act]))*1.06;
+  const X=i=>padL+iw*i/(n-1),Y=v=>padT+ih*(1-v/ymax);
+  const path=arr=>arr.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:100%;height:auto" id="${elId}-svg">`;
+  for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="8" text-anchor="end">${Math.round(v)}%</text>`}
+  ms.forEach((m,i)=>{if(i%2===0)g+=`<text x="${X(i)}" y="${Hc-5}" font-size="8" text-anchor="middle">${m.label}</text>`});
+  let si=ms.findIndex(m=>m.wd>state.at); if(si<0)si=n-1;
+  const sx=X(Math.max(0,si-0.5));
+  g+=`<line x1="${sx}" x2="${sx}" y1="${padT}" y2="${padT+ih}" stroke="var(--warn)" stroke-dasharray="3 3"/>`;
+  series.forEach(x=>{
+    g+=`<path d="${path(x.plan)}" fill="none" stroke="${x.col}" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>`;
+    g+=`<path d="${path(x.fc)}" fill="none" stroke="${x.col}" stroke-width="1.4" stroke-dasharray="5 4" opacity=".7"/>`;
+    if(x.act.length){g+=`<path d="${path(x.act)}" fill="none" stroke="${x.col}" stroke-width="2.2"/>`;
+      g+=`<circle cx="${X(x.act.length-1)}" cy="${Y(x.act[x.act.length-1])}" r="2.6" fill="${x.col}" stroke="var(--surface)" stroke-width="1.5"/>`}});
+  g+=`<rect id="${elId}-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+  const leg=`<div class="legend">${series.map(x=>`<span><span class="sw" style="background:${x.col}"></span>${x.name}</span>`).join("")}<span class="dim">solid = actual · dashed = forecast · dotted = plan</span></div>`;
+  setTimeout(()=>{const hit=document.getElementById(elId+"-hit");if(!hit)return;
+    hit.addEventListener("mousemove",e=>{const svg=document.getElementById(elId+"-svg");const r=svg.getBoundingClientRect();const fx=(e.clientX-r.left)/r.width*Wc;let i=Math.round((fx-padL)/(iw/(n-1)));i=Math.max(0,Math.min(n-1,i));
+      showTip(e,`<b>${ms[i].label}</b>`+series.map(x=>`<br>${x.name}: ${i<x.act.length?fmt1(x.act[i])+"%":"<span class='t2'>fc "+fmt1(x.fc[i]||0)+"%</span>"} <span class="t2">(plan ${fmt1(x.plan[i]||0)}%)</span>`).join(""));});
+    hit.addEventListener("mouseleave",hideTip);},0);
+  return leg+g;
+}
+function scurveTableMulti(rows){
+  if(scSel.length===1&&scSel[0]==="all")return scurveTable(rows);
+  const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
+  let h=`<div class="twrap"><table><tr><th>Month</th>${sels.map(x=>`<th class="num">${x[1]} Plan %</th><th class="num">${x[1]} Act/Fc %</th>`).join("")}</tr>`;
+  DATA.months.forEach(m=>{h+=`<tr><td>${m.label}</td>`;
+    sels.forEach(x=>{const rs=rows.filter(x[2]);
+      h+=`<td class="num">${fmt1(planPct(rs,m.wd))}</td><td class="num">${m.wd<=SW?fmt1(actPctAt(rs,m.wd)):fmt1(fcPct(rs,m.wd))+" fc"}</td>`});
+    h+=`</tr>`});
+  return h+"</table></div>";
+}
 function scurveTable(rows){
   let h=`<div class="twrap"><table><tr><th>Month</th><th class="num">Plan %</th><th class="num">Actual %</th><th class="num">Forecast %</th></tr>`;
   DATA.months.forEach(m=>{h+=`<tr><td>${m.label}</td><td class="num">${fmt1(planPct(rows,m.wd))}</td><td class="num">${m.wd<=SW?fmt1(actPctAt(rows,m.wd)):"—"}</td><td class="num">${fmt1(fcPct(rows,m.wd))}</td></tr>`});
@@ -757,12 +804,10 @@ function pageSummary(){
   h+=gaugeCard(rows)+epcCard()+costCard();
   h+=kpiCards(rows,true);
   h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
-  h+=card("span12","Milestone L2 Schedule — Progress Update","lead / lag in working days vs baseline",msL2Table());
   h+=card("span12","Long Lead Item Delivery Status","top supply packages by weightage · delivery = GRN at site",longLeadTable());
-  h+=card("span12","Progress S-Curves — Engineering · Procurement · Construction · Overall","weightage-based cumulative %",epcScurves());
-  h+=card("span7","S-curve — Plan vs Actual","cumulative %, filtered scope",
-    `<div id="sc-box">${scurve(rows,"sc",scMode==="mon")}</div>`,
-    `<div style="display:flex;gap:5px"><div class="toggle2"><button id="sc-cum" class="${scMode==="cum"?"on":""}">Cumulative</button><button id="sc-mon" class="${scMode==="mon"?"on":""}">Monthly</button></div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
+  h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
+    `<div id="sc-box">${scurveMulti(rows,"sc",scMode==="mon")}</div>`,
+    `<div style="display:flex;gap:5px;flex-wrap:wrap"><div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-cum" class="${scMode==="cum"?"on":""}">Cumulative</button><button id="sc-mon" class="${scMode==="mon"?"on":""}">Monthly</button></div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
   h+=card("span5","Stage progress","actual vs plan",stageBars(rows),unitToggle());
   h+=critPoints(rows);
   h+=card("span6","Open Constraints","awaiting start",constraints(rows));
@@ -874,8 +919,10 @@ function render(){
   const rows=filtered();
   const cum=document.getElementById("sc-cum"),mon=document.getElementById("sc-mon"),cht=document.getElementById("sc-chart"),tbl=document.getElementById("sc-table");
   if(cum){cum.onclick=()=>{scMode="cum";render()};mon.onclick=()=>{scMode="mon";render()};
-    cht.onclick=()=>{document.getElementById("sc-box").innerHTML=scurve(rows,"sc",scMode==="mon");cht.classList.add("on");tbl.classList.remove("on")};
-    tbl.onclick=()=>{document.getElementById("sc-box").innerHTML=scurveTable(rows);tbl.classList.add("on");cht.classList.remove("on")};}
+    cht.onclick=()=>{document.getElementById("sc-box").innerHTML=scurveMulti(rows,"sc",scMode==="mon");cht.classList.add("on");tbl.classList.remove("on")};
+    tbl.onclick=()=>{document.getElementById("sc-box").innerHTML=scurveTableMulti(rows);tbl.classList.add("on");cht.classList.remove("on")};
+    document.querySelectorAll("#sc-series button").forEach(b=>{b.onclick=()=>{const k=b.dataset.s;
+      if(scSel.includes(k)){if(scSel.length>1)scSel=scSel.filter(x=>x!==k)}else scSel.push(k);render()}});}
   const up=document.getElementById("u-pct"),um=document.getElementById("u-mw");
   if(up){up.onclick=()=>{state.unit="%";render()}}
   if(um){um.onclick=()=>{state.unit="MW";render()}}
