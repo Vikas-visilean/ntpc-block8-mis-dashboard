@@ -159,6 +159,11 @@ svg text{fill:var(--ink2);font-family:inherit}
 .gstats .v{font-weight:700;font-variant-numeric:tabular-nums}
 .detrow td{background:var(--page)!important}
 :focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+
+/* NTPC default zoom (exec readability). Steps down on smaller screens. */
+html{zoom:1.3}
+@media (max-width:1680px){html{zoom:1.15}}
+@media (max-width:1400px){html{zoom:1}}
 </style>
 </head>
 <body>
@@ -709,6 +714,40 @@ function critPoints(rows){
    <div class="small dim">${esc(DNAME[r[C.dept]]||"")} · ${esc(r[C.pkg].slice(0,36))} · float ${r[C.tf]} wd · ends ${wdate(r[C.fEF],1)} · ${esc(r[C.owner]||"unassigned")}</div></div>`});
   return h+"</div>";
 }
+
+// ---------- Executive Director page-1 sections ----------
+function longLeadTable(){
+  const TOTW=L.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0)||1;
+  const w={};L.forEach(r=>{if(r[C.dept]==="supply")w[r[C.pkg]]=(w[r[C.pkg]]||0)+(r[C.cost]>0?r[C.cost]:0)});
+  const seen={},items=[];
+  L.forEach(r=>{if(r[C.dept]!=="supply"||r[C.sub]!=="At Site"||seen[r[C.pkg]])return;seen[r[C.pkg]]=1;
+    items.push({p:r[C.pkg],b:r[C.bEF],f:r[C.fEF],d:r[C.fEF]-r[C.bEF],pc:r[C.pct],w:w[r[C.pkg]]||0})});
+  items.sort((a,b)=>b.w-a.w);
+  let h=`<div class="twrap"><table><tr><th>#</th><th>Long-lead item (supply package)</th><th class="num">Wt %</th><th>Baseline delivery</th><th>Forecast delivery</th><th class="num">Delay / Ahead</th><th>Status</th></tr>`;
+  items.slice(0,12).forEach((x,i)=>{
+    const dd=x.d>0?`<span style="color:var(--crit-text);font-weight:700">+${x.d} wd</span>`:(x.d<0?`<span style="color:var(--good);font-weight:700">${x.d} wd</span>`:`<span class="dim">on time</span>`);
+    const st=x.pc>=100?chip("good","Delivered"):(x.b<=SW?chip("warn","In pipeline"):chip("mut","Planned"));
+    h+=`<tr><td>${i+1}</td><td><b>${esc(x.p)}</b></td><td class="num">${(100*x.w/TOTW).toFixed(2)}</td><td>${wdate(x.b,1)}</td><td>${wdate(x.f,1)}</td><td class="num">${dd}</td><td>${st}</td></tr>`});
+  return h+"</table></div>";
+}
+function epcScurves(){
+  const defs=[["Engineering",r=>r[C.dept]==="engineering"],
+              ["Procurement",r=>r[C.dept]==="supply"||r[C.dept]==="services"],
+              ["Construction",r=>r[C.dept]==="execution"||r[C.dept]==="tnc"||r[C.dept]==="hoto"],
+              ["Overall",r=>true]];
+  let h=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px">`;
+  defs.forEach((d,i)=>{const rs=L.filter(d[1]);
+    h+=`<div><div style="font-size:11px;font-weight:700;margin-bottom:2px">${d[0]} S-Curve <span class="dim" style="font-weight:500">(${rs.length} activities)</span></div>${scurve(rs,"sc-epc"+i,false).replaceAll('font-size="8"','font-size="11"')}</div>`});
+  return h+"</div>";
+}
+function msL2Table(){
+  const CH={done:["good","Achieved"],ontrack:["good","On track"],watch:["warn","Watch"],late:["crit","Late"]};
+  let h=`<div class="twrap"><table><tr><th>#</th><th>Milestone</th><th>Baseline</th><th>Forecast</th><th class="num">Lead / Lag</th><th>Status</th></tr>`;
+  DATA.milestones.forEach((m,i)=>{const sp=m.slip;
+    const sl=sp>0?`<span style="color:var(--crit-text);font-weight:700">+${sp} wd lag</span>`:(sp<0?`<span style="color:var(--good);font-weight:700">${-sp} wd lead</span>`:`<span class="dim">on plan</span>`);
+    h+=`<tr><td>${i+1}</td><td><b>${esc(m.name)}</b></td><td>${wdate(m.b,1)}</td><td>${wdate(m.f,1)}</td><td class="num">${sl}</td><td>${chip(CH[m.status][0],CH[m.status][1])}</td></tr>`});
+  return h+"</table></div>";
+}
 // ---------- pages ----------
 function card(cls,title,hint,body,extraHdr){return `<div class="card ${cls}"><div class="hdrrow"><div><h2>${title}</h2><div class="hint">${hint}</div></div>${extraHdr||""}</div>${body}</div>`}
 const unitToggle=()=>`<div class="toggle2"><button id="u-pct" class="${state.unit==="%"?"on":""}">%</button><button id="u-mw" class="${state.unit==="MW"?"on":""}">MW</button></div>`;
@@ -718,6 +757,9 @@ function pageSummary(){
   h+=gaugeCard(rows)+epcCard()+costCard();
   h+=kpiCards(rows,true);
   h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
+  h+=card("span12","Milestone L2 Schedule — Progress Update","lead / lag in working days vs baseline",msL2Table());
+  h+=card("span12","Long Lead Item Delivery Status","top supply packages by weightage · delivery = GRN at site",longLeadTable());
+  h+=card("span12","Progress S-Curves — Engineering · Procurement · Construction · Overall","weightage-based cumulative %",epcScurves());
   h+=card("span7","S-curve — Plan vs Actual","cumulative %, filtered scope",
     `<div id="sc-box">${scurve(rows,"sc",scMode==="mon")}</div>`,
     `<div style="display:flex;gap:5px"><div class="toggle2"><button id="sc-cum" class="${scMode==="cum"?"on":""}">Cumulative</button><button id="sc-mon" class="${scMode==="mon"?"on":""}">Monthly</button></div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
@@ -819,7 +861,9 @@ function syncFilterUI(){
   ds.min=20;ds.max=M.forecastFinishWd;ds.value=state.at;
   document.getElementById("f-datev").textContent=wdate(state.at,1)+(state.at===SW?" (today)":"");
 }
+let lastPage=null;
 function render(){
+  const _keep=lastPage===state.page;const _sy=window.scrollY;
   navHtml();syncFilterUI();
   const pg=document.getElementById("page");
   if(state.page==="summary")pg.innerHTML=pageSummary();
@@ -837,7 +881,7 @@ function render(){
   if(um){um.onclick=()=>{state.unit="MW";render()}}
   document.querySelectorAll(".ftile").forEach(el=>{el.addEventListener("click",()=>{
     state.f.area=state.f.area===el.dataset.area?"":el.dataset.area;render();})});
-  window.scrollTo(0,0);
+  if(_keep)window.scrollTo(0,_sy);else window.scrollTo(0,0);lastPage=state.page;
 }
 ["f-dept","f-type","f-area","f-pkg"].forEach(id=>{
   document.getElementById(id).addEventListener("change",e=>{
