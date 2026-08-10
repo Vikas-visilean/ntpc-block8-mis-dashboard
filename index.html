@@ -843,6 +843,108 @@ function pageMom(){
     <tr><td>3</td><td>Confirm final BOQ quantities & budget per package</td><td>MIS review 05-Aug</td><td>Procurement</td><td>Accounts</td><td>26-Aug-26</td><td>${chip("mut","Not started")}</td></tr>
    </table></div>`)+"</div>";
 }
+// ---------- Exec Director dept views (wishlist 10-Aug) ----------
+const n8=x=>String(x||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+function pkgMap(rows){const by={};rows.forEach(r=>{const p=r[C.pkg];(by[p]=by[p]||{rows:[],w:0}).rows.push(r);by[p].w+=(r[C.cost]>0?r[C.cost]:0)});return by}
+function stepOf(info,keys){for(const r of info.rows){const n=n8(r[C.name]);if(keys.some(k=>n.includes(k)))return r}return null}
+function dcell(r){if(!r)return `<td class="dim">—</td>`;
+  const late=r[C.pct]<100&&r[C.fEF]>r[C.bEF];
+  return `<td style="white-space:nowrap${late?";color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}${r[C.pct]>=100?" ✓":""}</td>`}
+const PROC_DATE_COLS=[["RFP Floated",["floatingofrfp"]],["Tech Offer Recd",["vendorproposalcollection"]],
+ ["Tech Evaluation",["technicalbidevaluation"]],["Comm. Bid + NFA",["commercialbidevaluation","managementapproval"]],
+ ["PR Raised",["prfraising"]],["PO Release",["poplacement"]],["Advance Payment",["advancepaymentrelease"]],
+ ["Vendor Drawing Subm.",["designdocumentreview"]],["Drawing Approval (Client)",["designdocumentapprovalfromendclient"]],
+ ["Mfg / Stage Insp.",["stageinspection","manufacturingclearance"]],["GRN / At Site",["grnatsite"]]];
+function procDateMatrix(rows){
+  const by=pkgMap(rows);const pkgs=Object.entries(by).sort((a,b)=>b[1].w-a[1].w);
+  let h=`<div class="twrap"><table><tr><th style="min-width:150px">Package</th>${PROC_DATE_COLS.map(c=>`<th>${c[0]}</th>`).join("")}</tr>`;
+  pkgs.forEach(([p,info])=>{h+=`<tr><td><b>${esc(p)}</b></td>${PROC_DATE_COLS.map(c=>dcell(stepOf(info,c[1]))).join("")}</tr>`});
+  return h+"</table></div>";
+}
+function poTracker(rows){
+  const TOTW=L.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0)||1;
+  const by=pkgMap(rows);const pkgs=Object.entries(by).sort((a,b)=>b[1].w-a[1].w);
+  let h=`<div class="twrap"><table><tr><th>#</th><th>Package</th><th class="num">Wt %</th><th>Baseline PO</th><th>Forecast / Actual PO</th><th class="num">Δ wd</th><th>Status</th><th>Reason / Remark</th></tr>`;
+  let i=0;
+  pkgs.forEach(([p,info])=>{const po=stepOf(info,["poplacement"]);if(!po)return;i++;
+    const d=po[C.fEF]-po[C.bEF];
+    const dd=d>0?`<span style="color:var(--crit-text);font-weight:700">+${d}</span>`:(d<0?`<span style="color:var(--good);font-weight:700">${d}</span>`:"0");
+    const st=po[C.pct]>=100?chip("good","Placed"):(po[C.bEF]<=SW?chip("warn","Due"):chip("mut","Planned"));
+    h+=`<tr><td>${i}</td><td><b>${esc(p)}</b></td><td class="num">${(100*info.w/TOTW).toFixed(2)}</td><td>${wdate(po[C.bEF],1)}</td><td>${wdate(po[C.fEF],1)}</td><td class="num">${dd}</td><td>${st}</td><td class="dim">— (manual feed)</td></tr>`});
+  return h+"</table></div>";
+}
+function committedCard(rows){
+  const by=pkgMap(rows);let bud=0,com=0;
+  Object.values(by).forEach(info=>{bud+=info.w;const po=stepOf(info,["poplacement"]);if(po&&po[C.pct]>=100)com+=info.w});
+  const cr=x=>"₹"+(x/1e7>=100?Math.round(x/1e7).toLocaleString():fmt1(x/1e7))+" Cr";
+  return `<div class="card span4 kpi"><h2>Committed vs Budgeted</h2>
+   <div class="gstats" style="margin-top:3px">
+    <span class="k">Budgeted (weight basis)</span><span class="v">${cr(bud)}</span>
+    <span class="k">Committed (PO placed)</span><span class="v">${cr(com)}</span>
+    <span class="k">Gap</span><span class="v">${cr(bud-com)}</span>
+    <span class="k">Reason / makeup plan</span><span class="v">— manual</span>
+   </div><div class="hint" style="margin-top:4px">values are weightage carriers — real BOQ/committed cost awaits accounts feed</div></div>`;
+}
+const DELAY_HEADS=[["a. Receipt of RFQ from engineering",["rfppreparation"]],
+ ["b. Receipt of offers from vendors",["vendorproposalcollection"]],
+ ["c. Tech bid evaluation",["technicalbidevaluation"]],
+ ["d. Receipt of PR",["prfraising"]],["e. Placement of PO",["poplacement"]]];
+function delayHeads(rows){
+  const by=pkgMap(rows);const tot=Object.keys(by).length||1;
+  let h="";
+  DELAY_HEADS.forEach(([nm,keys])=>{
+    let n=0,slip=0;
+    Object.values(by).forEach(info=>{const r=stepOf(info,keys);if(r&&r[C.pct]<100&&r[C.fEF]-r[C.bEF]>=1){n++;slip+=r[C.fEF]-r[C.bEF]}});
+    const avg=n?Math.round(slip/n):0;
+    h+=`<div class="prow"><div class="nm">${esc(nm)}</div>
+     <div class="pbar"><div class="fill" style="width:${Math.min(100,100*n/tot)}%;background:${n?"var(--warn)":"var(--good)"}"></div></div>
+     <div class="val"><b>${n}</b> <span class="dim">pkg${n===1?"":"s"} behind${n?` · avg +${avg} wd`:""}</span></div></div>`});
+  return h+`<div class="hint" style="margin-top:4px">behind = forecast finish ≥1 wd after baseline and step not complete</div>`;
+}
+function grpChip(rows,keys){
+  const rs=rows.filter(r=>keys.some(k=>n8(r[C.pkg]).includes(k)||n8(r[C.name]).includes(k)));
+  if(!rs.length)return chip("mut","N/A");
+  if(rs.every(r=>r[C.pct]>=100))return chip("good","Complete");
+  if(rs.some(r=>r[C.pct]>0))return chip("blue","In progress");
+  return rs.some(r=>r[C.bES]<SW)?chip("warn","Due"):chip("mut","Planned");
+}
+function statOverview(rows){
+  return `<div class="twrap"><table>
+   <tr><th>STU PSS / GSS</th><th>Capacity (AC)</th><th>DC Capacity</th><th>Connectivity</th><th>CEA Charging Approval</th><th>COD Registration</th><th>SLDC Scheduling</th><th>Billing Status</th><th>Remark</th></tr>
+   <tr><td><b>NTPC Bikaner — Block 8</b></td><td>200 MWac</td><td class="dim">— (BOQ pending)</td>
+    <td>${chip("mut","Client (NTPC) scope")}</td>
+    <td>${grpChip(rows,["ceaapplicationapprovalsolar","firsttimecharging"])}</td>
+    <td>${grpChip(rows,["selfcoddeclaration","noarregistrationapproval"])}</td>
+    <td>${grpChip(rows,["qcaandscheduling"])}</td>
+    <td class="dim">— (manual)</td><td class="dim">—</td></tr></table></div>`;
+}
+function statSheet(rows){
+  const use=[...rows].sort((a,b)=>a[C.seq]-b[C.seq]);
+  const SC={done:["good","Done"],inprog:["blue","In progress"],late:["warn","Late start"],future:["mut","Planned"]};
+  let h=`<div class="twrap" style="max-height:420px;overflow:auto"><table><tr><th>Sr</th><th>Document / Activity</th><th>Group</th><th class="num">Timeline (d)</th><th>Scope / Owner</th><th>Target date</th><th>Revised target</th><th>Status</th></tr>`;
+  use.forEach((r,i)=>{const late=r[C.pct]<100&&r[C.fEF]>r[C.bEF];
+    h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${chip(SC[r[C.state]][0],SC[r[C.state]][1])}</td></tr>`});
+  return h+"</table></div>";
+}
+function engOverview(rows){
+  const spi=planPct(rows,SW)>0?actPctAt(rows,SW)/planPct(rows,SW):1;
+  const sup=L.filter(r=>r[C.dept]==="supply"||r[C.dept]==="services");
+  const by=pkgMap(sup);
+  const pct=(keys)=>{let have=0,done=0;Object.values(by).forEach(info=>{const r=stepOf(info,keys);if(r){have++;if(r[C.pct]>=100)done++}});return have?Math.round(100*done/have)+"%":"—"};
+  const crit=rows.filter(r=>r[C.pct]<100).sort((a,b)=>a[C.tf]-b[C.tf])[0];
+  return card("span12","Engineering Overview — Exec View","single-line status per ED format · queries need manual feed",
+   `<div class="twrap"><table>
+    <tr><th>Client</th><th>Location</th><th>Capacity</th><th>Type</th><th>Engineering stage</th><th>Design status</th><th class="num">% Engg complete</th><th class="num">% RFP shared</th><th class="num">TBER</th><th class="num">Material approval (client)</th><th>Tech queries (open/closed)</th><th>Critical activity / constraint</th><th>Status</th></tr>
+    <tr><td><b>NTPC (KPI Green Energy)</b></td><td>Bikaner, Rajasthan</td><td>200 MWac</td><td>Solar · Tracker</td>
+     <td>Detailed Engineering</td><td>${chip("blue","In progress")}</td>
+     <td class="num"><b>${fmt1(actPctAt(rows,SW))}%</b></td>
+     <td class="num">${pct(["floatingofrfp"])}</td>
+     <td class="num">${pct(["technicalbidevaluation"])}</td>
+     <td class="num">${pct(["designdocumentapprovalfromendclient"])}</td>
+     <td class="dim">— / — (manual)</td>
+     <td>${crit?esc(String(crit[C.name]).slice(0,44))+` <span class="dim">(float ${crit[C.tf]} wd)</span>`:"—"}</td>
+     <td>${spi>=0.95?chip("good","On track"):chip("warn","Delayed")}</td></tr></table></div>`);
+}
 function pageDept(key){
   const rows=filtered(key);
   let h=`<div class="grid">`;
@@ -850,13 +952,20 @@ function pageDept(key){
   h+=`<div class="card span8"><h2>S-curve — ${esc(DNAME[key])}</h2><div class="hint">cumulative plan vs actual</div>${scurve(rows,"scd",false)}</div>`;
   h+=kpiCards(rows,false);
   if(key==="engineering"){
+    h+=engOverview(rows);
     h+=engExtras(rows);
     h+=card("span12","Engineering package pipeline","document stages per package · click a row for activities",pipeTable(rows,"pe",true));
   }else if(key==="supply"||key==="services"){
+    h+=card("span12","Key Procurement Dates — Exec View","forecast dates per package · ✓ = done · red = behind baseline",procDateMatrix(rows));
+    h+=card("span8","PO Tracker — expected vs actual","per ED format: value-wise baseline vs forecast PO with delay",poTracker(rows));
+    h+=committedCard(rows);
+    h+=card("span12","Delay Analysis — procurement heads","per ED format: a–e heads, packages currently behind baseline",delayHeads(rows));
     h+=card("span12",`${esc(DNAME[key])} — pipeline`,"schedule stages per package · click a row for activities",pipeTable(rows,"pd",false));
   }else if(key==="regulatory"||key==="liaisoning"){
+    h+=card("span12","Statutory Overview — Exec View","project-level snapshot per ED format",statOverview(rows));
     h+=card("span12","Critical approvals tracker","schedule order · sort by any column",regTable(rows,true,"rc"));
     h+=card("span12","All approval groups","",regTable(rows,false,"ra"));
+    h+=card("span12","Statutory Updates Sheet — Exec View","document-wise · target vs revised date · scroll for all",statSheet(rows));
   }else if(key==="execution"||key==="tnc"){
     h+=card("span12","Block / Feeder scorecard","click a tile to filter",feederTiles(rows),unitToggle());
     h+=card("span6","Stage progress","by work type",stageBars(rows),unitToggle());
