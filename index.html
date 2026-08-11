@@ -489,8 +489,8 @@ const pipeL1={}, pipeL2={};              // per-table L1 (section) / L2-L3 (pack
 function cellState(rr){
   if(!rr||!rr.length)return null;
   if(rr.every(isDone))return "done";
+  if(rr.some(r=>r[C.pct]>0))return "inprog";
   if(rr.some(r=>r[C.state]==="late"))return "late";
-  if(rr.some(r=>r[C.pct]>0&&r[C.pct]<100))return "inprog";
   if(rr.some(isBehind))return "watch";
   return "future";
 }
@@ -663,7 +663,7 @@ const REG_CRIT=["connectivityassessment","baynoallocation","connbgsubmissions","
  "ministryofdefence","airportauthority","assessmentofpsslocation","pollutioncategory","nationalhighway",
  "getcotranscocrossings","ptccapproval","ceachargingapplicationapprovalehvline","ceachargingapplicationapprovalpss",
  "ceaapplicationapprovalsolar","ceaapplicationapprovalwind","ftcfeesandcharges","firsttimecharging","trialrun","noar"];
-let regSort={key:"seq",dir:1}, regQ="", regStatus="";
+let regSort={key:"seq",dir:1}, regQ="", regStatus="", statSel="";
 function regItems(rows,critOnly){
   const g={};rows.forEach(r=>{(g[r[C.pkg]]=g[r[C.pkg]]||[]).push(r)});
   let items=Object.entries(g).map(([pkg,rr])=>{
@@ -696,7 +696,7 @@ function regTable(rows,critOnly,idp){
     <span class="fnote">${items.length} items · click headers to sort</span></div>`;
   h+=`<div class="twrap"><table><tr>${hd("seq","# Schedule order",1)}${hd("pkg","Approval / Permission")}${hd("st","Status")}${hd("a","%",1)}${hd("bf","Baseline finish",1)}${hd("ff","Forecast finish",1)}${hd("v","Var",1)}${hd("nxtD","Next step",0)}${hd("tf","Float",1)}</tr>`;
   items.forEach((x,i)=>{
-    h+=`<tr><td class="num dim">${i+1}</td><td><b>${esc(x.pkg.slice(0,50))}</b>${x.crit?" "+chip("crit","CRITICAL"):""}</td>
+    h+=`<tr class="regrow ${statSel===x.pkg?"selrow":""}" data-pkg="${esc(x.pkg)}" style="cursor:pointer${statSel===x.pkg?";outline:2px solid var(--blue)":""}"><td class="num dim">${i+1}</td><td><b>${esc(x.pkg.slice(0,50))}</b>${x.crit?" "+chip("crit","CRITICAL"):""}</td>
      <td>${stChip(x.st==="watch"?"future":x.st)}</td>
      <td class="num">${Math.round(x.a)}</td><td class="num">${wdate(x.bf,1)}</td><td class="num">${wdate(x.ff,1)}</td>
      <td class="num" ${x.v>=4?'style="color:var(--crit-text);font-weight:700"':""}>${x.v>0?"+":""}${x.v}</td>
@@ -949,9 +949,12 @@ function statOverview(rows){
     <td class="dim">— (manual)</td><td class="dim">—</td></tr></table></div>`;
 }
 function statSheet(rows){
-  const use=[...rows].sort((a,b)=>a[C.seq]-b[C.seq]);
+  let use=[...rows].sort((a,b)=>a[C.seq]-b[C.seq]);
+  let selbar="";
+  if(statSel){use=use.filter(r=>r[C.pkg]===statSel);
+    selbar=`<div style="margin-bottom:5px">${chip("blue","Filtered: "+esc(statSel.slice(0,60)))} <a href="#" onclick="statSel='';render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear filter</a></div>`}
   const SC={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnc","Not Committed"],future:["vlnc","Not Committed"]};
-  let h=`<div class="twrap" style="max-height:420px;overflow:auto"><table><tr><th>Sr</th><th>Document / Activity</th><th>Group</th><th class="num">Timeline (d)</th><th>Scope / Owner</th><th>Target date</th><th>Revised target</th><th>Status</th></tr>`;
+  let h=selbar+`<div class="twrap" style="max-height:420px;overflow:auto"><table><tr><th>Sr</th><th>Document / Activity</th><th>Group</th><th class="num">Timeline (d)</th><th>Scope / Owner</th><th>Target date</th><th>Revised target</th><th>Status</th></tr>`;
   use.forEach((r,i)=>{const late=r[C.pct]<100&&r[C.fEF]>r[C.bEF];
     h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${chip(SC[r[C.state]][0],SC[r[C.state]][1])}</td></tr>`});
   return h+"</table></div>";
@@ -991,10 +994,9 @@ function pageDept(key){
     h+=card("span12","Delay Analysis — procurement heads","per ED format: a–e heads, packages currently behind baseline",delayHeads(rows));
     h+=card("span12",`${esc(DNAME[key])} — pipeline`,"schedule stages per package · click a row for activities",pipeTable(rows,"pd",false));
   }else if(key==="regulatory"||key==="liaisoning"){
-    h+=card("span12","Statutory Overview — Exec View","project-level snapshot per ED format",statOverview(rows));
-    h+=card("span12","Critical approvals tracker","schedule order · sort by any column",regTable(rows,true,"rc"));
+    h+=card("span12","Critical approvals tracker","schedule order · sort by any column · click a row to filter the Updates Sheet below",regTable(rows,true,"rc"));
     h+=card("span12","All approval groups","",regTable(rows,false,"ra"));
-    h+=card("span12","Statutory Updates Sheet — Exec View","document-wise · target vs revised date · scroll for all",statSheet(rows));
+    h+=card("span12","Statutory Updates Sheet — Exec View","document-wise · target vs revised date · click an approval above to focus, or scroll for all",statSheet(rows));
   }else if(key==="execution"||key==="tnc"){
     h+=card("span12","Block / Feeder scorecard","click a tile to filter · Actual % (red = behind baseline plan)",feederTiles(rows));
     h+=card("span12","Stage progress","by work type · Actual % vs Baseline Plan %",stageBars(rows));
@@ -1063,6 +1065,8 @@ function render(){
   if(um){um.onclick=()=>{state.unit="MW";render()}}
   document.querySelectorAll(".ftile").forEach(el=>{el.addEventListener("click",()=>{
     state.f.area=state.f.area===el.dataset.area?"":el.dataset.area;render();})});
+  document.querySelectorAll("tr.regrow").forEach(el=>{el.addEventListener("click",()=>{
+    const p=el.dataset.pkg;statSel=statSel===p?"":p;render();})});
   if(_keep)window.scrollTo(0,_sy);else window.scrollTo(0,0);lastPage=state.page;
 }
 ["f-dept","f-type","f-area","f-pkg","f-owner"].forEach(id=>{
