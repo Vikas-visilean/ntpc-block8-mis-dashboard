@@ -164,6 +164,16 @@ svg text{fill:var(--ink2);font-family:inherit}
 html{zoom:1.3}
 @media (max-width:1680px){html{zoom:1.15}}
 @media (max-width:1400px){html{zoom:1}}
+
+.chip.vlc{background:rgba(27,138,47,.15);color:#1b8a2f}
+.chip.vls{background:rgba(92,45,145,.13);color:#7a4fb3}
+.chip.vlnr{background:rgba(255,90,70,.15);color:#e04b3a}
+.chip.vlnc{background:rgba(230,198,25,.22);color:#8a7500}
+.chip.vlw{background:rgba(245,166,35,.16);color:#b57508}
+[data-theme=dark] .chip.vlc{color:#4ecb6a}[data-theme=dark] .chip.vls{color:#b08fe0}
+[data-theme=dark] .chip.vlnr{color:#ff8a7a}[data-theme=dark] .chip.vlnc{color:#e0c545}[data-theme=dark] .chip.vlw{color:#ffb84d}
+.vleg{display:inline-flex;gap:5px;align-items:center;font-size:9.5px;color:var(--mut);flex-wrap:wrap}
+.fbar input[type=date]{font-size:10px;padding:2px 4px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -198,10 +208,13 @@ html{zoom:1.3}
       <select id="f-type"><option value="">All EPC types</option></select>
       <select id="f-area"><option value="">All areas</option></select>
       <select id="f-pkg"><option value="">All packages</option></select>
+      <select id="f-owner"><option value="">All owners</option></select>
+      <span class="dsl">From <input type="date" id="f-d1"></span><span class="dsl">To <input type="date" id="f-d2"></span>
       <span class="tgl" id="f-crit">⚠ Critical</span>
       <span class="tgl" id="f-del">⏰ Delayed</span>
       <span class="dsl">Date <input type="range" id="f-date" min="0" max="0" step="1"><b id="f-datev"></b></span>
       <button class="reset" id="f-reset">Reset</button>
+      <span class="vleg" style="margin-left:auto">VisiLean status:<span class="chip vlc">Complete</span><span class="chip vls">Started</span><span class="chip vlnr">Not Ready</span><span class="chip vlnc">Not Committed</span><span class="chip vlw">Warning</span></span>
       <span class="fnote" id="f-count"></span>
     </div>
     <div id="page"></div>
@@ -223,7 +236,7 @@ const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"
 const fmt1=x=>(Math.round(x*10)/10).toFixed(1);
 const fq=x=>x>=1e6?(x/1e6).toFixed(1)+"M":x>=1000?(x/1000).toFixed(x>=10000?0:1)+"k":Math.round(x*10)/10;
 // ---------- state ----------
-const state = {page:"summary", unit:"%", at:SW, f:{dept:"",type:"",area:"",pkg:"",crit:false,del:false}};
+const state = {page:"summary", unit:"%", at:SW, f:{dept:"",type:"",area:"",pkg:"",owner:"",w1:null,w2:null,crit:false,del:false}};
 // status rules aligned with the schedule Excel 'Status' column
 const isDone = r=>r[C.state]==="done";
 const isLateStart = r=>r[C.state]==="late";
@@ -233,7 +246,9 @@ const isCrit = r=>r[C.tf]<=5 && r[C.state]!=="done";
 function filtered(forceDept){
   const f=state.f, dept=forceDept||f.dept;
   return L.filter(r=>(!dept||r[C.dept]===dept)&&(!f.type||r[C.type]===f.type)&&(!f.area||r[C.area]===f.area)
-    &&(!f.pkg||r[C.pkg]===f.pkg)&&(!f.crit||isCrit(r))&&(!f.del||isBehind(r)));
+    &&(!f.pkg||r[C.pkg]===f.pkg)&&(!f.owner||r[C.owner]===f.owner)
+    &&(f.w1===null||r[C.fEF]>=f.w1)&&(f.w2===null||r[C.fES]<=f.w2)
+    &&(!f.crit||isCrit(r))&&(!f.del||isBehind(r)));
 }
 function wgt(rows){const c=rows.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0);return c>0?(r=>(r[C.cost]>0?r[C.cost]:0)):(r=>r[C.dur]);}
 function wsum(rows){const w=wgt(rows);return rows.reduce((a,r)=>a+w(r),0)||1}
@@ -249,7 +264,7 @@ function moveTip(e){const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+1
 function hideTip(){tip.style.display="none"}
 document.addEventListener("scroll",hideTip,true);
 function chip(cls,txt){return `<span class="chip ${cls}">${txt}</span>`}
-function stChip(st){return st==="done"?chip("good","Complete"):st==="inprog"?chip("blue","In progress"):st==="late"?chip("crit","Delayed start"):chip("mut","Not started")}
+function stChip(st){return st==="done"?chip("vlc","Complete"):st==="inprog"?chip("vls","Started"):st==="late"?chip("vlnr","Not Ready"):chip("vlnc","Not Committed")}
 // ---------- speedometer gauge (semicircle, correct sweep) ----------
 function gauge(a,p){
   const Wc=170,Hc=104,cx=85,cy=90,R=62;
@@ -274,27 +289,26 @@ function gaugeCard(rows){
   return `<div class="card span4"><h2>Overall progress</h2><div class="hint">vs baseline plan</div>
    <div class="gwrap">${gauge(a,p)}
     <div class="gstats">
-     <span class="k">SPI</span><span class="v">${spi?spi.toFixed(2):"—"}</span>
-     <span class="k">Pace</span><span class="v">${spi?Math.round(spi*100)+"%":"—"}</span>
-     <span class="k">Variance</span><span class="v" style="color:${sv>=0?"var(--good-text)":"var(--crit-text)"}">${sv>=0?"+":""}${fmt1(sv)}%</span>
+     <span class="k">SPI — Schedule Performance Index<br><span style="font-weight:400">(= Actual % ÷ Planned %)</span></span><span class="v">${spi?spi.toFixed(2):"—"}</span>
+     <span class="k">Progress Variance<br><span style="font-weight:400">(= Actual − Plan)</span></span><span class="v" style="color:${sv>=0?"var(--good-text)":"var(--crit-text)"}">${sv>=0?"+":""}${fmt1(sv)}%</span>
     </div></div></div>`;
 }
 function epcCard(){
   const segs=[["Engineering",L.filter(r=>r[C.dept]==="engineering")],
    ["Procurement",L.filter(r=>r[C.dept]==="supply"||r[C.dept]==="services")],
    ["Construction",L.filter(r=>r[C.dept]==="execution"||r[C.dept]==="tnc")]];
-  let h=`<div class="card span4"><h2>EPC bifurcation</h2><div class="hint">actual vs plan</div>`;
-  segs.forEach(([n,rr])=>{const a=actPct(rr),p=planPct(rr),spi=p>0.05?a/p:0;
-    h+=`<div class="prow"><div class="nm"><b>${n}</b> <span class="dim">(${rr.length})</span></div>
+  let h=`<div class="card span4"><h2>EPC bifurcation</h2><div class="hint">Actual % vs Baseline Plan % · Δ = progress variation (Actual − Plan)</div>`;
+  segs.forEach(([n,rr])=>{const a=actPct(rr),p=planPct(rr),spi=p>0.05?a/p:0,dv=a-p;
+    h+=`<div class="prow"><div class="nm"><b>${n}</b> <span class="dim">${rr.length} activities</span></div>
      <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div>
-     <div class="val"><b>${fmt1(a)}%</b> <span class="dim">/ ${fmt1(p)}%</span> ${spi?`<span class="chip ${spi>=0.95?"good":spi>=0.8?"warn":"crit"}">${spi.toFixed(2)}</span>`:""}</div></div>`});
+     <div class="val"><b>${fmt1(a)}%</b> <span class="dim">/ ${fmt1(p)}%</span> <span style="color:${dv>=0?"var(--good-text)":"var(--crit-text)"};font-weight:600">Δ ${dv>=0?"+":""}${fmt1(dv)}%</span> ${spi?`<span class="chip ${spi>=0.95?"vlc":spi>=0.8?"vlw":"vlnr"}">SPI ${spi.toFixed(2)}</span>`:""}</div></div>`});
   return h+`</div>`;
 }
 function costCard(){
   const rows=filtered();
   const bud=rows.reduce((a,r)=>a+(r[C.cost]||0),0), ev=rows.reduce((a,r)=>a+(r[C.cost]||0)*r[C.pct]/100,0);
   const cr=x=>"₹"+(x/1e7>=100?Math.round(x/1e7).toLocaleString():fmt1(x/1e7))+" Cr";
-  return `<div class="card span4 kpi"><h2>Cost</h2>
+  return `<div class="card span4"><h2>Cost</h2>
    <div class="gstats" style="margin-top:3px">
     <span class="k">Budget (BAC)</span><span class="v">${cr(bud)}</span>
     <span class="k">Earned value</span><span class="v">${cr(ev)}</span>
@@ -312,10 +326,9 @@ function kpiCards(rows,projectLevel){
   const totalAll=projectLevel? total + DATA.milestones.length : total;
   return c("Total activities",totalAll.toLocaleString(),projectLevel?`incl. ${DATA.milestones.length} milestones`:"in scope")
    + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count")
-   + c("Delayed",dl.toLocaleString(),`≥4 wd behind baseline · ${ls} delayed start`,cr?chip("crit",cr+" critical"):chip("good","0 critical"))
-   + c("Baseline vs Forecast",`<span style="font-size:12px">${wdate(bfin,1)}</span>`,`forecast ${wdate(ffin,1)}`,(ffin-bfin)>=4?chip("warn","+"+(ffin-bfin)+" wd"):chip("good","on plan"))
-   + c("Days to COD",d2cod+" d","forecast "+M.forecastFinish)
-   + c("Delay by days",(M.delayDays>=0?"+":"")+M.delayDays+" wd","vs baseline COD",M.delayDays>10?chip("crit","recovery needed"):M.delayDays>0?chip("warn","monitor"):chip("good","on time"));
+   + c("Delayed",dl.toLocaleString(),`≥4 days behind baseline · ${ls} delayed start`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"))
+   + c("Baseline vs Forecast",`<span style="font-size:12px">${wdate(bfin,1)}</span>`,`forecast ${wdate(ffin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):chip("vlc","on plan"))
+   + c("Days to COD",d2cod+" days","forecast "+M.forecastFinish);
 }
 // ---------- S-curve ----------
 let scMode="cum";
@@ -413,15 +426,14 @@ function msTimeline(){
   const DOT={done:"var(--good)",ontrack:"var(--good)",watch:"var(--warn)",late:"var(--crit)"};
   // progress along project duration for the mini track
   const w1=Math.max(M.forecastFinishWd,M.baselineFinishWd);
-  let h=`<div class="mstrack"><div class="mstline"></div><div class="mstdone" style="width:${Math.min(100,100*SW/w1)}%"></div>`;
+  let h=`<div class="legend" style="margin-bottom:4px"><span><span class="sw" style="background:var(--good)"></span>On track / Achieved (slip ≤ 6 days)</span><span><span class="sw" style="background:var(--warn)"></span>Watch (7–15 days)</span><span><span class="sw" style="background:var(--crit)"></span>Late (&gt; 15 days)</span></div><div class="mstrack"><div class="mstline"></div><div class="mstdone" style="width:${Math.min(100,100*SW/w1)}%"></div>`;
   ms.forEach((m2,i)=>{h+=`<div class="mstdot" style="left:${100*m2.f/w1}%;background:${DOT[m2.status]}" data-i="${i}"></div>`});
   h+=`<div class="msttoday" style="left:${100*SW/w1}%"><span>today</span></div></div>`;
   h+=`<div class="mscards">`;
   ms.forEach((m2,i)=>{
-    const [cc,ct]=CH[m2.status];
     h+=`<div class="msc" data-i="${i}">
       <div class="mscn"><span class="mscdot" style="background:${DOT[m2.status]}"></span>${esc(m2.name.replace(/^MS-\d+\s*/,""))}</div>
-      <div class="mscch">${chip(cc,ct)}${m2.slip>0?chip(m2.slip>15?"crit":"warn","+"+m2.slip+" wd"):chip("good","on plan")}</div>
+      <div class="mscch">${m2.slip>0?chip(m2.slip>15?"vlnr":"vlw","+"+m2.slip+" days"):chip("vlc","on plan")}</div>
       <div class="mscd"><span class="k">Baseline</span><b>${wdate(m2.b,1)}</b></div>
       <div class="mscd"><span class="k">Forecast</span><b style="color:${m2.slip>0?"var(--crit-text)":"var(--good-text)"}">${wdate(m2.f,1)}</b></div>
     </div>`;
@@ -429,7 +441,7 @@ function msTimeline(){
   h+="</div>";
   setTimeout(()=>{document.querySelectorAll(".mstdot").forEach(el=>{
     el.addEventListener("mousemove",e=>{const m2=ms[+el.dataset.i];
-      showTip(e,`<b>${esc(m2.name)}</b><br>Baseline: ${wdate(m2.b,1)} · Forecast: ${wdate(m2.f,1)}<br><span class="t2">+${m2.slip} wd · ${m2.status}</span>`)});
+      showTip(e,`<b>${esc(m2.name)}</b><br>Baseline: ${wdate(m2.b,1)} · Forecast: ${wdate(m2.f,1)}<br><span class="t2">+${m2.slip} days · ${m2.status}</span>`)});
     el.addEventListener("mouseleave",hideTip);});},0);
   return h;
 }
@@ -473,6 +485,7 @@ const ENG_COL_LBL={"Drafting":"Drafting & Conceptual","Int. Check":"Internal Che
 const LONGLEAD=/pv module|mms|tracker|inverter duty|central inverter|main auxiliary|harmonic|ctpt|vcb|33 kv main/i;
 let pipeSearch="", pipeDelOnly=false;
 const pipeColSel={}, pipeColOpen={};   // per-table stage column selection
+const pipeL1={}, pipeL2={};              // per-table L1 (section) / L2-L3 (package) filters
 function cellState(rr){
   if(!rr||!rr.length)return null;
   if(rr.every(isDone))return "done";
@@ -487,6 +500,8 @@ function pipeTable(rows,idp,engMode){
     dl:rr.some(isBehind),cr:rr.some(isCrit),ls:rr.some(isLateStart),
     end:Math.max(...rr.map(r=>r[C.fEF])),seq:Math.min(...rr.map(r=>r[C.seq]))}))
     .sort((x,y)=>x.seq-y.seq);
+  if(pipeL1[idp])groups=groups.filter(x=>x.rr.some(r=>r[C.sec]===pipeL1[idp]));
+  if(pipeL2[idp])groups=groups.filter(x=>x.pkg===pipeL2[idp]);
   if(pipeSearch)groups=groups.filter(x=>x.pkg.toLowerCase().includes(pipeSearch.toLowerCase()));
   if(pipeDelOnly)groups=groups.filter(x=>x.dl||x.ls);
   // columns = schedule steps ordered by earliest baseline start
@@ -502,14 +517,14 @@ function pipeTable(rows,idp,engMode){
     const doneN=withCol.filter(x=>cellState(x.rr.filter(r=>colKey(r)===cn))==="done").length;
     const liveN=withCol.filter(x=>cellState(x.rr.filter(r=>colKey(r)===cn))==="inprog").length;
     const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
-    sc+=`<div class="stgc"><div class="n" title="${esc(lbl)}">${esc(lbl.length>15?lbl.slice(0,14)+"…":lbl)}</div><div class="v">${doneN}<small>/${withCol.length}${liveN?" · "+liveN+" live":""}</small></div>
+    sc+=`<div class="stgc"><div class="n" title="${esc(lbl)}">${esc(lbl.length>15?lbl.slice(0,14)+"…":lbl)}</div><div class="v">${doneN}<small>/${withCol.length}${liveN?" · "+liveN+" in progress":""}</small></div>
      <div class="fb"><i style="width:${withCol.length?100*doneN/withCol.length:0}%"></i></div></div>`;
   });
   sc+="</div>";
   let h=`<div class="twrap"><table class="stickycol"><tr><th>Package</th>`+
     cols.map(cn=>{const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
       return `<th title="${esc(lbl)}">${esc(lbl.length>16?lbl.slice(0,15)+"…":lbl)}</th>`}).join("")+`<th class="num">%</th></tr>`;
-  const PL={done:["good","Complete"],inprog:["blue","Started"],late:["crit","Delayed"],watch:["warn","At risk"],future:["mut","Not ready"]};
+  const PL={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnr","Not Ready"],watch:["vlw","Warning"],future:["vlnc","Not Committed"]};
   groups.forEach((x,gi)=>{
     h+=`<tr class="prowclick" data-g="${idp}-${gi}"><td><b>${esc(x.pkg.slice(0,40))}</b>
       ${x.cr?chip("crit","CRIT"):""}${!engMode&&LONGLEAD.test(x.pkg)?chip("blue","LL"):""}
@@ -550,6 +565,8 @@ function pipeTable(rows,idp,engMode){
       return `<label><input type="checkbox" data-cc="${esc(cn)}" data-p="${idp}" ${(!sel||!sel.size||sel.has(cn))?"checked":""}> ${esc(lbl.length>34?lbl.slice(0,33)+"…":lbl)}</label>`}).join("")}
     </div></details>`;
   return sc+`<div style="display:flex;gap:7px;align-items:center;margin-bottom:5px;flex-wrap:wrap">
+    <select onchange="pipeL1['${idp}']=this.value;pipeL2['${idp}']='';render()">${["",...new Set(rows.map(r=>r[C.sec]))].map(v=>`<option value="${esc(v)}" ${pipeL1[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"L1 — all sections"}</option>`).join("")}</select>
+    <select onchange="pipeL2['${idp}']=this.value;render()">${["",...new Set(rows.filter(r=>!pipeL1[idp]||r[C.sec]===pipeL1[idp]).map(r=>r[C.pkg]))].map(v=>`<option value="${esc(v)}" ${pipeL2[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"L2/L3 — all packages"}</option>`).join("")}</select>
     <input type="search" id="${idp}-q" placeholder="Search packages…" value="${esc(pipeSearch)}">
     <span class="tgl ${pipeDelOnly?"on2":""}" id="${idp}-del">Delayed only</span>
     ${colpop}
@@ -616,14 +633,14 @@ function feederTiles(rows){
     let cats="";
     FCATS.forEach(([cn,fn])=>{
       const cr2=rr.filter(fn);if(!cr2.length)return;
-      const qt=cr2.reduce((x,r)=>x+(r[C.qty]||0),0),qd=cr2.reduce((x,r)=>x+(r[C.qty]||0)*r[C.pct]/100,0);
+      const q2=cr2.filter(r=>r[C.uom]&&r[C.uom]!=="Lot"&&r[C.uom]!=="%");
+      const qt=q2.reduce((x,r)=>x+(r[C.qty]||0),0),qd=q2.reduce((x,r)=>x+(r[C.qty]||0)*r[C.pct]/100,0);
       const cp=actPctAt(cr2,SW);
-      const uom=(cr2.find(r=>r[C.uom]&&r[C.uom]!=="Lot"&&r[C.uom]!=="%")||cr2[0])[C.uom]||"";
-      let val=`${fq(qd)}/${fq(qt)} ${esc(uom)}`;
-      if(state.unit==="MW"&&cn==="Module")val=isBlock?fmt1(cp/100*17.6)+"/17.6 MW":fmt1(cp/100*300)+" MW";
-      cats+=`<div class="frow"><div class="fn">${cn}</div><div class="fb"><i style="width:${Math.min(100,cp)}%"></i></div><div class="fv">${val} · ${Math.round(cp)}%</div></div>`;
+      const uom=q2.length?(q2[0][C.uom]||""):"";
+      const val=qt>0?`${fq(qd)}/${fq(qt)} ${esc(uom)} · ${Math.round(cp)}%`:`${Math.round(cp)}%`;
+      cats+=`<div class="frow"><div class="fn">${cn}</div><div class="fb"><i style="width:${Math.min(100,cp)}%"></i></div><div class="fv">${val}</div></div>`;
     });
-    const big=state.unit==="MW"&&isBlock?fmt1(a/100*17.6)+" MW":fmt1(a)+"%";
+    const big=`<span style="color:${a+0.05<p?"var(--crit-text)":"inherit"}">${fmt1(a)}%</span>`;
     h+=`<div class="ftile ${state.f.area===k?"sel":""}" data-area="${esc(k)}">
      <div class="bn">${esc(k)} ${dl?`<span class="chip crit">⏰${dl}</span>`:""}</div>
      <div class="bp">${big}</div><div class="bpl">plan ${fmt1(p)}% · ${rr.length} activities</div>${cats}</div>`;
@@ -636,7 +653,7 @@ function scorecard(rows){
     const a=actPctAt(rr,SW),p=planPct(rr,SW),spi=p>0.05?a/p:null,dl=rr.filter(isBehind).length,cr2=rr.filter(isCrit).length;
     h+=`<tr><td>${esc(k)}</td><td class="num">${rr.length}</td><td class="num">${fmt1(p)}</td><td class="num">${fmt1(a)}</td>
      <td class="num">${spi===null?"—":spi.toFixed(2)}</td><td class="num">${dl}</td><td class="num">${cr2}</td>
-     <td>${spi===null?chip("mut","not started"):spi>=0.95?chip("good","on track"):spi>=0.8?chip("warn","watch"):chip("crit","behind")}</td></tr>`});
+     <td>${spi===null?chip("vlnc","Not Committed"):spi>=0.95?chip("vlc","On track"):spi>=0.8?chip("vlw","Warning"):chip("vlnr","Behind")}</td></tr>`});
   return h+"</table></div>";
 }
 // ---------- regulatory tracker (schedule order, sortable, filterable) ----------
@@ -675,12 +692,12 @@ function regTable(rows,critOnly,idp){
       <option value="done" ${regStatus==="done"?"selected":""}>Complete</option>
       <option value="inprog" ${regStatus==="inprog"?"selected":""}>In progress</option>
       <option value="late" ${regStatus==="late"?"selected":""}>Delayed</option>
-      <option value="future" ${regStatus==="future"?"selected":""}>Upcoming</option></select>
+      <option value="future" ${regStatus==="future"?"selected":""}>Not Committed</option></select>
     <span class="fnote">${items.length} items · click headers to sort</span></div>`;
   h+=`<div class="twrap"><table><tr>${hd("seq","# Schedule order",1)}${hd("pkg","Approval / Permission")}${hd("st","Status")}${hd("a","%",1)}${hd("bf","Baseline finish",1)}${hd("ff","Forecast finish",1)}${hd("v","Var",1)}${hd("nxtD","Next step",0)}${hd("tf","Float",1)}</tr>`;
   items.forEach((x,i)=>{
     h+=`<tr><td class="num dim">${i+1}</td><td><b>${esc(x.pkg.slice(0,50))}</b>${x.crit?" "+chip("crit","CRITICAL"):""}</td>
-     <td>${x.st==="done"?chip("good","Complete"):x.st==="inprog"?chip("blue","In progress"):x.st==="late"?chip("crit","Delayed"):chip("mut","Upcoming")}</td>
+     <td>${stChip(x.st==="watch"?"future":x.st)}</td>
      <td class="num">${Math.round(x.a)}</td><td class="num">${wdate(x.bf,1)}</td><td class="num">${wdate(x.ff,1)}</td>
      <td class="num" ${x.v>=4?'style="color:var(--crit-text);font-weight:700"':""}>${x.v>0?"+":""}${x.v}</td>
      <td class="small">${x.nxt?esc(x.nxt.slice(0,38))+" · "+wdate(x.nxtD):"—"}</td><td class="num">${x.tf}</td></tr>`;
@@ -740,10 +757,17 @@ function watchTable(rows,cap){
      <td class="num" style="color:var(--crit-text);font-weight:700">+${v}</td><td class="num">${r[C.tf]}</td></tr>`});
   return h+"</table></div>";
 }
+let consTab="await";
 function constraints(rows){
+  if(consTab==="vl"){
+    return `<div style="padding:14px 6px;text-align:center">
+      <div style="font-size:22px">🔗</div>
+      <div style="font-weight:700;margin:4px 0">No constraints logged yet</div>
+      <div class="hint" style="max-width:420px;margin:0 auto">Open constraints will pull directly from the VisiLean constraints log via API once teams start logging them — including a category-wise pie chart (material / design / approval / access / resource).</div></div>`;
+  }
   const items=rows.filter(isLateStart).sort((a,b)=>a[C.bES]-b[C.bES]).slice(0,18);
-  let h=`<div class="twrap"><table><tr><th>Constraint (awaiting start)</th><th>Owner</th><th>Dept</th><th>Needed by</th><th class="num">Days open</th></tr>`;
-  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td>${esc(r[C.owner]||"—")}</td><td class="dim">${esc((DNAME[r[C.dept]]||"").slice(0,16))}</td><td>${wdate(r[C.bES])}</td><td class="num">${SW-r[C.bES]}</td></tr>`});
+  let h=`<div class="twrap"><table><tr><th>Activity (awaiting start)</th><th>WBS</th><th>Owner · Dept</th><th>Planned start</th><th class="num">Pending since (days)</th></tr>`;
+  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,26))} · ${esc(String(r[C.sec]).slice(0,22))}</td><td>${esc(r[C.owner]||"—")} <span class="dim">· ${esc((DNAME[r[C.dept]]||"").slice(0,14))}</span></td><td>${wdate(r[C.bES])}</td><td class="num">${SW-r[C.bES]}</td></tr>`});
   return h+"</table></div>";
 }
 function lookahead(rows){
@@ -753,12 +777,15 @@ function lookahead(rows){
   return h+"</table></div>";
 }
 function critPoints(rows){
-  const sup=rows.filter(r=>r[C.tf]<=0&&!isDone(r));
-  const top=rows.filter(isCrit).sort((a,b)=>a[C.tf]-b[C.tf]||b[C.dur]-a[C.dur]).slice(0,3);
-  let h=`<div class="card span6"><h2>Critical points</h2><div class="hint">lowest float · supercritical = zero float</div>`;
-  h+=`<div style="margin-bottom:5px">${chip("crit","Supercritical: "+sup.length)} ${chip("mut","assigned: "+sup.filter(r=>r[C.owner]).length)}</div>`;
-  top.forEach((r,i)=>{h+=`<div style="padding:3px 0;border-bottom:1px solid var(--line)"><b>Point-${i+1}:</b> ${esc(r[C.name])}
-   <div class="small dim">${esc(DNAME[r[C.dept]]||"")} · ${esc(r[C.pkg].slice(0,36))} · float ${r[C.tf]} wd · ends ${wdate(r[C.fEF],1)} · ${esc(r[C.owner]||"unassigned")}</div></div>`});
+  const EXCL=/project buffer|project closeout|documents submission closure/i;
+  const sup=rows.filter(r=>r[C.tf]<=0&&!isDone(r)&&!EXCL.test(r[C.name]));
+  const top=rows.filter(r=>isCrit(r)&&!EXCL.test(r[C.name])&&r[C.fES]<=SW+60)
+    .sort((a,b)=>a[C.tf]-b[C.tf]||a[C.fES]-b[C.fES]).slice(0,5);
+  let h=`<div class="card span6"><h2>Critical points — management attention</h2><div class="hint">immediate critical activities (due within ~60 days) · buffer &amp; closeout excluded</div>`;
+  h+=`<div style="margin-bottom:5px">${chip("vlnr","Supercritical (zero float): "+sup.length)} ${chip("mut","with owner: "+sup.filter(r=>r[C.owner]).length)}</div>`;
+  top.forEach((r,i)=>{h+=`<div style="padding:4px 0;border-bottom:1px solid var(--line)"><b>Point-${i+1}:</b> ${esc(r[C.name])} ${stChip(r[C.state])}
+   <div class="small dim" style="margin-top:1px">WBS: ${esc(DNAME[r[C.dept]]||"")} › ${esc(String(r[C.sec]).slice(0,28))} › ${esc(String(r[C.pkg]).slice(0,32))}${r[C.area]&&r[C.area]!=="Off-site / Office"?" › "+esc(r[C.area]):""}</div>
+   <div class="small dim">float ${r[C.tf]} days · window ${wdate(r[C.fES])} → ${wdate(r[C.fEF],1)} · owner: ${esc(r[C.owner]||"unassigned")}</div></div>`});
   return h+"</div>";
 }
 
@@ -772,8 +799,8 @@ function longLeadTable(){
   items.sort((a,b)=>b.w-a.w);
   let h=`<div class="twrap"><table><tr><th>#</th><th>Long-lead item (supply package)</th><th class="num">Wt %</th><th>Baseline delivery</th><th>Forecast delivery</th><th class="num">Delay / Ahead</th><th>Status</th></tr>`;
   items.slice(0,12).forEach((x,i)=>{
-    const dd=x.d>0?`<span style="color:var(--crit-text);font-weight:700">+${x.d} wd</span>`:(x.d<0?`<span style="color:var(--good);font-weight:700">${x.d} wd</span>`:`<span class="dim">on time</span>`);
-    const st=x.pc>=100?chip("good","Delivered"):(x.b<=SW?chip("warn","In pipeline"):chip("mut","Planned"));
+    const dd=x.d>0?`<span style="color:var(--crit-text);font-weight:700">+${x.d} days</span>`:(x.d<0?`<span style="color:var(--good);font-weight:700">${x.d} days</span>`:`<span class="dim">on time</span>`);
+    const st=x.pc>=100?chip("vlc","Delivered"):(x.b<=SW?chip("vlw","Warning"):chip("vlnc","Not Committed"));
     h+=`<tr><td>${i+1}</td><td><b>${esc(x.p)}</b></td><td class="num">${(100*x.w/TOTW).toFixed(2)}</td><td>${wdate(x.b,1)}</td><td>${wdate(x.f,1)}</td><td class="num">${dd}</td><td>${st}</td></tr>`});
   return h+"</table></div>";
 }
@@ -791,7 +818,7 @@ function msL2Table(){
   const CH={done:["good","Achieved"],ontrack:["good","On track"],watch:["warn","Watch"],late:["crit","Late"]};
   let h=`<div class="twrap"><table><tr><th>#</th><th>Milestone</th><th>Baseline</th><th>Forecast</th><th class="num">Lead / Lag</th><th>Status</th></tr>`;
   DATA.milestones.forEach((m,i)=>{const sp=m.slip;
-    const sl=sp>0?`<span style="color:var(--crit-text);font-weight:700">+${sp} wd lag</span>`:(sp<0?`<span style="color:var(--good);font-weight:700">${-sp} wd lead</span>`:`<span class="dim">on plan</span>`);
+    const sl=sp>0?`<span style="color:var(--crit-text);font-weight:700">+${sp} days lag</span>`:(sp<0?`<span style="color:var(--good);font-weight:700">${-sp} days lead</span>`:`<span class="dim">on plan</span>`);
     h+=`<tr><td>${i+1}</td><td><b>${esc(m.name)}</b></td><td>${wdate(m.b,1)}</td><td>${wdate(m.f,1)}</td><td class="num">${sl}</td><td>${chip(CH[m.status][0],CH[m.status][1])}</td></tr>`});
   return h+"</table></div>";
 }
@@ -806,12 +833,12 @@ function pageSummary(){
   h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
   h+=card("span12","Long Lead Item Delivery Status","top supply packages by weightage · delivery = GRN at site",longLeadTable());
   h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
-    `<div id="sc-box">${scurveMulti(rows,"sc",scMode==="mon")}</div>`,
-    `<div style="display:flex;gap:5px;flex-wrap:wrap"><div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-cum" class="${scMode==="cum"?"on":""}">Cumulative</button><button id="sc-mon" class="${scMode==="mon"?"on":""}">Monthly</button></div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
-  h+=card("span5","Stage progress","actual vs plan",stageBars(rows),unitToggle());
+    `<div id="sc-box"><div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">Monthly</div>${scurveMulti(rows,"sc2",true)}</div>`,
+    `<div style="display:flex;gap:5px;flex-wrap:wrap"><div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
+  h+=card("span5","Stage progress","Actual % vs Baseline Plan %",stageBars(rows));
   h+=critPoints(rows);
-  h+=card("span6","Open Constraints","awaiting start",constraints(rows));
-  h+=card("span12","Delay & Critical Watchlist","largest slips vs baseline",watchTable(rows,14));
+  h+=card("span6","Open Constraints / Awaiting to Start","pending = days since planned start",constraints(rows),
+    `<div class="toggle2"><button class="${consTab==="await"?"on":""}" onclick="consTab='await';render()">Awaiting Start</button><button class="${consTab==="vl"?"on":""}" onclick="consTab='vl';render()">VisiLean Constraints</button></div>`);
   h+="</div>";
   return h;
 }
@@ -820,7 +847,7 @@ function pageLayout(){
   const site=rows.filter(r=>r[C.dept]==="execution"||r[C.dept]==="tnc"||r[C.dept]==="hoto");
   const use=site.length?site:rows;
   let h=`<div class="grid">`;
-  h+=card("span12","Plant Layout — Block / Feeder Scorecard","click a tile to filter",feederTiles(use),unitToggle());
+  h+=card("span12","Plant Layout — Block / Feeder Scorecard","click a tile to filter · Actual % (red = behind baseline plan)",feederTiles(use));
   h+=card("span12","Area Scorecard","weightage-based vs plan",scorecard(use));
   h+="</div>";
   return h;
@@ -836,11 +863,11 @@ function pagePipeline(){
 }
 function pageMom(){
   return `<div class="grid">`+
-   card("span12","MOM & Action Tracker","",
-   `<div class="twrap"><table><tr><th>#</th><th>Action</th><th>Source MOM</th><th>Responsible</th><th>Accountable</th><th>Due</th><th>Status</th></tr>
-    <tr><td>1</td><td>Crash SLD client-approval cycle to 7 days</td><td>MIS review 05-Aug</td><td>Engineering Head</td><td>Project Director</td><td>12-Aug-26</td><td>${chip("blue","Open")}</td></tr>
-    <tr><td>2</td><td>PSS fast-track decision — early civil + transformer delivery</td><td>MIS review 05-Aug</td><td>Projects</td><td>Management</td><td>19-Aug-26</td><td>${chip("blue","Open")}</td></tr>
-    <tr><td>3</td><td>Confirm final BOQ quantities & budget per package</td><td>MIS review 05-Aug</td><td>Procurement</td><td>Accounts</td><td>26-Aug-26</td><td>${chip("mut","Not started")}</td></tr>
+   card("span12","MOM & Action Tracker","will sync from the VisiLean action log (MOM category) via API",
+   `<div class="twrap"><table><tr><th>#</th><th>Action</th><th>Source MOM</th><th>Responsible</th><th>Due</th><th>Status</th></tr>
+    <tr><td>1</td><td>Crash SLD client-approval cycle to 7 days</td><td>MIS review 05-Aug</td><td>Engineering Head</td><td>12-Aug-26</td><td>${chip("vls","Started")}</td></tr>
+    <tr><td>2</td><td>PSS fast-track decision — early civil + transformer delivery</td><td>MIS review 05-Aug</td><td>Projects</td><td>19-Aug-26</td><td>${chip("vls","Started")}</td></tr>
+    <tr><td>3</td><td>Confirm final BOQ quantities & budget per package</td><td>MIS review 05-Aug</td><td>Procurement</td><td>26-Aug-26</td><td>${chip("vlnc","Not Committed")}</td></tr>
    </table></div>`)+"</div>";
 }
 // ---------- Exec Director dept views (wishlist 10-Aug) ----------
@@ -864,12 +891,12 @@ function procDateMatrix(rows){
 function poTracker(rows){
   const TOTW=L.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0)||1;
   const by=pkgMap(rows);const pkgs=Object.entries(by).sort((a,b)=>b[1].w-a[1].w);
-  let h=`<div class="twrap"><table><tr><th>#</th><th>Package</th><th class="num">Wt %</th><th>Baseline PO</th><th>Forecast / Actual PO</th><th class="num">Δ wd</th><th>Status</th><th>Reason / Remark</th></tr>`;
+  let h=`<div class="twrap"><table><tr><th>#</th><th>Package</th><th class="num">Wt %</th><th>Baseline PO</th><th>Forecast / Actual PO</th><th class="num">Δ days</th><th>Status</th><th>Reason / Remark</th></tr>`;
   let i=0;
   pkgs.forEach(([p,info])=>{const po=stepOf(info,["poplacement"]);if(!po)return;i++;
     const d=po[C.fEF]-po[C.bEF];
     const dd=d>0?`<span style="color:var(--crit-text);font-weight:700">+${d}</span>`:(d<0?`<span style="color:var(--good);font-weight:700">${d}</span>`:"0");
-    const st=po[C.pct]>=100?chip("good","Placed"):(po[C.bEF]<=SW?chip("warn","Due"):chip("mut","Planned"));
+    const st=po[C.pct]>=100?chip("vlc","Complete"):(po[C.bEF]<=SW?chip("vlw","Warning"):chip("vlnc","Not Committed"));
     h+=`<tr><td>${i}</td><td><b>${esc(p)}</b></td><td class="num">${(100*info.w/TOTW).toFixed(2)}</td><td>${wdate(po[C.bEF],1)}</td><td>${wdate(po[C.fEF],1)}</td><td class="num">${dd}</td><td>${st}</td><td class="dim">— (manual feed)</td></tr>`});
   return h+"</table></div>";
 }
@@ -877,7 +904,7 @@ function committedCard(rows){
   const by=pkgMap(rows);let bud=0,com=0;
   Object.values(by).forEach(info=>{bud+=info.w;const po=stepOf(info,["poplacement"]);if(po&&po[C.pct]>=100)com+=info.w});
   const cr=x=>"₹"+(x/1e7>=100?Math.round(x/1e7).toLocaleString():fmt1(x/1e7))+" Cr";
-  return `<div class="card span4 kpi"><h2>Committed vs Budgeted</h2>
+  return `<div class="card span4"><h2>Committed vs Budgeted</h2>
    <div class="gstats" style="margin-top:3px">
     <span class="k">Budgeted (weight basis)</span><span class="v">${cr(bud)}</span>
     <span class="k">Committed (PO placed)</span><span class="v">${cr(com)}</span>
@@ -898,14 +925,14 @@ function delayHeads(rows){
     const avg=n?Math.round(slip/n):0;
     h+=`<div class="prow"><div class="nm">${esc(nm)}</div>
      <div class="pbar"><div class="fill" style="width:${Math.min(100,100*n/tot)}%;background:${n?"var(--warn)":"var(--good)"}"></div></div>
-     <div class="val"><b>${n}</b> <span class="dim">pkg${n===1?"":"s"} behind${n?` · avg +${avg} wd`:""}</span></div></div>`});
-  return h+`<div class="hint" style="margin-top:4px">behind = forecast finish ≥1 wd after baseline and step not complete</div>`;
+     <div class="val"><b>${n}</b> <span class="dim">pkg${n===1?"":"s"} behind${n?` · avg +${avg} days`:""}</span></div></div>`});
+  return h+`<div class="hint" style="margin-top:4px">behind = forecast finish ≥1 days after baseline and step not complete</div>`;
 }
 function grpChip(rows,keys){
   const rs=rows.filter(r=>keys.some(k=>n8(r[C.pkg]).includes(k)||n8(r[C.name]).includes(k)));
   if(!rs.length)return chip("mut","N/A");
-  if(rs.every(r=>r[C.pct]>=100))return chip("good","Complete");
-  if(rs.some(r=>r[C.pct]>0))return chip("blue","In progress");
+  if(rs.every(r=>r[C.pct]>=100))return chip("vlc","Complete");
+  if(rs.some(r=>r[C.pct]>0))return chip("vls","Started");
   return rs.some(r=>r[C.bES]<SW)?chip("warn","Due"):chip("mut","Planned");
 }
 function statOverview(rows){
@@ -920,7 +947,7 @@ function statOverview(rows){
 }
 function statSheet(rows){
   const use=[...rows].sort((a,b)=>a[C.seq]-b[C.seq]);
-  const SC={done:["good","Done"],inprog:["blue","In progress"],late:["warn","Late start"],future:["mut","Planned"]};
+  const SC={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnr","Not Ready"],future:["vlnc","Not Committed"]};
   let h=`<div class="twrap" style="max-height:420px;overflow:auto"><table><tr><th>Sr</th><th>Document / Activity</th><th>Group</th><th class="num">Timeline (d)</th><th>Scope / Owner</th><th>Target date</th><th>Revised target</th><th>Status</th></tr>`;
   use.forEach((r,i)=>{const late=r[C.pct]<100&&r[C.fEF]>r[C.bEF];
     h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${chip(SC[r[C.state]][0],SC[r[C.state]][1])}</td></tr>`});
@@ -936,13 +963,13 @@ function engOverview(rows){
    `<div class="twrap"><table>
     <tr><th>Client</th><th>Location</th><th>Capacity</th><th>Type</th><th>Engineering stage</th><th>Design status</th><th class="num">% Engg complete</th><th class="num">% RFP shared</th><th class="num">TBER</th><th class="num">Material approval (client)</th><th>Tech queries (open/closed)</th><th>Critical activity / constraint</th><th>Status</th></tr>
     <tr><td><b>NTPC (KPI Green Energy)</b></td><td>Bikaner, Rajasthan</td><td>200 MWac</td><td>Solar · Tracker</td>
-     <td>Detailed Engineering</td><td>${chip("blue","In progress")}</td>
+     <td>Detailed Engineering</td><td>${chip("vls","Started")}</td>
      <td class="num"><b>${fmt1(actPctAt(rows,SW))}%</b></td>
      <td class="num">${pct(["floatingofrfp"])}</td>
      <td class="num">${pct(["technicalbidevaluation"])}</td>
      <td class="num">${pct(["designdocumentapprovalfromendclient"])}</td>
      <td class="dim">— / — (manual)</td>
-     <td>${crit?esc(String(crit[C.name]).slice(0,44))+` <span class="dim">(float ${crit[C.tf]} wd)</span>`:"—"}</td>
+     <td>${crit?esc(String(crit[C.name]).slice(0,44))+` <span class="dim">(float ${crit[C.tf]} days)</span>`:"—"}</td>
      <td>${spi>=0.95?chip("good","On track"):chip("warn","Delayed")}</td></tr></table></div>`);
 }
 function pageDept(key){
@@ -967,15 +994,11 @@ function pageDept(key){
     h+=card("span12","All approval groups","",regTable(rows,false,"ra"));
     h+=card("span12","Statutory Updates Sheet — Exec View","document-wise · target vs revised date · scroll for all",statSheet(rows));
   }else if(key==="execution"||key==="tnc"){
-    h+=card("span12","Block / Feeder scorecard","click a tile to filter",feederTiles(rows),unitToggle());
-    h+=card("span6","Stage progress","by work type",stageBars(rows),unitToggle());
-    h+=card("span6","3-week lookahead","",lookahead(rows));
+    h+=card("span12","Block / Feeder scorecard","click a tile to filter · Actual % (red = behind baseline plan)",feederTiles(rows));
+    h+=card("span12","Stage progress","by work type · Actual % vs Baseline Plan %",stageBars(rows));
   }else{
-    h+=card("span6","Sections","progress by section",stageSecs(rows));
-    h+=card("span6","3-week lookahead","",lookahead(rows));
+    h+=card("span12","Sections","progress by section · Actual % vs Baseline Plan %",stageSecs(rows));
   }
-  if(key!=="execution"&&key!=="tnc"&&key!=="regulatory"&&key!=="liaisoning")h+=card("span6","3-week lookahead","",lookahead(rows));
-  h+=card(key==="execution"||key==="tnc"||key==="regulatory"||key==="liaisoning"?"span12":"span6","Delay & Critical Watchlist","",watchTable(rows,12));
   h+="</div>";
   setTimeout(()=>{bindPipe("pe");bindPipe("pd")},0);
   return h;
@@ -1008,6 +1031,7 @@ function syncFilterUI(){
   fillSelect("f-type",[...new Set(base.map(r=>r[C.type]).filter(Boolean))].sort(),f.type);
   fillSelect("f-area",[...new Set(base.map(r=>r[C.area]))].sort((a,b)=>{const na=a.match(/^Block[ -]?(\d+)/i),nb=b.match(/^Block[ -]?(\d+)/i);if(na&&nb)return +na[1]-+nb[1];if(na)return -1;if(nb)return 1;return a.localeCompare(b)}),f.area);
   fillSelect("f-pkg",[...new Set(base.filter(r=>(!f.area||r[C.area]===f.area)).map(r=>r[C.pkg]))].sort().slice(0,400),f.pkg);
+  fillSelect("f-owner",[...new Set(base.map(r=>r[C.owner]).filter(Boolean))].sort(),f.owner);
   document.getElementById("f-crit").classList.toggle("on",f.crit);
   document.getElementById("f-del").classList.toggle("on2",f.del);
   document.getElementById("f-count").textContent=filtered().length.toLocaleString()+" activities";
@@ -1026,9 +1050,9 @@ function render(){
   else if(state.page==="mom")pg.innerHTML=pageMom();
   else if(state.page.startsWith("d:"))pg.innerHTML=pageDept(state.page.slice(2));
   const rows=filtered();
-  const cum=document.getElementById("sc-cum"),mon=document.getElementById("sc-mon"),cht=document.getElementById("sc-chart"),tbl=document.getElementById("sc-table");
-  if(cum){cum.onclick=()=>{scMode="cum";render()};mon.onclick=()=>{scMode="mon";render()};
-    cht.onclick=()=>{document.getElementById("sc-box").innerHTML=scurveMulti(rows,"sc",scMode==="mon");cht.classList.add("on");tbl.classList.remove("on")};
+  const cht=document.getElementById("sc-chart"),tbl=document.getElementById("sc-table");
+  if(cht){
+    cht.onclick=()=>{document.getElementById("sc-box").innerHTML=`<div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">Monthly</div>${scurveMulti(rows,"sc2",true)}`;cht.classList.add("on");tbl.classList.remove("on")};
     tbl.onclick=()=>{document.getElementById("sc-box").innerHTML=scurveTableMulti(rows);tbl.classList.add("on");cht.classList.remove("on")};
     document.querySelectorAll("#sc-series button").forEach(b=>{b.onclick=()=>{const k=b.dataset.s;
       if(scSel.includes(k)){if(scSel.length>1)scSel=scSel.filter(x=>x!==k)}else scSel.push(k);render()}});}
@@ -1048,9 +1072,12 @@ function render(){
     if(id==="f-pkg")f.pkg=e.target.value;
     render();});
 });
+function wdOfIso(v){if(!v)return null;const t=new Date(v+"T00:00:00");let i=WD.findIndex(d=>d>=t);if(i<0)i=WD.length-1;return i+1}
+document.getElementById("f-d1").addEventListener("change",e=>{state.f.w1=wdOfIso(e.target.value);render()});
+document.getElementById("f-d2").addEventListener("change",e=>{state.f.w2=wdOfIso(e.target.value);render()});
 document.getElementById("f-crit").addEventListener("click",()=>{state.f.crit=!state.f.crit;render()});
 document.getElementById("f-del").addEventListener("click",()=>{state.f.del=!state.f.del;render()});
-document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",crit:false,del:false};state.at=SW;pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};render()});
+document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",w1:null,w2:null,crit:false,del:false};state.at=SW;pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];render()});
 document.getElementById("f-date").addEventListener("input",e=>{state.at=+e.target.value;render()});
 function applyTheme(t){
   document.querySelectorAll("#thm button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
@@ -1062,7 +1089,7 @@ applyTheme(lsGet("kp-thm")||"auto");
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>applyTheme(lsGet("kp-thm")||"auto"));
 document.getElementById("h-date").textContent=M.statusDate;
 {const d2=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
- document.getElementById("h-cod").innerHTML=`${d2} d <span style="font-size:8.5px;color:${M.delayDays>0?"var(--crit-text)":"var(--good-text)"}">(${M.delayDays>=0?"+":""}${M.delayDays}d)</span>`;}
+ document.getElementById("h-cod").innerHTML=`${d2} days <span style="font-size:8.5px;color:${M.delayDays>0?"var(--crit-text)":"var(--good-text)"}">(${M.delayDays>=0?"+":""}${M.delayDays}d)</span>`;}
 render();
 </script>
 </body>
