@@ -214,7 +214,7 @@ html{zoom:1.3}
       <span class="tgl" id="f-del">⏰ Delayed</span>
       <span class="dsl">Date <input type="range" id="f-date" min="0" max="0" step="1"><b id="f-datev"></b></span>
       <button class="reset" id="f-reset">Reset</button>
-      <span class="vleg" style="margin-left:auto">VisiLean status:<span class="chip vlc">Complete</span><span class="chip vls">Started</span><span class="chip vlnr">Not Ready</span><span class="chip vlnc">Not Committed</span><span class="chip vlw">Warning</span></span>
+      <span class="vleg" style="margin-left:auto">VisiLean status:<span class="chip vlc">Complete</span><span class="chip vls">Started</span><span class="chip vlnc">Not Committed</span><span class="dim">· Not Ready / Warning arrive with the VisiLean live feed</span></span>
       <span class="fnote" id="f-count"></span>
     </div>
     <div id="page"></div>
@@ -264,7 +264,7 @@ function moveTip(e){const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+1
 function hideTip(){tip.style.display="none"}
 document.addEventListener("scroll",hideTip,true);
 function chip(cls,txt){return `<span class="chip ${cls}">${txt}</span>`}
-function stChip(st){return st==="done"?chip("vlc","Complete"):st==="inprog"?chip("vls","Started"):st==="late"?chip("vlnr","Not Ready"):chip("vlnc","Not Committed")}
+function stChip(st){return st==="done"?chip("vlc","Complete"):st==="inprog"?chip("vls","Started"):chip("vlnc","Not Committed")}
 // ---------- speedometer gauge (semicircle, correct sweep) ----------
 function gauge(a,p){
   const Wc=170,Hc=104,cx=85,cy=90,R=62;
@@ -524,7 +524,7 @@ function pipeTable(rows,idp,engMode){
   let h=`<div class="twrap"><table class="stickycol"><tr><th>Package</th>`+
     cols.map(cn=>{const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
       return `<th title="${esc(lbl)}">${esc(lbl.length>16?lbl.slice(0,15)+"…":lbl)}</th>`}).join("")+`<th class="num">%</th></tr>`;
-  const PL={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnr","Not Ready"],watch:["vlw","Warning"],future:["vlnc","Not Committed"]};
+  const PL={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnc","Not Committed"],watch:["vlnc","Not Committed"],future:["vlnc","Not Committed"]};
   groups.forEach((x,gi)=>{
     h+=`<tr class="prowclick" data-g="${idp}-${gi}"><td><b>${esc(x.pkg.slice(0,40))}</b>
       ${x.cr?chip("crit","CRIT"):""}${!engMode&&LONGLEAD.test(x.pkg)?chip("blue","LL"):""}
@@ -800,7 +800,7 @@ function longLeadTable(){
   let h=`<div class="twrap"><table><tr><th>#</th><th>Long-lead item (supply package)</th><th class="num">Wt %</th><th>Baseline delivery</th><th>Forecast delivery</th><th class="num">Delay / Ahead</th><th>Status</th></tr>`;
   items.slice(0,12).forEach((x,i)=>{
     const dd=x.d>0?`<span style="color:var(--crit-text);font-weight:700">+${x.d} days</span>`:(x.d<0?`<span style="color:var(--good);font-weight:700">${x.d} days</span>`:`<span class="dim">on time</span>`);
-    const st=x.pc>=100?chip("vlc","Delivered"):(x.b<=SW?chip("vlw","Warning"):chip("vlnc","Not Committed"));
+    const st=x.pc>=100?chip("vlc","Delivered"):chip("vlnc","Not Committed");
     h+=`<tr><td>${i+1}</td><td><b>${esc(x.p)}</b></td><td class="num">${(100*x.w/TOTW).toFixed(2)}</td><td>${wdate(x.b,1)}</td><td>${wdate(x.f,1)}</td><td class="num">${dd}</td><td>${st}</td></tr>`});
   return h+"</table></div>";
 }
@@ -878,8 +878,7 @@ function dcell(r){if(!r)return `<td class="dim">—</td>`;
   let col="inherit",w=400,sfx="";
   if(r[C.pct]>=100){col="#1b8a2f";w=600;sfx=" ✓"}                                  // VisiLean Complete
   else if(r[C.pct]>0){col="#7a4fb3";w=600;sfx=" ▶"}                                 // VisiLean Started
-  else if(r[C.bEF]<SW){col="#e04b3a";w=600}                                          // VisiLean Not Ready (overdue)
-  else if(r[C.fEF]>r[C.bEF]){col="#b57508";w=600}                                    // VisiLean Warning (behind baseline)
+  else if(r[C.bEF]<SW){col="#e04b3a";w=600}                                          // overdue vs baseline (date fact)
   return `<td style="white-space:nowrap;color:${col};font-weight:${w}">${wdate(r[C.fEF],1)}${sfx}</td>`}
 const PROC_DATE_COLS=[["RFP Floated",["floatingofrfp"]],["Tech Offer Recd",["vendorproposalcollection"]],
  ["Tech Evaluation",["technicalbidevaluation"]],["Comm. Bid + NFA",["commercialbidevaluation","managementapproval"]],
@@ -900,7 +899,7 @@ function poTracker(rows){
   pkgs.forEach(([p,info])=>{const po=stepOf(info,["poplacement"]);if(!po)return;i++;
     const d=po[C.fEF]-po[C.bEF];
     const dd=d>0?`<span style="color:var(--crit-text);font-weight:700">+${d}</span>`:(d<0?`<span style="color:var(--good);font-weight:700">${d}</span>`:"0");
-    const st=po[C.pct]>=100?chip("vlc","Complete"):(po[C.bEF]<=SW?chip("vlw","Warning"):chip("vlnc","Not Committed"));
+    const st=po[C.pct]>=100?chip("vlc","Complete"):chip("vlnc","Not Committed");
     h+=`<tr><td>${i}</td><td><b>${esc(p)}</b></td><td class="num">${(100*info.w/TOTW).toFixed(2)}</td><td>${wdate(po[C.bEF],1)}</td><td>${wdate(po[C.fEF],1)}</td><td class="num">${dd}</td><td>${st}</td><td class="dim">— (manual feed)</td></tr>`});
   return h+"</table></div>";
 }
@@ -937,7 +936,7 @@ function grpChip(rows,keys){
   if(!rs.length)return chip("mut","N/A");
   if(rs.every(r=>r[C.pct]>=100))return chip("vlc","Complete");
   if(rs.some(r=>r[C.pct]>0))return chip("vls","Started");
-  return rs.some(r=>r[C.bES]<SW)?chip("warn","Due"):chip("mut","Planned");
+  return chip("vlnc","Not Committed");
 }
 function statOverview(rows){
   return `<div class="twrap"><table>
@@ -951,7 +950,7 @@ function statOverview(rows){
 }
 function statSheet(rows){
   const use=[...rows].sort((a,b)=>a[C.seq]-b[C.seq]);
-  const SC={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnr","Not Ready"],future:["vlnc","Not Committed"]};
+  const SC={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnc","Not Committed"],future:["vlnc","Not Committed"]};
   let h=`<div class="twrap" style="max-height:420px;overflow:auto"><table><tr><th>Sr</th><th>Document / Activity</th><th>Group</th><th class="num">Timeline (d)</th><th>Scope / Owner</th><th>Target date</th><th>Revised target</th><th>Status</th></tr>`;
   use.forEach((r,i)=>{const late=r[C.pct]<100&&r[C.fEF]>r[C.bEF];
     h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${chip(SC[r[C.state]][0],SC[r[C.state]][1])}</td></tr>`});
@@ -986,7 +985,7 @@ function pageDept(key){
     h+=engOverview(rows);
     h+=card("span12","Engineering package pipeline","document stages per package · click a row for activities",pipeTable(rows,"pe",true));
   }else if(key==="supply"||key==="services"){
-    h+=card("span12","Key Procurement Dates — Exec View","forecast dates per package · VisiLean colours: green ✓ complete · purple ▶ started · red overdue · amber behind baseline",procDateMatrix(rows));
+    h+=card("span12","Key Procurement Dates — Exec View","forecast dates per package · green ✓ complete · purple ▶ started · red = overdue vs baseline · rest Not Committed until VisiLean status feed",procDateMatrix(rows));
     h+=card("span8","PO Tracker — expected vs actual","per ED format: value-wise baseline vs forecast PO with delay",poTracker(rows));
     h+=committedCard(rows);
     h+=card("span12","Delay Analysis — procurement heads","per ED format: a–e heads, packages currently behind baseline",delayHeads(rows));
