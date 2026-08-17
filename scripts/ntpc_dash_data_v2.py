@@ -83,6 +83,8 @@ for t in TASKS:
          "owner": cf.get("Owner.", "") or cf.get("Owner", ""),
          "assignee": t.get("owner") or "", "loc": t.get("location") or "Off-site / Office",
          "bES": wd_s(bs), "bEF": wd_f(bf),
+         "pES": (wd_s(pdate(t.get("plannedStartDate"))) if pdate(t.get("plannedStartDate")) else None),
+         "pEF": (wd_f(pdate(t.get("plannedEndDate"))) if pdate(t.get("plannedEndDate")) else None),
          "aS": pdate(t.get("actualStartDate")), "aF": pdate(t.get("actualEndDate")),
          "pct": float(t.get("percentComplete") or 0),
          "vls": t.get("status") or "Not Committed",
@@ -100,42 +102,22 @@ for t in TASKS:
 leafs = {u: r for u, r in recs.items() if not r["parent"]}
 print("usable leaves:", len(leafs), "| milestones:", len(milestones_raw))
 
-# ---------- forecast forward pass ----------
-succ = defaultdict(list); indeg = defaultdict(int)
+# ---------- forecast = VisiLean PLANNED dates, verbatim (KP rule 17-Aug-2026) ----------
+# No dashboard-side re-forecasting: VisiLean owns scheduling. Planned start/end
+# from the API ARE the forecast; baseline start/end are the baseline.
+succ = defaultdict(list)
 for pu, su, code, lag in RELS:
     if pu in leafs and su in leafs:
-        succ[pu].append((su, code, lag)); indeg[su] += 1
+        succ[pu].append((su, code, lag))
 fES, fEF = {}, {}
 for u, r in leafs.items():
-    if r["pct"] >= 100:
-        fES[u] = float(wd_s(r["aS"]) if r["aS"] else r["bES"])
-        fEF[u] = float(wd_f(r["aF"]) if r["aF"] else fES[u] + r["dur"])
-    elif r["pct"] > 0:
-        fES[u] = float(wd_s(r["aS"]) if r["aS"] else min(r["bES"], STATUS_WD))
-        fEF[u] = float(STATUS_WD) + r["dur"] * (1 - r["pct"] / 100.0)
-    else:
-        fES[u] = float(max(r["bES"], STATUS_WD)); fEF[u] = fES[u] + r["dur"]
-closeout = next((u for u, r in leafs.items() if "Project Closeout" in r["name"]), None)
-q = deque([u for u in leafs if indeg[u] == 0]); deg = dict(indeg); done_n = 0
-while q:
-    u = q.popleft(); done_n += 1
-    if u == closeout and fEF[u] < TARGET_WD:
-        fEF[u] = float(TARGET_WD); fES[u] = fEF[u] - leafs[u]["dur"]
-    for (v, code, lag) in succ[u]:
-        r = leafs[v]
-        if r["pct"] < 100:
-            if code == "SS": cand = fES[u] + lag
-            elif code == "FF": cand = fEF[u] + lag - r["dur"]
-            else: cand = fEF[u] + lag
-            cand = max(cand, float(STATUS_WD) if r["pct"] == 0 else fES[v])
-            if cand > fES[v]:
-                fES[v] = cand
-                fEF[v] = max(fEF[v], cand + (r["dur"] if r["pct"] == 0 else r["dur"] * (1 - r["pct"] / 100.0)))
-        deg[v] -= 1
-        if deg[v] == 0: q.append(v)
-print(f"forecast {done_n}/{len(leafs)}; finish {max(fEF.values()):.0f} wd = {wdates[int(round(max(fEF.values())))-1]}")
+    fES[u] = float(r["pES"] if r["pES"] is not None else r["bES"])
+    fEF[u] = float(r["pEF"] if r["pEF"] is not None else r["bEF"])
+    if fEF[u] < fES[u]:
+        fEF[u] = fES[u]
+print(f"forecast = VisiLean planned dates; finish {max(fEF.values()):.0f} wd = {wdates[int(round(max(fEF.values())))-1]}")
 
-# ---------- float ----------
+# ---------- total float, computed on VisiLean planned dates ----------
 END = max(fEF.values())
 LF = {u: float(END) for u in leafs}
 order = sorted(leafs, key=lambda u: -fEF[u])
