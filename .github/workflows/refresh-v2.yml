@@ -1,0 +1,44 @@
+name: Refresh v2 dashboard from VisiLean
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"     # every 15 minutes (UTC; GitHub may add small delays)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-v2
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch VisiLean data and rebuild v2
+        env:
+          VL_TOKEN_TASK: ${{ secrets.VL_TOKEN_TASK }}
+          VL_TOKEN_HISTORY: ${{ secrets.VL_TOKEN_HISTORY }}
+          VL_TOKEN_CONSTRAINTS: ${{ secrets.VL_TOKEN_CONSTRAINTS }}
+        run: |
+          python scripts/ntpc_dash_data_v2.py
+          python scripts/build_ntpc_dash_v2.py
+
+      - name: Publish if data changed
+        run: |
+          git config user.name  "visilean-bot"
+          git config user.email "support@visilean.com"
+          if git diff --quiet -- v2/.datahash; then
+            echo "no data change - skipping publish"
+          else
+            git add v2/index.html v2/meta.json v2/.datahash
+            git commit -m "v2 auto-refresh $(date -u '+%d-%b %H:%M UTC')"
+            git push
+          fi
