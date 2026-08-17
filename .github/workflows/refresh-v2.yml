@@ -2,7 +2,7 @@ name: Refresh v2 dashboard from VisiLean
 
 on:
   schedule:
-    - cron: "*/15 * * * *"     # every 15 minutes (UTC; GitHub may add small delays)
+    - cron: "*/5 * * * *"     # every 5 minutes (UTC; GitHub may add small delays)
   workflow_dispatch: {}
 
 permissions:

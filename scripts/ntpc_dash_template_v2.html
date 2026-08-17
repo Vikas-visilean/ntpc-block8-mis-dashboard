@@ -1140,7 +1140,7 @@ if(_rbtn)_rbtn.addEventListener("click",async()=>{
     const m2=await r.json();
     if(m2.generatedAt&&m2.generatedAt!==M.generatedAt){
       _rbtn.textContent="⟳ new data — reloading…";
-      setTimeout(()=>location.reload(),400);
+      setTimeout(()=>location.replace(location.pathname+"?r="+Date.now()),400);
     }else{
       _rbtn.textContent="✓ latest ("+(M.generatedAt||M.statusDate)+")";
       setTimeout(()=>{_rbtn.textContent="⟳ Refresh";_rbtn.disabled=false},4000);
