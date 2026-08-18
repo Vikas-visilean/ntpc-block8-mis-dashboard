@@ -28,15 +28,29 @@ def _tokens():
 
 TOKENS = _tokens()
 
-def fetch(kind):
+def fetch(kind, attempts=3):
     tp = "task" if kind == "history" else kind
     url = f"{BASE}?accessToken={TOKENS[kind]}&projectId={PROJECT}&type={tp}"
-    req = urllib.request.Request(url, headers={"User-Agent": "VisiLean-MIS-v2"})
-    return json.loads(urllib.request.urlopen(req, timeout=300).read().decode("utf-8", errors="replace"))
+    last = None
+    for i in range(attempts):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "VisiLean-MIS-v2"})
+            return json.loads(urllib.request.urlopen(req, timeout=120).read().decode("utf-8", errors="replace"))
+        except Exception as e:
+            last = e
+            print(f"fetch {kind} attempt {i+1}/{attempts} failed: {e}")
+            if i + 1 < attempts:
+                import time as _t; _t.sleep(15 * (i + 1))
+    raise last
 
 print("fetching VisiLean APIs...")
-TASKS = fetch("task")
-CONS = fetch("constraintLog")
+try:
+    TASKS = fetch("task")
+    CONS = fetch("constraintLog")
+except Exception as e:
+    # transient VisiLean outage: skip this cycle cleanly; the next run recovers
+    print(f"SKIP this cycle - VisiLean API unreachable after retries: {e}")
+    sys.exit(0)
 print("tasks:", len(TASKS), "| constraints:", len(CONS))
 RELS = json.load(open(os.path.join(SCR, "vl_relations.json"), encoding="utf-8"))
 
