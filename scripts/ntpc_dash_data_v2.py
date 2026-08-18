@@ -94,6 +94,7 @@ for t in TASKS:
     if bs is None or bf is None: continue
     r = {"uid": uid, "name": t.get("taskName") or "", "parent": bool(t.get("parent")),
          "L": L, "atype": cf.get("Activity Type", ""), "pkgcf": cf.get("Package", ""),
+         "deptcf": cf.get("Department", ""),
          "owner": cf.get("Owner.", "") or cf.get("Owner", ""),
          "assignee": t.get("owner") or "", "loc": t.get("location") or "Off-site / Office",
          "bES": wd_s(bs), "bEF": wd_f(bf),
@@ -152,7 +153,10 @@ DEPTS = [("initiation", "Project Initiation"), ("engineering", "Design & Enginee
          ("regulatory", "Regulatory & Statutory"), ("execution", "Execution & Construction"),
          ("tnc", "Testing & Commissioning"), ("hoto", "HOTO (Handover)")]
 def dept_of(r):
-    l1, l2 = norm(r["L"][0]), norm(r["L"][1])
+    dcf = norm(re.sub(r"^\s*\d+\s*", "", r.get("deptcf") or ""))
+    l1 = dcf if dcf else norm(r["L"][0])
+    l2 = norm(r["L"][1])
+    if l1.startswith("testing"): return "tnc"
     if l1.startswith("projectinitiation"): return "initiation"
     if l1.startswith("design"): return "engineering"
     if l1.startswith("quality"): return "quality"
@@ -212,15 +216,20 @@ rows = []
 for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     u = r["uid"]; dept = dept_of(r); ln = norm(r["name"]); L = r["L"]
     area = r["loc"] or "Off-site / Office"
+    # Package = VisiLean 'Package' custom field VERBATIM (KP field-match rule 18-Aug);
+    # Level-derived fallback only for rows where the field is empty in VisiLean.
     if dept in ("supply", "services"):
-        pkg = r["pkgcf"] or L[2] or L[1]; sec = "Supply" if dept == "supply" else "EPCC & I&C Services"
+        sec = "Supply" if dept == "supply" else "EPCC & I&C Services"
+        fb = L[2] or L[1]
     elif dept == "engineering":
-        pkg = r["pkgcf"] or (L[3] or L[2] or L[1]); sec = L[2] or L[1]
+        sec = L[2] or L[1]; fb = L[3] or L[2] or L[1]
     elif dept in ("execution", "tnc"):
+        sec = L[2] or L[1]
         cand = [x for x in L[2:6] if x and not BLOCK_RE.match(x) and norm(x) != "construction"]
-        pkg = cand[-1] if cand else (L[3] or L[2] or L[1]); sec = L[2] or L[1]
+        fb = cand[-1] if cand else (L[3] or L[2] or L[1])
     else:
-        pkg = L[1] or L[0]; sec = L[1] or L[0]
+        sec = L[1] or L[0]; fb = L[1] or L[0]
+    pkg = r["pkgcf"] or fb
     stage = ""
     if dept == "engineering":
         stage = next((v for kk, v in ENG_STAGE if kk in ln), "Drafting" if "drafting" in ln else "")
