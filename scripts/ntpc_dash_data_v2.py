@@ -256,7 +256,8 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  r["name"][:70], int(r["bES"]), int(r["bEF"]), int(round(fES[u])), int(round(fEF[u])),
                  round(r["pct"]), round(r["dur"], 1), r["qty"], r["uom"][:14],
                  int(round(TF.get(u, 0))), state,
-                 (r["assignee"] or r["owner"] or "")[:24], sub, round(r["cost"]), len(rows), vs])
+                 (r["assignee"] or "")[:30], sub, round(r["cost"]), len(rows), vs,
+                 (r["owner"] or "")[:40]])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done")
 
 ms = []
@@ -308,7 +309,7 @@ for c in CONS:
 DATA = {"meta": meta, "months": months, "depts": [{"key": k, "name": n} for k, n in DEPTS],
         "milestones": ms, "constraints": cons,
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
-                 "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls"],
+                 "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls", "ownship"],
         "leaves": rows}
 out = os.path.join(SCR, "ntpc_dashboard_data_v2.json")
 json.dump(DATA, open(out, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))

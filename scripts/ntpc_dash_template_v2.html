@@ -230,6 +230,7 @@ html{zoom:1.3}
       <select id="f-area"><option value="">All locations</option></select>
       <select id="f-pkg"><option value="">All packages</option></select>
       <select id="f-owner"><option value="">All owners</option></select>
+      <select id="f-ownship"><option value="">All ownership</option></select>
       <span class="dsl">From <input type="date" id="f-d1"></span><span class="dsl">To <input type="date" id="f-d2"></span>
       <span class="tgl" id="f-crit">⚠ Critical</span>
       <span class="tgl" id="f-del">⏰ Delayed</span>
@@ -257,7 +258,7 @@ const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"
 const fmt1=x=>(Math.round(x*10)/10).toFixed(1);
 const fq=x=>x>=1e6?(x/1e6).toFixed(1)+"M":x>=1000?(x/1000).toFixed(x>=10000?0:1)+"k":Math.round(x*10)/10;
 // ---------- state ----------
-const state = {page:"summary", unit:"%", at:SW, f:{dept:"",type:"",area:"",pkg:"",owner:"",w1:null,w2:null,crit:false,del:false}};
+const state = {page:"summary", unit:"%", at:SW, f:{dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false}};
 // status rules aligned with the schedule Excel 'Status' column
 const isDone = r=>r[C.state]==="done";
 const isLateStart = r=>r[C.state]==="late";
@@ -267,7 +268,7 @@ const isCrit = r=>r[C.tf]<=5 && r[C.state]!=="done";
 function filtered(forceDept){
   const f=state.f, dept=forceDept||f.dept;
   return L.filter(r=>(!dept||r[C.dept]===dept)&&(!f.type||r[C.type]===f.type)&&(!f.area||r[C.area]===f.area)
-    &&(!f.pkg||r[C.pkg]===f.pkg)&&(!f.owner||r[C.owner]===f.owner)
+    &&(!f.pkg||r[C.pkg]===f.pkg)&&(!f.owner||r[C.owner]===f.owner)&&(!f.ownship||String(r[C.ownship]||"").split(/\s*,\s*/).indexOf(f.ownship)>=0)
     &&(f.w1===null||r[C.fEF]>=f.w1)&&(f.w2===null||r[C.fES]<=f.w2)
     &&(!f.crit||isCrit(r))&&(!f.del||isBehind(r)));
 }
@@ -581,7 +582,7 @@ function pipeTable(rows,idp,engMode){
         let t=`<table><tr><th>Activity</th><th>Status</th><th class="num">%</th><th class="num">Qty</th><th>Owner</th><th>Baseline end</th><th>Forecast end</th><th class="num">Var</th></tr>`;
         x.rr.slice().sort((a2,b2)=>a2[C.fES]-b2[C.fES]).forEach(r=>{const v=r[C.fEF]-r[C.bEF];
           t+=`<tr><td>${esc(r[C.name])}</td><td>${rowChip(r)}</td><td class="num">${r[C.pct]}</td>
-           <td class="num">${r[C.qty]?fq(r[C.qty])+" "+esc(r[C.uom]):"—"}</td><td>${esc(r[C.owner]||"—")}</td>
+           <td class="num">${r[C.qty]?fq(r[C.qty])+" "+esc(r[C.uom]):"—"}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")}</td>
            <td>${wdate(r[C.bEF],1)}</td><td>${wdate(r[C.fEF],1)}</td>
            <td class="num" ${v>=4?'style="color:var(--crit-text);font-weight:700"':""}>${v>0?"+":""}${v}</td></tr>`});
         box.firstElementChild.innerHTML=t+"</table>";
@@ -805,13 +806,13 @@ function constraints(rows){
   }
   const items=rows.filter(isLateStart).sort((a,b)=>a[C.bES]-b[C.bES]).slice(0,18);
   let h=`<div class="twrap"><table><tr><th>Activity (awaiting start)</th><th>WBS</th><th>Owner · Dept</th><th>Planned start</th><th class="num">Pending since (days)</th></tr>`;
-  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,26))} · ${esc(String(r[C.sec]).slice(0,22))}</td><td>${esc(r[C.owner]||"—")} <span class="dim">· ${esc((DNAME[r[C.dept]]||"").slice(0,14))}</span></td><td>${wdate(r[C.bES])}</td><td class="num">${SW-r[C.bES]}</td></tr>`});
+  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,26))} · ${esc(String(r[C.sec]).slice(0,22))}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")} <span class="dim">· ${esc((DNAME[r[C.dept]]||"").slice(0,14))}</span></td><td>${wdate(r[C.bES])}</td><td class="num">${SW-r[C.bES]}</td></tr>`});
   return h+"</table></div>";
 }
 function lookahead(rows){
   const items=rows.filter(r=>!isDone(r)&&r[C.fES]>=SW-2&&r[C.fES]<=SW+18).sort((a,b)=>a[C.fES]-b[C.fES]).slice(0,18);
   let h=`<div class="twrap"><table><tr><th>Activity</th><th>Package</th><th>Owner</th><th>Start</th><th>Finish</th></tr>`;
-  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim">${esc(r[C.pkg].slice(0,28))}</td><td>${esc(r[C.owner]||"—")}</td><td>${wdate(r[C.fES])}</td><td>${wdate(r[C.fEF],1)}</td></tr>`});
+  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim">${esc(r[C.pkg].slice(0,28))}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")}</td><td>${wdate(r[C.fES])}</td><td>${wdate(r[C.fEF],1)}</td></tr>`});
   return h+"</table></div>";
 }
 function critPoints(rows){
@@ -820,10 +821,10 @@ function critPoints(rows){
   const top=rows.filter(r=>isCrit(r)&&!EXCL.test(r[C.name])&&r[C.fES]<=SW+60)
     .sort((a,b)=>a[C.tf]-b[C.tf]||a[C.fES]-b[C.fES]).slice(0,5);
   let h=`<div class="card span6"><h2>Critical points — management attention</h2><div class="hint">immediate critical activities (due within ~60 days) · buffer &amp; closeout excluded</div>`;
-  h+=`<div style="margin-bottom:5px">${chip("vlnr","Supercritical (zero float): "+sup.length)} ${chip("mut","with owner: "+sup.filter(r=>r[C.owner]).length)}</div>`;
+  h+=`<div style="margin-bottom:5px">${chip("vlnr","Supercritical (zero float): "+sup.length)} ${chip("mut","with owner: "+sup.filter(r=>r[C.owner]||r[C.ownship]).length)}</div>`;
   top.forEach((r,i)=>{h+=`<div style="padding:4px 0;border-bottom:1px solid var(--line)"><b>Point-${i+1}:</b> ${esc(r[C.name])} ${rowChip(r)}
    <div class="small dim" style="margin-top:1px">WBS: ${esc(DNAME[r[C.dept]]||"")} › ${esc(String(r[C.sec]).slice(0,28))} › ${esc(String(r[C.pkg]).slice(0,32))}${r[C.area]&&r[C.area]!=="Off-site / Office"?" › "+esc(r[C.area]):""}</div>
-   <div class="small dim">float ${r[C.tf]} days · window ${wdate(r[C.fES])} → ${wdate(r[C.fEF],1)} · owner: ${esc(r[C.owner]||"unassigned")}</div></div>`});
+   <div class="small dim">float ${r[C.tf]} days · window ${wdate(r[C.fES])} → ${wdate(r[C.fEF],1)} · owner: ${esc(r[C.owner]||r[C.ownship]||"unassigned")}</div></div>`});
   return h+"</div>";
 }
 
@@ -994,7 +995,7 @@ function statSheet(rows){
   const SC={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnc","Not Committed"],future:["vlnc","Not Committed"]};
   let h=selbar+`<div class="twrap" style="max-height:420px;overflow:auto"><table><tr><th>Sr</th><th>Document / Activity</th><th>Group</th><th class="num">Timeline (d)</th><th>Scope / Owner</th><th>Target date</th><th>Revised target</th><th>Status</th></tr>`;
   use.forEach((r,i)=>{const late=r[C.pct]<100&&r[C.fEF]>r[C.bEF];
-    h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${chip(SC[r[C.state]][0],SC[r[C.state]][1])}</td></tr>`});
+    h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||r[C.ownship]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${chip(SC[r[C.state]][0],SC[r[C.state]][1])}</td></tr>`});
   return h+"</table></div>";
 }
 function engOverview(rows){
@@ -1074,6 +1075,7 @@ function syncFilterUI(){
   fillSelect("f-area",[...new Set(base.map(r=>r[C.area]))].sort((a,b)=>{const na=a.match(/^Block[ -]?(\d+)/i),nb=b.match(/^Block[ -]?(\d+)/i);if(na&&nb)return +na[1]-+nb[1];if(na)return -1;if(nb)return 1;return a.localeCompare(b)}),f.area);
   fillSelect("f-pkg",[...new Set(base.filter(r=>(!f.area||r[C.area]===f.area)).map(r=>r[C.pkg]))].sort().slice(0,400),f.pkg);
   fillSelect("f-owner",[...new Set(base.map(r=>r[C.owner]).filter(Boolean))].sort(),f.owner);
+  fillSelect("f-ownship",[...new Set(base.flatMap(r=>String(r[C.ownship]||"").split(/\s*,\s*/).filter(Boolean)))].sort(),f.ownship);
   document.getElementById("f-crit").classList.toggle("on",f.crit);
   document.getElementById("f-del").classList.toggle("on2",f.del);
   document.getElementById("f-count").textContent=filtered().length.toLocaleString()+" activities";
@@ -1107,7 +1109,7 @@ function render(){
     const p=el.dataset.pkg;statSel=statSel===p?"":p;render();})});
   if(_keep)window.scrollTo(0,_sy);else window.scrollTo(0,0);lastPage=state.page;
 }
-["f-dept","f-type","f-area","f-pkg","f-owner"].forEach(id=>{
+["f-dept","f-type","f-area","f-pkg","f-owner","f-ownship"].forEach(id=>{
   document.getElementById(id).addEventListener("change",e=>{
     const f=state.f;
     if(id==="f-dept"){f.dept=e.target.value;f.pkg="";f.type=""}
@@ -1115,6 +1117,7 @@ function render(){
     if(id==="f-area")f.area=e.target.value;
     if(id==="f-pkg")f.pkg=e.target.value;
     if(id==="f-owner")f.owner=e.target.value;
+    if(id==="f-ownship")f.ownship=e.target.value;
     render();});
 });
 function wdOfIso(v){if(!v)return null;const t=new Date(v+"T00:00:00");let i=WD.findIndex(d=>d>=t);if(i<0)i=WD.length-1;return i+1}
@@ -1122,7 +1125,7 @@ document.getElementById("f-d1").addEventListener("change",e=>{state.f.w1=wdOfIso
 document.getElementById("f-d2").addEventListener("change",e=>{state.f.w2=wdOfIso(e.target.value);render()});
 document.getElementById("f-crit").addEventListener("click",()=>{state.f.crit=!state.f.crit;render()});
 document.getElementById("f-del").addEventListener("click",()=>{state.f.del=!state.f.del;render()});
-document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",w1:null,w2:null,crit:false,del:false};state.at=SW;pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];render()});
+document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false};state.at=SW;pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];render()});
 document.getElementById("f-date").addEventListener("input",e=>{state.at=+e.target.value;render()});
 function applyTheme(t){
   document.querySelectorAll("#thm button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
