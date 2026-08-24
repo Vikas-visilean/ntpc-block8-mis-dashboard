@@ -82,16 +82,36 @@ def money(s):
 
 recs = {}
 milestones_raw = []
+GUID = {t.get("guid"): t for t in TASKS if t.get("guid")}
+_synth = [0]
 for t in TASKS:
     try: uid = int(t.get("externalId"))
-    except Exception: continue
+    except Exception:
+        # Created directly in VisiLean, so no MSP UniqueID (drawing-revision rows
+        # R0/R1/R2 etc). VisiLean counts these in "All Tasks" -> so do we.
+        _synth[0] += 1
+        uid = -_synth[0]
     cf = t.get("customField") or {}
     L = [cf.get(f"Level {i}", "") or "" for i in range(1, 8)]
     bs, bf = pdate(t.get("baselineStartDate")), pdate(t.get("baselineEndDate"))
+    # "not baselined": VisiLean counts these in All Tasks but leaves them out of
+    # Completed / Delayed, because there is no baseline to measure them against.
+    # Rows created straight in VisiLean (drawing revisions R0/R1/R2) look like this.
+    nodate = 1 if (bs is None or bf is None) else 0
     if bs is None or bf is None:
         bs2, bf2 = pdate(t.get("plannedStartDate")), pdate(t.get("plannedEndDate"))
         bs, bf = bs or bs2, bf or bf2
-    if bs is None or bf is None: continue
+    if bs is None or bf is None:
+        # Undated row: inherit the parent's window so it can be placed, and flag it
+        # so every date-driven metric skips it. VisiLean does the same - such rows
+        # appear in All Tasks but not in Completed / Delayed.
+        p = GUID.get(t.get("parentGUID"))
+        pbs = pbf = None
+        if p is not None:
+            pbs = pdate(p.get("baselineStartDate")) or pdate(p.get("plannedStartDate"))
+            pbf = pdate(p.get("baselineEndDate")) or pdate(p.get("plannedEndDate"))
+        bs = bs or pbs or START
+        bf = bf or pbf or bs
     r = {"uid": uid, "name": t.get("taskName") or "", "parent": bool(t.get("parent")),
          "L": L, "atype": cf.get("Activity Type", ""), "pkgcf": cf.get("Package", ""),
          "deptcf": cf.get("Department", ""),
@@ -104,7 +124,9 @@ for t in TASKS:
          "pct": float(t.get("percentComplete") or 0),
          "vls": t.get("status") or "Not Committed",
          "qty": t.get("totalQuantity"), "uom": t.get("quantityUnits") or "",
-         "cost": money(cf.get("Cost")), }
+         "cost": money(cf.get("Cost")), "nd": nodate,
+         "psd": (pdate(t.get("plannedStartDate")) or bs),
+         "ped": (pdate(t.get("plannedEndDate")) or bf), }
     try: r["dur"] = max(0.0, float(t.get("baselineDuration") or t.get("plannedDuration") or 0))
     except Exception: r["dur"] = max(0.0, float(r["bEF"] - r["bES"]))
     if r["dur"] == 0 and not r["parent"]:
@@ -145,6 +167,14 @@ for _ in range(3):
             else: cand = LF[v] - dv - lag
             if cand < LF[u]: LF[u] = cand
 TF = {u: max(0.0, LF[u] - fEF[u]) for u in leafs}
+# How much of the schedule is actually wired into the logic network. The relations
+# sidecar is a static capture; when activities are deleted in VisiLean the chains
+# break and float stops being meaningful, so publish the coverage alongside it.
+_inlogic = set()
+for pu, su, code, lag in RELS:
+    if pu in leafs and su in leafs: _inlogic.add(pu); _inlogic.add(su)
+LOGIC_COV = round(100.0 * len(_inlogic) / max(1, len(leafs)), 1)
+print(f"logic coverage: {LOGIC_COV}% of leaves are in the relation network")
 
 # ---------- classification ----------
 DEPTS = [("initiation", "Project Initiation"), ("engineering", "Design & Engineering"),
@@ -248,6 +278,13 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     elif dept == "engineering":
         sub = stage
     vs = r["vls"]
+    # Delayed (VisiLean-equivalent): not complete, and it should have started or
+    # finished by today. Matches VisiLean's "Delayed Tasks" counter. The old test
+    # (forecast finish >= 4 days past baseline) always read 0, because VisiLean's
+    # planned dates equal the baseline until the schedule is actually rescheduled.
+    dly = 0
+    if not r["nd"] and r["pct"] < 100:
+        if r["ped"] < TODAY or (r["psd"] < TODAY and r["pct"] == 0): dly = 1
     if r["pct"] >= 100 or vs == "Complete": state = "done"
     elif r["pct"] > 0 or vs in ("Started", "Warning", "Stopped"): state = "inprog"
     elif r["bES"] < STATUS_WD: state = "late"
@@ -257,8 +294,8 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  round(r["pct"]), round(r["dur"], 1), r["qty"], r["uom"][:14],
                  int(round(TF.get(u, 0))), state,
                  (r["assignee"] or "")[:30], sub, round(r["cost"]), len(rows), vs,
-                 (r["owner"] or "")[:40]])
-n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done")
+                 (r["owner"] or "")[:40], r["nd"], dly])
+n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
 ms = []
 for m in sorted(milestones_raw, key=lambda x: x["name"]):
@@ -291,8 +328,12 @@ meta = {"statusDate": TODAY.strftime("%d-%b-%Y"), "statusWd": STATUS_WD, "startD
         "svPts": round(100 * (act_pct - plan_pct), 1),
         "svPct": round(100 * (act_pct - plan_pct) / plan_pct, 1) if plan_pct > 0.0005 else 0,
         "delayDays": ffin - bfin, "critical": n_crit,
-        "done": sum(1 for x in rows if x[16] == "done"), "inprog": sum(1 for x in rows if x[16] == "inprog"),
-        "late": sum(1 for x in rows if x[16] == "late"), "total": len(rows),
+        "done": sum(1 for x in rows if x[16] == "done" and not x[23]),
+        "inprog": sum(1 for x in rows if x[16] == "inprog" and not x[23]),
+        "late": sum(1 for x in rows if x[16] == "late" and not x[23]),
+        "delayed": sum(1 for x in rows if x[24]), "logicCoverage": LOGIC_COV,
+        "total": len(rows), "totalTasks": len(rows) + len(ms),
+        "undated": sum(1 for x in rows if x[23]),
         "source": "VisiLean live API",
         "generatedAt": datetime.datetime.utcnow().strftime("%d-%b-%Y %H:%M UTC")}
 
@@ -309,7 +350,8 @@ for c in CONS:
 DATA = {"meta": meta, "months": months, "depts": [{"key": k, "name": n} for k, n in DEPTS],
         "milestones": ms, "constraints": cons,
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
-                 "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls", "ownship"],
+                 "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
+                 "ownship", "nd", "dly"],
         "leaves": rows}
 out = os.path.join(SCR, "ntpc_dashboard_data_v2.json")
 json.dump(DATA, open(out, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))

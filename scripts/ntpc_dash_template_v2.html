@@ -192,6 +192,10 @@ html{zoom:1.3}
 .chip.vlc,[data-theme=dark] .chip.vlc{background:#57A344;color:#fff}
 .chip.vlrq,[data-theme=dark] .chip.vlrq{background:#7B85C9;color:#fff}
 .chip.vlqc,[data-theme=dark] .chip.vlqc{background:#1C2050;color:#fff}
+#h-age{font-weight:700;font-size:9.5px;border-radius:5px;padding:1px 5px;margin-left:5px;white-space:nowrap}
+#h-age.fresh{background:#57A34422;color:var(--good-text)}
+#h-age.aging{background:#E0B52022;color:var(--warn-text,#8a6100)}
+#h-age.stale{background:#DC1F1F22;color:var(--crit-text)}
 #btn-refresh{border:1px solid var(--line2);background:var(--surface);color:var(--blue);font-weight:700;font-size:10.5px;border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap}
 #btn-refresh:hover{background:var(--blue-wash)}
 </style>
@@ -212,7 +216,7 @@ html{zoom:1.3}
     <div class="topbar">
       <div>
         <h1>NTPC Bikaner Block 8 · 200 MW</h1>
-        <div class="sub">KPI Green Energy · LIVE from VisiLean · 6-day weeks · LOA 07-May-2026 · <span id="h-gen" style="color:var(--blue);font-weight:600"></span></div>
+        <div class="sub">KPI Green Energy · LIVE from VisiLean · 6-day weeks · LOA 07-May-2026 · <span id="h-gen" style="color:var(--blue);font-weight:600"></span><span id="h-age"></span></div>
       </div>
       <div class="meta">
         <div class="m"><div class="k">Capacity</div><div class="v">200 MWac</div></div>
@@ -260,9 +264,15 @@ const fq=x=>x>=1e6?(x/1e6).toFixed(1)+"M":x>=1000?(x/1000).toFixed(x>=10000?0:1)
 // ---------- state ----------
 const state = {page:"summary", unit:"%", at:SW, f:{dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false}};
 // status rules aligned with the schedule Excel 'Status' column
-const isDone = r=>r[C.state]==="done";
+// VisiLean 'Activity Type' custom field values, verbatim. Every E/P/C figure on
+// this dashboard is counted off this field so it ties back to VisiLean 1:1.
+const AT={ENG:"Engineering",SUP:"Procurement - Supply",SVC:"Procurement - Services",CON:"Construction"};
+const isEng=r=>r[C.type]===AT.ENG, isProc=r=>r[C.type]===AT.SUP||r[C.type]===AT.SVC, isCon=r=>r[C.type]===AT.CON;
+// Not baselined in VisiLean -> counted in Total, left out of Completed / Delayed,
+// exactly as VisiLean's own counters do.
+const isDone = r=>r[C.state]==="done" && !r[C.nd];
 const isLateStart = r=>r[C.state]==="late";
-const isDelayed = r=>(r[C.fEF]-r[C.bEF])>=4 && r[C.state]==="future";
+const isDelayed = r=>!!r[C.dly];
 const isBehind = r=>(r[C.fEF]-r[C.bEF])>=4 && r[C.state]!=="done";
 const isCrit = r=>r[C.tf]<=5 && r[C.state]!=="done";
 function filtered(forceDept){
@@ -322,14 +332,19 @@ function gaugeCard(rows){
     </div></div></div>`;
 }
 function epcCard(){
-  const segs=[["Engineering",L.filter(r=>r[C.dept]==="engineering")],
-   ["Procurement",L.filter(r=>r[C.dept]==="supply"||r[C.dept]==="services")],
-   ["Construction",L.filter(r=>r[C.dept]==="execution"||r[C.dept]==="tnc")]];
-  let h=`<div class="card span4"><h2>EPC bifurcation</h2><div class="hint">Actual % vs Baseline Plan % · Δ = progress variation (Actual − Plan)</div>`;
+  const segs=[["Engineering",L.filter(isEng)],
+   ["Procurement",L.filter(isProc)],
+   ["Construction",L.filter(isCon)]];
+  let h=`<div class="card span4"><h2>EPC bifurcation</h2><div class="hint">counted on VisiLean's <b>Activity Type</b> · Actual % vs Baseline Plan % · Δ = progress variation (Actual − Plan)</div>`;
   segs.forEach(([n,rr])=>{const a=actPct(rr),p=planPct(rr),spi=p>0.05?a/p:0,dv=a-p;
     h+=`<div class="prow"><div class="nm"><b>${n}</b> <span class="dim">${rr.length} activities</span></div>
      <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div>
      <div class="val"><b>${fmt1(a)}%</b> <span class="dim">/ ${fmt1(p)}%</span> <span style="color:${dv>=0?"var(--good-text)":"var(--crit-text)"};font-weight:600">Δ ${dv>=0?"+":""}${fmt1(dv)}%</span> ${spi?`<span class="chip ${spi>=0.95?"vlc":spi>=0.8?"vlw":"vlnr"}">SPI ${spi.toFixed(2)}</span>`:""}</div></div>`});
+  // everything that is not E / P / C, so the three rows above reconcile to the total
+  const cov={[AT.ENG]:1,[AT.SUP]:1,[AT.SVC]:1,[AT.CON]:1},oth={};
+  L.forEach(r=>{if(!cov[r[C.type]]){const k=r[C.type]||"Unclassified";oth[k]=(oth[k]||0)+1}});
+  const ks=Object.keys(oth).sort((a,b)=>oth[b]-oth[a]);
+  if(ks.length)h+=`<div class="hint" style="margin-top:7px;padding-top:6px;border-top:1px solid var(--line)">Other activity types — ${ks.map(k=>`${esc(k)} <b>${oth[k].toLocaleString()}</b>`).join(" · ")}</div>`;
   return h+`</div>`;
 }
 function costCard(){
@@ -351,10 +366,14 @@ function kpiCards(rows,projectLevel){
   const bfin=rows.length?Math.max(...rows.map(r=>r[C.bEF])):0,ffin=rows.length?Math.max(...rows.map(r=>r[C.fEF])):0;
   const d2cod=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
   const c=(t,big,cmp,ch)=>`<div class="card span2 kpi"><h2>${t}</h2><div class="big">${big}</div><div class="cmp">${cmp||""}</div>${ch?`<div style="margin-top:4px">${ch}</div>`:""}</div>`;
-  const totalAll=projectLevel? total + DATA.milestones.length : total;
-  return c("Total activities",totalAll.toLocaleString(),projectLevel?`incl. ${DATA.milestones.length} milestones`:"in scope")
+  // Milestones live outside the activity rows, so they only belong in the headline
+  // count when nothing is filtered - otherwise a filtered view (e.g. Activity Type =
+  // Construction) would read 9 too high against VisiLean.
+  const unfiltered=rows.length===L.length;
+  const totalAll=(projectLevel&&unfiltered)? total + DATA.milestones.length : total;
+  return c("Total activities",totalAll.toLocaleString(),(projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones`:"in scope")
    + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count")
-   + c("Delayed",dl.toLocaleString(),`≥4 days behind baseline · ${ls} delayed start`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"))
+   + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"))
    + c("Baseline vs Forecast",`<span style="font-size:12px">${wdate(bfin,1)}</span>`,`forecast ${wdate(ffin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):chip("vlc","on plan"))
    + c("Days to COD",d2cod+" days","forecast "+M.forecastFinish);
 }
@@ -397,9 +416,9 @@ function scurve(rows,elId,monthly){
 }
 let scSel=["all"];
 const SC_SERIES=[["all","Overall",r=>true,"var(--blue)"],
- ["e","Engineering",r=>r[C.dept]==="engineering","var(--s-plan)"],
- ["p","Procurement",r=>r[C.dept]==="supply"||r[C.dept]==="services","var(--good)"],
- ["c","Construction",r=>r[C.dept]==="execution"||r[C.dept]==="tnc"||r[C.dept]==="hoto","var(--warn)"]];
+ ["e","Engineering",isEng,"var(--s-plan)"],
+ ["p","Procurement",isProc,"var(--good)"],
+ ["c","Construction",isCon,"var(--warn)"]];
 function scurveMulti(rows,elId,monthly){
   if(scSel.length===1&&scSel[0]==="all")return scurve(rows,elId,monthly);
   const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
@@ -830,24 +849,27 @@ function critPoints(rows){
 
 // ---------- Executive Director page-1 sections ----------
 function longLeadTable(){
+  // Every package under VisiLean Activity Type "Procurement - Supply", grouped by the
+  // Package custom field (KP observation 5) - not a top-N slice. Delivery row = the
+  // package's "GRN at site" activity; if a package has none yet, its last activity.
   const TOTW=L.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0)||1;
-  const w={};L.forEach(r=>{if(r[C.dept]==="supply")w[r[C.pkg]]=(w[r[C.pkg]]||0)+(r[C.cost]>0?r[C.cost]:0)});
-  const seen={},items=[];
-  L.forEach(r=>{if(r[C.dept]!=="supply"||r[C.sub]!=="At Site"||seen[r[C.pkg]])return;seen[r[C.pkg]]=1;
-    items.push({p:r[C.pkg],b:r[C.bEF],f:r[C.fEF],d:r[C.fEF]-r[C.bEF],pc:r[C.pct],w:w[r[C.pkg]]||0})});
+  const sup=L.filter(r=>r[C.type]===AT.SUP);
+  const w={},grn={},last={};
+  sup.forEach(r=>{const k=r[C.pkg];w[k]=(w[k]||0)+(r[C.cost]>0?r[C.cost]:0);
+    if(r[C.sub]==="At Site"&&!grn[k])grn[k]=r;
+    if(!last[k]||r[C.bEF]>last[k][C.bEF])last[k]=r});
+  const items=Object.keys(w).map(k=>{const r=grn[k]||last[k];
+    return {p:k,b:r[C.bEF],f:r[C.fEF],d:r[C.fEF]-r[C.bEF],pc:r[C.pct],w:w[k]||0}});
   items.sort((a,b)=>b.w-a.w);
   let h=`<div class="twrap"><table><tr><th>#</th><th>Long-lead item (supply package)</th><th class="num">Wt %</th><th>Baseline delivery</th><th>Forecast delivery</th><th class="num">Delay / Ahead</th><th>Status</th></tr>`;
-  items.slice(0,12).forEach((x,i)=>{
+  items.forEach((x,i)=>{
     const dd=x.d>0?`<span style="color:var(--crit-text);font-weight:700">+${x.d} days</span>`:(x.d<0?`<span style="color:var(--good);font-weight:700">${x.d} days</span>`:`<span class="dim">on time</span>`);
     const st=x.pc>=100?chip("vlc","Delivered"):chip("vlnc","Not Committed");
     h+=`<tr><td>${i+1}</td><td><b>${esc(x.p)}</b></td><td class="num">${(100*x.w/TOTW).toFixed(2)}</td><td>${wdate(x.b,1)}</td><td>${wdate(x.f,1)}</td><td class="num">${dd}</td><td>${st}</td></tr>`});
   return h+"</table></div>";
 }
 function epcScurves(){
-  const defs=[["Engineering",r=>r[C.dept]==="engineering"],
-              ["Procurement",r=>r[C.dept]==="supply"||r[C.dept]==="services"],
-              ["Construction",r=>r[C.dept]==="execution"||r[C.dept]==="tnc"||r[C.dept]==="hoto"],
-              ["Overall",r=>true]];
+  const defs=[["Engineering",isEng],["Procurement",isProc],["Construction",isCon],["Overall",r=>true]];
   let h=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px">`;
   defs.forEach((d,i)=>{const rs=L.filter(d[1]);
     h+=`<div><div style="font-size:11px;font-weight:700;margin-bottom:2px">${d[0]} S-Curve <span class="dim" style="font-weight:500">(${rs.length} activities)</span></div>${scurve(rs,"sc-epc"+i,false).replaceAll('font-size="8"','font-size="11"')}</div>`});
@@ -870,7 +892,7 @@ function pageSummary(){
   h+=gaugeCard(rows)+epcCard()+costCard();
   h+=kpiCards(rows,true);
   h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
-  h+=card("span12","Long Lead Item Delivery Status","top supply packages by weightage · delivery = GRN at site",longLeadTable());
+  h+=card("span12","Long Lead Item Delivery Status","all Procurement - Supply packages (VisiLean Package field) · delivery = GRN at site",longLeadTable());
   h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
     `<div id="sc-box"><div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">Monthly</div>${scurveMulti(rows,"sc2",true)}</div>`,
     `<div style="display:flex;gap:5px;flex-wrap:wrap"><div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
@@ -1150,12 +1172,42 @@ if(_rbtn)_rbtn.addEventListener("click",async()=>{
     }
   }catch(e){
     _rbtn.textContent="⟳ Refresh";_rbtn.disabled=false;
-    showTip({clientX:innerWidth-260,clientY:60},"Could not check for updates — VisiLean sync runs every 15 minutes; this page shows the latest published build.");
+    showTip({clientX:innerWidth-260,clientY:60},"Could not check for updates — this page shows the latest published build; the VisiLean sync runs every 5 minutes.");
     setTimeout(hideTip,4000);
   }
 });
 document.getElementById("h-date").textContent=M.statusDate;
-if(M.generatedAt)document.getElementById("h-gen").textContent="refreshed "+M.generatedAt;
+// ---------- data freshness ----------
+// generatedAt looks like "24-Aug-2026 08:05 UTC"; parse it so the page can show how
+// old the data actually is rather than just when it was built.
+function genMs(s){
+  const m=/^(\d{1,2})-([A-Za-z]{3})-(\d{4})\s+(\d{1,2}):(\d{2})/.exec(s||"");
+  if(!m)return null;
+  const mo=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(m[2]);
+  if(mo<0)return null;
+  return Date.UTC(+m[3],mo,+m[1],+m[4],+m[5]);
+}
+const _genMs=genMs(M.generatedAt);
+function paintAge(){
+  const el=document.getElementById("h-age");if(!el||!_genMs)return;
+  const mins=Math.max(0,Math.round((Date.now()-_genMs)/60000));
+  el.textContent=mins<1?"live":(mins<60?mins+" min old":Math.floor(mins/60)+"h "+(mins%60)+"m old");
+  el.className=mins<=10?"fresh":(mins<=30?"aging":"stale");
+  el.title="VisiLean data age. The sync runs every 5 minutes; this page also checks for new data every minute.";
+}
+if(M.generatedAt){document.getElementById("h-gen").textContent="refreshed "+M.generatedAt;paintAge();setInterval(paintAge,30000);}
+// background poll: pick up a new build without anyone pressing Refresh
+let _pollBusy=false;
+setInterval(async()=>{
+  if(_pollBusy||document.hidden)return;_pollBusy=true;
+  try{
+    const r=await fetch("meta.json?t="+Date.now(),{cache:"no-store"});
+    const m2=await r.json();
+    if(m2.generatedAt&&m2.generatedAt!==M.generatedAt)
+      location.replace(location.pathname+"?r="+Date.now());
+  }catch(e){}
+  _pollBusy=false;
+},60000);
 {const d2=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
  document.getElementById("h-cod").innerHTML=`${d2} days <span style="font-size:8.5px;color:${M.delayDays>0?"var(--crit-text)":"var(--good-text)"}">(${M.delayDays>=0?"+":""}${M.delayDays}d)</span>`;}
 render();

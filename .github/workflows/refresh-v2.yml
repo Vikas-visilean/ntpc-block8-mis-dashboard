@@ -1,20 +1,36 @@
 name: Refresh v2 dashboard from VisiLean
 
+# WHY THIS IS A LOOP AND NOT A "*/5" CRON
+# GitHub only runs `schedule` events on a best-effort basis and throttles them hard.
+# Measured on this repo over 23-24 Aug 2026 with cron "*/5": actual gaps were
+# median 27 min, max 111 min - never once 5 minutes. That is why the dashboard was
+# showing hour-old data while VisiLean was current.
+# So: the schedule only has to START a run, and the run itself then refreshes every
+# 5 minutes for just under 6 hours (the GitHub job ceiling). The 2-hourly trigger
+# plus cancel-in-progress means a fresh worker always takes over, and a skipped or
+# badly delayed trigger is still covered by the previous run's remaining hours.
+
 on:
   schedule:
-    - cron: "*/5 * * * *"     # every 5 minutes (UTC; GitHub may add small delays)
-  workflow_dispatch: {}
+    - cron: "7 */2 * * *"      # start a worker every 2 hours (offset off the hour: less contended)
+  workflow_dispatch:
+    inputs:
+      once:
+        description: "Refresh once and exit (no loop)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 concurrency:
   group: refresh-v2
-  cancel-in-progress: false
+  cancel-in-progress: true      # a newly started worker replaces the running one
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 350        # stay under the 6h hard limit
     steps:
       - uses: actions/checkout@v4
 
@@ -22,23 +38,43 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Fetch VisiLean data and rebuild v2
+      - name: Refresh loop (every 5 minutes)
         env:
           VL_TOKEN_TASK: ${{ secrets.VL_TOKEN_TASK }}
           VL_TOKEN_HISTORY: ${{ secrets.VL_TOKEN_HISTORY }}
           VL_TOKEN_CONSTRAINTS: ${{ secrets.VL_TOKEN_CONSTRAINTS }}
+          ONCE: ${{ inputs.once }}
         run: |
-          python scripts/ntpc_dash_data_v2.py
-          python scripts/build_ntpc_dash_v2.py
-
-      - name: Publish if data changed
-        run: |
+          set -uo pipefail
           git config user.name  "visilean-bot"
           git config user.email "support@visilean.com"
-          if git diff --quiet -- v2/.datahash; then
-            echo "no data change - skipping publish"
-          else
-            git add v2/index.html v2/meta.json v2/.datahash
-            git commit -m "v2 auto-refresh $(date -u '+%d-%b %H:%M UTC')"
-            git push
-          fi
+
+          END=$(( $(date +%s) + 340*60 ))   # leave headroom before the job timeout
+          n=0
+          while : ; do
+            n=$((n+1))
+            echo "::group::cycle $n  $(date -u '+%H:%M:%S UTC')"
+
+            if python scripts/ntpc_dash_data_v2.py && python scripts/build_ntpc_dash_v2.py ; then
+              if git diff --quiet -- v2/.datahash ; then
+                echo "no data change"
+              else
+                git add v2/index.html v2/meta.json v2/.datahash
+                git commit -m "v2 auto-refresh $(date -u '+%d-%b %H:%M UTC')" || true
+                # another worker may have pushed while we were building
+                for try in 1 2 3 ; do
+                  git pull --rebase --autostash -q && git push -q && { echo "published"; break; }
+                  echo "push retry $try"; sleep 5
+                done
+              fi
+            else
+              # a bad cycle must not kill the worker - the next one recovers
+              echo "cycle failed (VisiLean unreachable or build error) - continuing"
+              git checkout -- v2 2>/dev/null || true
+            fi
+            echo "::endgroup::"
+
+            if [ "${ONCE:-false}" = "true" ]; then echo "once-mode: done"; break; fi
+            if [ "$(date +%s)" -ge "$END" ]; then echo "worker window finished after $n cycles"; break; fi
+            sleep 300
+          done
