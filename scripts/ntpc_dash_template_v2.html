@@ -1187,7 +1187,9 @@ function genMs(s){
   if(mo<0)return null;
   return Date.UTC(+m[3],mo,+m[1],+m[4],+m[5]);
 }
-const _genMs=genMs(M.generatedAt);
+// generatedAtEpoch is the authoritative instant (the printed stamp is IST, so it
+// must not be parsed as UTC); genMs stays as a fallback for older builds.
+const _genMs=(M.generatedAtEpoch?M.generatedAtEpoch*1000:genMs(M.generatedAt));
 function paintAge(){
   const el=document.getElementById("h-age");if(!el||!_genMs)return;
   const mins=Math.max(0,Math.round((Date.now()-_genMs)/60000));

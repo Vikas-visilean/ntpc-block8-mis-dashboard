@@ -316,6 +316,9 @@ WT = sum(W(x) for x in rows) or 1.0
 plan_pct = sum(min(1.0, max(0.0, (STATUS_WD - x[7]) / max(0.5, x[12]))) * W(x) for x in rows) / WT
 act_pct = sum(x[11] / 100.0 * W(x) for x in rows) / WT
 bfin = max(x[8] for x in rows); ffin = max(x[10] for x in rows)
+NOW_UTC = datetime.datetime.now(datetime.timezone.utc)
+IST_NOW = NOW_UTC.astimezone(datetime.timezone(datetime.timedelta(hours=5, minutes=30)))
+
 meta = {"statusDate": TODAY.strftime("%d-%b-%Y"), "statusWd": STATUS_WD, "startDate": "07-May-2026",
         "project": "KPIGEL-NTPC Bikaner Block 8 · 200 MW",
         "baselineFinishWd": bfin, "forecastFinishWd": ffin,
@@ -335,7 +338,10 @@ meta = {"statusDate": TODAY.strftime("%d-%b-%Y"), "statusWd": STATUS_WD, "startD
         "total": len(rows), "totalTasks": len(rows) + len(ms),
         "undated": sum(1 for x in rows if x[23]),
         "source": "VisiLean live API",
-        "generatedAt": datetime.datetime.utcnow().strftime("%d-%b-%Y %H:%M UTC")}
+        # KP reads this in India, so the stamp is IST. generatedAtEpoch is the same
+        # instant in unix seconds, used by the page to work out how old the data is.
+        "generatedAt": IST_NOW.strftime("%d-%b-%Y %H:%M IST"),
+        "generatedAtEpoch": int(NOW_UTC.timestamp())}
 
 cons = []
 for c in CONS:
