@@ -268,6 +268,91 @@ computed in the adapter, or be replaced by VisiLean's own dates if preferred.
 
 ---
 
+## 10A. v2 — live from the VisiLean APIs (deployed)
+
+v1.0 at the repository root stays locked. **v2 lives at `/v2/` and is the live one.**
+
+### Data source
+
+Three VisiLean PowerBI endpoints, project `7A2842F6-7E5F-DB7C-3E7F-0EE7EF60698F`:
+`type=task` (activities), `type=task` (history), `type=constraintLog`. Tokens are GitHub Actions
+secrets (`VL_TOKEN_TASK` / `VL_TOKEN_HISTORY` / `VL_TOKEN_CONSTRAINTS`) and a gitignored
+`scripts/vl_tokens.json` locally. The API returns 403 to any request carrying a browser `Origin`
+header, so the page cannot fetch VisiLean directly — everything goes through the Action.
+
+`prerequisites` always comes back empty, so activity logic is read from the static sidecar
+`scripts/vl_relations.json` (10,853 pairs captured from the source MSP). **This file does not
+update itself** — when the schedule is restructured in VisiLean it must be regenerated, or float
+and criticality drift. `meta.logicCoverage` publishes the share of activities still wired into the
+network so the drift is visible rather than silent.
+
+### Fields are taken from VisiLean verbatim (KP rule, 18-Aug-2026)
+
+| Dashboard dimension | VisiLean source |
+|---|---|
+| Department filter / department pages | `Department` custom field |
+| Activity type filter **and all E/P/C figures** | `Activity Type` custom field |
+| Location filter | `Location` |
+| Package filter, long-lead packages | `Package` custom field |
+| Owner filter | native VisiLean activity owner (the assigned person) |
+| Ownership filter | `Owner.` custom field (group), renamed *Ownership* |
+| Baseline dates | `baselineStartDate` / `baselineEndDate` |
+| Forecast dates | `plannedStartDate` / `plannedEndDate` — **never recomputed** |
+| % complete (project) | weightage-weighted from the Cost field |
+
+### Counting rules — these tie the dashboard to VisiLean 1:1 (KP observations, 24-Aug-2026)
+
+* **Total activities = VisiLean "All Tasks"** = every leaf task. Rows created straight in VisiLean
+  have no MSP `externalId` (drawing revisions `R0`/`R1`/`R2`); they get a synthetic negative UID so
+  they are still counted.
+* **Not-baselined rows** (`nd=1`) have no baseline dates. They count in Total but are excluded from
+  Completed, Delayed, critical and progress — which is exactly what VisiLean's own counters do, and
+  is why VisiLean shows 6,430 tasks but only 189 complete out of 197 complete leaves.
+* **E / P / C are counted on `Activity Type`, not on the department mapping.** The department
+  mapping folded Testing & Commissioning into Construction (2,850 + 40 = 2,890) and disagreed with
+  VisiLean. Activity types outside E/P/C (Quality, Statutory & Approvals, Project Management,
+  Testing & Commissioning, Handover) are listed under the card so the three rows reconcile to Total.
+* **Delayed** = not complete **and** past its planned start with 0% progress, or past its planned
+  finish. Mirrors VisiLean's Delayed Tasks. The previous test (forecast finish >= 4 days past
+  baseline) always read 0, because VisiLean's planned dates equal the baseline until a reschedule.
+* **Milestones** are added to the headline count only when no filter is applied.
+* **Long Lead Item Delivery Status** lists *every* `Procurement - Supply` package grouped by the
+  `Package` field (33 today), not a top-N slice. Delivery row = the package's "GRN at site"
+  activity, falling back to its last activity.
+
+### Refresh — how it actually works
+
+`schedule` events on GitHub are best-effort and heavily throttled. Measured on this repo with
+`cron: "*/5"` over 23-24 Aug 2026: **median gap 27 min, maximum 111 min** — it never once ran at
+5 minutes, which is why the dashboard was serving hour-old numbers.
+
+The schedule therefore only has to *start* a worker:
+
+* `cron: "7 */2 * * *"` starts a worker every 2 hours; `concurrency: cancel-in-progress: true`
+  means a new worker cleanly replaces the running one.
+* The worker itself loops **every 5 minutes for ~5h40m** (under the 6-hour job ceiling), so a
+  delayed or skipped trigger is still covered by the previous worker.
+* Each cycle publishes only when `v2/.datahash` changes (the hash excludes `generatedAt`).
+  A failed cycle logs and continues; it never kills the worker.
+* `workflow_dispatch` with `once: true` runs a single refresh — useful for a manual catch-up.
+
+On the page: the header shows the build time **in IST** plus a live **data-age chip**
+(green <= 10 min, amber <= 30 min, red beyond), and a background poll checks `meta.json` every
+60 seconds and reloads when a new build lands — so nobody has to press Refresh to stay current.
+`meta.generatedAtEpoch` carries the build instant in unix seconds for that age maths.
+
+### Build & run
+
+```
+python scripts/ntpc_dash_data_v2.py     # VisiLean APIs -> scripts/ntpc_dashboard_data_v2.json
+python scripts/build_ntpc_dash_v2.py    # + template + logo -> v2/index.html, meta.json, .datahash
+```
+
+The working copy lives at `C:\Users\vikas\ntpc-mis-dash` — **not** under `%TEMP%`, where Windows
+cleanup previously deleted tracked files and corrupted the local git objects.
+
+---
+
 ## 11. Baseline lock & backups
 
 * **Git tag** `v1.0-baseline-2026-08-17` on the public repo — restores this exact dashboard any time
