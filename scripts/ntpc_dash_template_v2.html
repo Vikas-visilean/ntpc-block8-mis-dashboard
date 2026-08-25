@@ -558,7 +558,10 @@ function pipeTable(rows,idp,engMode){
     .sort((x,y)=>x.seq-y.seq);
   if(pipeL1[idp])groups=groups.filter(x=>x.rr.some(r=>r[C.sec]===pipeL1[idp]));
   if(pipeL2[idp])groups=groups.filter(x=>x.pkg===pipeL2[idp]);
-  if(pipeSearch)groups=groups.filter(x=>x.pkg.toLowerCase().includes(pipeSearch.toLowerCase()));
+  if(pipeSearch){const q=pipeSearch.toLowerCase();
+    // match the package name OR any activity inside it, so an individual drawing
+    // (WBS Level 4, e.g. "Transformer Yard- Earthing Layout") is findable here
+    groups=groups.filter(x=>x.pkg.toLowerCase().includes(q)||x.rr.some(r=>String(r[C.name]).toLowerCase().includes(q)));}
   if(pipeDelOnly)groups=groups.filter(x=>x.dl||x.ls);
   // columns = schedule steps ordered by earliest baseline start
   const colMin={};
@@ -621,9 +624,9 @@ function pipeTable(rows,idp,engMode){
       return `<label><input type="checkbox" data-cc="${esc(cn)}" data-p="${idp}" ${(!sel||!sel.size||sel.has(cn))?"checked":""}> ${esc(lbl.length>34?lbl.slice(0,33)+"…":lbl)}</label>`}).join("")}
     </div></details>`;
   return sc+`<div style="display:flex;gap:7px;align-items:center;margin-bottom:5px;flex-wrap:wrap">
-    <select onchange="pipeL1['${idp}']=this.value;pipeL2['${idp}']='';render()">${["",...new Set(rows.map(r=>r[C.sec]))].map(v=>`<option value="${esc(v)}" ${pipeL1[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"L1 — all sections"}</option>`).join("")}</select>
-    <select onchange="pipeL2['${idp}']=this.value;render()">${["",...new Set(rows.filter(r=>!pipeL1[idp]||r[C.sec]===pipeL1[idp]).map(r=>r[C.pkg]))].map(v=>`<option value="${esc(v)}" ${pipeL2[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"L2/L3 — all packages"}</option>`).join("")}</select>
-    <input type="search" id="${idp}-q" placeholder="Search packages…" value="${esc(pipeSearch)}">
+    <select onchange="pipeL1['${idp}']=this.value;pipeL2['${idp}']='';render()">${["",...new Set(rows.map(r=>r[C.sec]))].map(v=>`<option value="${esc(v)}" ${pipeL1[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"All sections"}</option>`).join("")}</select>
+    <select onchange="pipeL2['${idp}']=this.value;render()">${["",...new Set(rows.filter(r=>!pipeL1[idp]||r[C.sec]===pipeL1[idp]).map(r=>r[C.pkg]))].map(v=>`<option value="${esc(v)}" ${pipeL2[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"All packages"}</option>`).join("")}</select>
+    <input type="search" id="${idp}-q" placeholder="Search packages or drawings…" value="${esc(pipeSearch)}">
     <span class="tgl ${pipeDelOnly?"on2":""}" id="${idp}-del">Delayed only</span>
     ${colpop}
     <span class="fnote">${groups.length} packages · click a row for activities</span></div>`+h;

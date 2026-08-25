@@ -248,17 +248,20 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     area = r["loc"] or "Off-site / Office"
     # Package = VisiLean 'Package' custom field VERBATIM (KP field-match rule 18-Aug);
     # Level-derived fallback only for rows where the field is empty in VisiLean.
+    # Section = WBS Level 2, i.e. the level directly under the department, for every
+    # department. The department page's section dropdown then sits one level above its
+    # package dropdown (Level 3 / the Package field) instead of both listing Level 3.
+    # For Supply and Services, Level 2 already reads "Supply" / "EPCC & I&C Services".
+    sec = L[1] or L[0]
     if dept in ("supply", "services"):
-        sec = "Supply" if dept == "supply" else "EPCC & I&C Services"
         fb = L[2] or L[1]
     elif dept == "engineering":
-        sec = L[2] or L[1]; fb = L[3] or L[2] or L[1]
+        fb = L[3] or L[2] or L[1]
     elif dept in ("execution", "tnc"):
-        sec = L[2] or L[1]
         cand = [x for x in L[2:6] if x and not BLOCK_RE.match(x) and norm(x) != "construction"]
         fb = cand[-1] if cand else (L[3] or L[2] or L[1])
     else:
-        sec = L[1] or L[0]; fb = L[1] or L[0]
+        fb = L[1] or L[0]
     pkg = r["pkgcf"] or fb
     stage = ""
     if dept == "engineering":
