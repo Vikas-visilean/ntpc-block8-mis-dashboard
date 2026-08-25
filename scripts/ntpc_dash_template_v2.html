@@ -884,8 +884,13 @@ function longLeadTable(){
   sup.forEach(r=>{const k=r[C.pkg];w[k]=(w[k]||0)+(r[C.cost]>0?r[C.cost]:0);
     if(r[C.sub]==="At Site"&&!grn[k])grn[k]=r;
     if(!last[k]||r[C.bEF]>last[k][C.bEF])last[k]=r});
-  const items=Object.keys(w).map(k=>{const r=grn[k]||last[k];
-    return {p:k,b:r[C.bEF],f:r[C.fEF],d:r[C.fEF]-r[C.bEF],pc:r[C.pct],w:w[k]||0}});
+  // Delivery dates come from VisiLean's package summary row (DATA.supplyDeliv), so the
+  // Baseline / Forecast columns read exactly what VisiLean shows for the package. Only
+  // if a package has no summary do we fall back to its GRN-at-site or last activity.
+  const SD=DATA.supplyDeliv||{};
+  const items=Object.keys(w).map(k=>{const r=grn[k]||last[k],sd=SD[k];
+    const b=sd?sd.b:r[C.bEF], f=sd?sd.f:r[C.fEF];
+    return {p:k,b,f,d:f-b,pc:r[C.pct],w:w[k]||0}});
   items.sort((a,b)=>b.w-a.w);
   let h=`<div class="twrap"><table><tr><th>#</th><th>Long-lead item (supply package)</th><th class="num">Wt %</th><th>Baseline delivery</th><th>Forecast delivery</th><th class="num">Delay / Ahead</th><th>Status</th></tr>`;
   items.forEach((x,i)=>{
@@ -918,7 +923,7 @@ function pageSummary(){
   h+=gaugeCard(rows)+epcCard()+costCard();
   h+=kpiCards(rows,true);
   h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
-  h+=card("span12","Long Lead Item Delivery Status","all Procurement - Supply packages (VisiLean Package field) · delivery = GRN at site",longLeadTable());
+  h+=card("span12","Long Lead Item Delivery Status","all Procurement - Supply packages · baseline / forecast delivery as per VisiLean package summary",longLeadTable());
   h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
     `<div id="sc-box"><div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">Monthly</div>${scurveMulti(rows,"sc2",true)}</div>`,
     `<div style="display:flex;gap:5px;flex-wrap:wrap"><div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);

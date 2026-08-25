@@ -350,6 +350,40 @@ meta = {"statusDate": TODAY.strftime("%d-%b-%Y"), "statusWd": STATUS_WD, "startD
         "generatedAt": IST_NOW.strftime("%d-%b-%Y %H:%M IST"),
         "generatedAtEpoch": int(NOW_UTC.timestamp())}
 
+# ---------- supply package delivery, straight off VisiLean's summary rows -------
+# KP rule 25-Aug: the Long Lead table's Baseline / Forecast delivery must equal the
+# dates VisiLean shows on the package summary row under Procurement > Supply.
+_kids = defaultdict(list)
+for t in TASKS:
+    if t.get("parentGUID"): _kids[t["parentGUID"]].append(t)
+
+def _descendants(t, depth=0):
+    if depth > 6: return
+    for c in _kids.get(t.get("guid"), []):
+        yield c
+        for g in _descendants(c, depth + 1): yield g
+
+SUPPLY_DELIV = {}
+for t in TASKS:
+    cfx = t.get("customField") or {}
+    if not t.get("parent"): continue
+    if (cfx.get("Level 1") or "").strip() != "Procurement & Vendor Documents": continue
+    if (cfx.get("Level 2") or "").strip() != "Supply": continue
+    # Level 3 is set on the nested MQAP sub-summaries; the package summary leaves it blank
+    if (cfx.get("Level 3") or "").strip(): continue
+    if (t.get("taskName") or "").strip() in ("", "Supply"): continue
+    pkgs = Counter()
+    for d in _descendants(t):
+        p = ((d.get("customField") or {}).get("Package") or "").strip()
+        if p: pkgs[p] += 1
+    if not pkgs: continue
+    pkg = pkgs.most_common(1)[0][0]
+    be, pe = pdate(t.get("baselineEndDate")), pdate(t.get("plannedEndDate"))
+    if be is None and pe is None: continue
+    # key must match the row's pkg column, which is truncated the same way
+    SUPPLY_DELIV[str(pkg)[:70]] = {"b": wd_f(be or pe), "f": wd_f(pe or be)}
+print("supply package delivery dates from VisiLean summaries:", len(SUPPLY_DELIV))
+
 cons = []
 for c in CONS:
     cons.append({"id": c.get("constrainId"), "title": c.get("title") or "", "desc": (c.get("discription") or "")[:200],
@@ -361,7 +395,7 @@ for c in CONS:
                  "open": not (c.get("completionDate") or "").strip()})
 
 DATA = {"meta": meta, "months": months, "depts": [{"key": k, "name": n} for k, n in DEPTS],
-        "milestones": ms, "constraints": cons,
+        "milestones": ms, "constraints": cons, "supplyDeliv": SUPPLY_DELIV,
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
                  "ownship", "nd", "dly", "item"],
