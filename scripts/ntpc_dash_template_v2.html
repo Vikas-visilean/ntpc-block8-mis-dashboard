@@ -146,6 +146,18 @@ tr:hover td{background:var(--blue-wash)}
 .colpop input{accent-color:var(--blue)}
 .colpop .cact{display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:5px}
 .colpop .cact button{color:var(--blue);font-size:10px;font-weight:600}
+#rsnmodal{position:fixed;inset:0;z-index:120;display:none;align-items:flex-start;justify-content:center;
+ background:rgba(15,23,42,.5);padding:32px 18px;overflow:auto}
+#rsnmodal.on{display:flex}
+#rsnmodal-box{background:var(--surface);border:1px solid var(--line2);border-radius:10px;
+ width:100%;max-width:760px;box-shadow:var(--shadow-popover);overflow:hidden}
+#rsnmodal-hd{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);
+ position:sticky;top:0;background:var(--surface);z-index:1}
+#rsnmodal-t{flex:1;font-size:12.5px;font-weight:800;line-height:1.35}
+#rsnmodal-x{border:1px solid var(--line2);background:var(--surface);color:var(--dim);font-size:16px;line-height:1;
+ border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto}
+#rsnmodal-x:hover{background:var(--blue-wash);color:var(--blue)}
+#rsnmodal-bd{padding:10px 14px 14px}
 #tip{position:fixed;z-index:99;background:var(--tip-bg);color:var(--tip-fg);border-radius:6px;padding:6px 9px;font-size:10px;pointer-events:none;box-shadow:var(--shadow-popover);display:none;max-width:290px;line-height:1.45}
 #tip .t2{color:var(--tip-fg2)}
 .toggle2{display:flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden;font-size:9.5px}
@@ -248,6 +260,13 @@ html{zoom:1.3}
   </main>
 </div>
 <div id="tip"></div>
+<div id="rsnmodal" role="dialog" aria-modal="true" aria-labelledby="rsnmodal-t">
+  <div id="rsnmodal-box">
+    <div id="rsnmodal-hd"><div id="rsnmodal-t"></div>
+      <button id="rsnmodal-x" title="Close (Esc)" aria-label="Close">&times;</button></div>
+    <div id="rsnmodal-bd"></div>
+  </div>
+</div>
 <script>
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -406,9 +425,8 @@ function donut(items,total,sel){
 function rsnDetail(r){
   const dd=(n)=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n} d late</span>`
             :(n<0?`<span style="color:var(--good-text);font-weight:700">${n} d early</span>`:`<span class="dim">on time</span>`);
-  return `<div style="padding:8px 10px;background:var(--blue-wash);border-radius:7px;margin:4px 0 8px">
-    <div style="font-weight:800;font-size:12px;margin-bottom:2px">${esc(r.name)} ${r.crit?chip("vlnr","CRITICAL"):""}</div>
-    <div class="small dim" style="margin-bottom:6px">WBS: ${esc(r.wbs||"—")}</div>
+  return `<div>
+    <div class="small dim" style="margin-bottom:8px">WBS: ${esc(r.wbs||"—")}</div>
     <div class="gstats">
       <span class="k">VisiLean status</span><span class="v">${vlChip(r.vls)}</span>
       <span class="k">Progress</span><span class="v">${r.pct}%</span>
@@ -430,6 +448,18 @@ function rsnDetail(r){
         <b>${esc(e.label)}</b>${e.by?` <span class="dim">· ${esc(e.by)}</span>`:""}${e.text?`<br>${esc(e.text)}`:""}</div>`).join("")}</div>`:""}
     ${r.desc?`<div style="margin-top:7px"><div class="small dim">Activity description</div><div style="font-size:11px;line-height:1.5">${esc(r.desc)}</div></div>`:""}
   </div>`;
+}
+function openRsn(uid){
+  const r=(DATA.reasons||[]).find(x=>x.uid===uid);if(!r)return;
+  document.getElementById("rsnmodal-t").innerHTML=esc(r.name)+(r.crit?" "+chip("vlnr","CRITICAL"):"");
+  document.getElementById("rsnmodal-bd").innerHTML=rsnDetail(r);
+  const m=document.getElementById("rsnmodal");m.classList.add("on");m.scrollTop=0;
+  document.body.style.overflow="hidden";
+  rsnSel=uid;
+}
+function closeRsn(){
+  document.getElementById("rsnmodal").classList.remove("on");
+  document.body.style.overflow="";rsnSel=null;
 }
 function reasonsCard(deptKey,span){
   const all=reasonsFor(deptKey);
@@ -467,23 +497,21 @@ function reasonsCard(deptKey,span){
   h+=`<div class="twrap" style="max-height:400px;overflow:auto;margin-top:8px"><table>
     <tr><th>Activity</th><th>Reason</th><th>Event</th><th>Owner</th><th>Status</th><th class="num">Start var.</th><th class="num">Finish var.</th></tr>`;
   list.forEach(r=>{
-    const sel=rsnSel===r.uid;
     const cs=rsnCat?r.cats.filter(c=>c.cat===rsnCat):r.cats;
     const v=n=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n}</span>`:(n<0?`<span style="color:var(--good-text)">${n}</span>`:`<span class="dim">0</span>`);
-    h+=`<tr class="rsnrow" data-u="${r.uid}" style="cursor:pointer${sel?";outline:2px solid var(--blue)":""}">
+    h+=`<tr class="rsnrow" data-u="${r.uid}" style="cursor:pointer" title="Open activity detail">
       <td><b>${esc(r.name.slice(0,50))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,62))}</div></td>
       <td>${cs.map(c=>`<span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>`).join(" ")}</td>
       <td>${[...new Set(cs.map(c=>c.label))].map(l=>chip(EV_COL[(cs.find(c=>c.label===l)||{}).kind]||"mut",l)).join(" ")}</td>
       <td>${esc(r.owner||r.ownship||"—")}</td><td>${vlChip(r.vls)}</td>
       <td class="num">${v(r.sSlip)}</td><td class="num">${v(r.fSlip)}</td></tr>`;
-    if(sel)h+=`<tr><td colspan="7">${rsnDetail(r)}</td></tr>`;
   });
   h+=`</table></div>`;
   setTimeout(()=>{
     document.querySelectorAll(".rsnslice,.rsnleg").forEach(el=>{
       el.addEventListener("click",()=>{const c=el.dataset.cat;rsnCat=(rsnCat===c?"":c);rsnSel=null;render()})});
     document.querySelectorAll(".rsnrow").forEach(el=>{
-      el.addEventListener("click",()=>{const u=+el.dataset.u;rsnSel=(rsnSel===u?null:u);render()})});
+      el.addEventListener("click",()=>openRsn(+el.dataset.u))});
   },0);
   return card(span||"span12","Reasons for Variance",
     "categories recorded by the team in VisiLean · click a slice to filter, then an activity for its detail",h);
@@ -1357,10 +1385,14 @@ function restoreUI(){
     pipeSearch=s.pipeSearch||"";pipeDelOnly=!!s.pipeDelOnly;
     Object.assign(pipeL1,s.pipeL1||{});Object.assign(pipeL2,s.pipeL2||{});
     statSel=s.statSel||"";regQ=s.regQ||"";regStatus=s.regStatus||"";
-    rsnCat=s.rsnCat||"";rsnSel=s.rsnSel||null;consTab=s.consTab||consTab;
+    rsnCat=s.rsnCat||"";rsnSel=null;consTab=s.consTab||consTab;
   }catch(e){}
   return s;
 }
+{const m=document.getElementById("rsnmodal");
+ if(m){document.getElementById("rsnmodal-x").addEventListener("click",closeRsn);
+   m.addEventListener("click",e=>{if(e.target===m)closeRsn()});
+   addEventListener("keydown",e=>{if(e.key==="Escape"&&m.classList.contains("on"))closeRsn()});}}
 const _restored=restoreUI();
 addEventListener("beforeunload",saveUI);
 document.getElementById("h-date").textContent=M.statusDate;
