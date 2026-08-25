@@ -254,6 +254,14 @@ SUB_MAP = [
     (("paymentprocess", "invoicebooking", "finalpaymentprocess"), "Payment"),
 ]
 BLOCK_RE = re.compile(r"(?i)^block[\s-]*(no)?\d+")
+# A Level-4 value that appears under many different Packages is a process step,
+# not a deliverable - "MQAP" sits under 32 supply packages, "Field Quality Plan &
+# HSE" under 4. Only a Level 4 that belongs to a single Package is a real package
+# item; anything shared falls back to the Package field so stages never surface as
+# packages in the pipeline table.
+L4_SPAN = defaultdict(set)
+for _r in leafs.values():
+    if _r["L"][3] and _r["pkgcf"]: L4_SPAN[_r["L"][3]].add(_r["pkgcf"])
 rows = []
 for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     u = r["uid"]; dept = dept_of(r); ln = norm(r["name"]); L = r["L"]
@@ -278,7 +286,7 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     # Deepest WBS level that exists for this row. In Design & Engineering the Package
     # field carries the Level-3 group, so the Level-4 deliverable is the real package;
     # where Level 4 is blank this falls back to the Package field unchanged.
-    item = L[3] or pkg
+    item = L[3] if (L[3] and len(L4_SPAN.get(L[3], ())) == 1) else pkg
     stage = ""
     if dept == "engineering":
         stage = next((v for kk, v in ENG_STAGE if kk in ln), "Drafting" if "drafting" in ln else "")
