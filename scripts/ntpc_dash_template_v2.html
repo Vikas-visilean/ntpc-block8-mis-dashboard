@@ -192,6 +192,7 @@ html{zoom:1.3}
 .chip.vlc,[data-theme=dark] .chip.vlc{background:#57A344;color:#fff}
 .chip.vlrq,[data-theme=dark] .chip.vlrq{background:#7B85C9;color:#fff}
 .chip.vlqc,[data-theme=dark] .chip.vlqc{background:#1C2050;color:#fff}
+#h-new{margin-left:6px;border:1px solid var(--blue);background:var(--blue-wash);color:var(--blue);font-weight:700;font-size:9.5px;border-radius:5px;padding:1px 6px;cursor:pointer}
 #h-age{font-weight:700;font-size:9.5px;border-radius:5px;padding:1px 5px;margin-left:5px;white-space:nowrap}
 #h-age.fresh{background:#57A34422;color:var(--good-text)}
 #h-age.aging{background:#E0B52022;color:var(--warn-text,#8a6100)}
@@ -216,7 +217,7 @@ html{zoom:1.3}
     <div class="topbar">
       <div>
         <h1>NTPC Bikaner Block 8 · 200 MW</h1>
-        <div class="sub">KPI Green Energy · LIVE from VisiLean · 6-day weeks · LOA 07-May-2026 · <span id="h-gen" style="color:var(--blue);font-weight:600"></span><span id="h-age"></span></div>
+        <div class="sub">KPI Green Energy · LIVE from VisiLean · 6-day weeks · LOA 07-May-2026 · <span id="h-gen" style="color:var(--blue);font-weight:600"></span><span id="h-age"></span><button id="h-new" style="display:none" title="A newer VisiLean build is available. Your current view is kept.">● New data — load</button></div>
       </div>
       <div class="meta">
         <div class="m"><div class="k">Capacity</div><div class="v">200 MWac</div></div>
@@ -358,6 +359,90 @@ function costCard(){
     <span class="k">Actual / CPI</span><span class="v">—</span>
     <span class="k">FAC</span><span class="v">${cr(bud)}</span>
    </div></div>`;
+}
+// ---------- reasons for variance (VisiLean task notes) ----------
+// VisiLean tags each note with what it was recorded against, and that tag IS the
+// variance kind: a late start, a late completion, or a plain closing remark.
+let rsnKind="", rsnSel=null;
+const RSN_META={latestart:["vlnr","Late start","why the activity started after its baseline start"],
+                latefinish:["vlst","Late completion","why it finished after its baseline finish"],
+                startnote:["vls","Start note","recorded when work started"],
+                stopped:["vlst","Stopped","why work was stopped"],
+                rejected:["vlrq","Rejected at QC","why it was rejected"],
+                completion:["vlc","Completion note","closing remark, not a variance"],
+                note:["mut","Note","free note"]};
+const RSN_VAR=["latestart","latefinish","stopped","rejected"];   // the actual variances
+function reasonsFor(deptKey){
+  const f=state.f;
+  return (DATA.reasons||[]).filter(r=>
+    (!deptKey||r.dept===deptKey)&&(!f.dept||r.dept===f.dept)&&(!f.type||r.type===f.type)
+    &&(!f.owner||r.owner===f.owner)
+    &&(!f.ownship||String(r.ownship||"").split(/\s*,\s*/).indexOf(f.ownship)>=0));
+}
+function rsnDetail(r){
+  const dd=(n)=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n} d late</span>`
+            :(n<0?`<span style="color:var(--good-text);font-weight:700">${n} d early</span>`:`<span class="dim">on time</span>`);
+  return `<div style="padding:8px 10px;background:var(--blue-wash);border-radius:7px;margin:4px 0 8px">
+    <div style="font-weight:800;font-size:12px;margin-bottom:2px">${esc(r.name)} ${r.crit?chip("vlnr","CRITICAL"):""}</div>
+    <div class="small dim" style="margin-bottom:6px">WBS: ${esc(r.wbs||"—")}</div>
+    <div class="gstats">
+      <span class="k">VisiLean status</span><span class="v">${vlChip(r.vls)}</span>
+      <span class="k">Progress</span><span class="v">${r.pct}%</span>
+      <span class="k">Owner</span><span class="v">${esc(r.owner||"—")}</span>
+      <span class="k">Ownership</span><span class="v">${esc(r.ownship||"—")}</span>
+      <span class="k">Package</span><span class="v">${esc(r.pkg||"—")}</span>
+      <span class="k">Location</span><span class="v">${esc(r.area||"—")}</span>
+      <span class="k">Baseline start → finish</span><span class="v">${wdate(r.bES)} → ${wdate(r.bEF,1)}</span>
+      <span class="k">${r.aEF!=null?"Actual":"Forecast"} start → finish</span><span class="v">${wdate(r.aES!=null?r.aES:r.fES)} → ${wdate(r.aEF!=null?r.aEF:r.fEF,1)}</span>
+      <span class="k">Start variance</span><span class="v">${dd(r.sSlip)}</span>
+      <span class="k">Finish variance</span><span class="v">${dd(r.fSlip)}</span>
+      <span class="k">Total float</span><span class="v">${r.tf} d</span>
+    </div>
+    ${r.entries.map(e=>{const m=RSN_META[e.kind]||RSN_META.note;
+      return `<div style="margin-top:7px"><div>${chip(m[0],m[1])}</div>
+        <div style="margin-top:3px;font-size:11px;line-height:1.5;padding:6px 8px;background:var(--surface);border:1px solid var(--line);border-radius:6px">${esc(e.text)}</div></div>`}).join("")}
+    ${r.desc?`<div style="margin-top:7px"><div class="small dim">Activity description</div><div style="font-size:11px;line-height:1.5">${esc(r.desc)}</div></div>`:""}
+  </div>`;
+}
+function reasonsCard(deptKey,span){
+  const all=reasonsFor(deptKey);
+  const cnt={};all.forEach(r=>r.entries.forEach(e=>{cnt[e.kind]=(cnt[e.kind]||0)+1}));
+  const kinds=Object.keys(cnt).sort((a,b)=>(RSN_VAR.indexOf(b)-RSN_VAR.indexOf(a))||cnt[b]-cnt[a]);
+  // how many delayed activities still have no reason recorded
+  const withNote=new Set(all.map(r=>r.uid));
+  const late=filtered(deptKey).filter(r=>r[C.dly]);
+  const list=rsnKind?all.filter(r=>r.entries.some(e=>e.kind===rsnKind)):all;
+  let h=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px">
+    <span class="tgl ${rsnKind===""?"on2":""}" onclick="rsnKind='';rsnSel=null;render()">All reasons ${all.length}</span>`;
+  kinds.forEach(k=>{const m=RSN_META[k]||RSN_META.note;
+    h+=`<span class="tgl ${rsnKind===k?"on2":""}" onclick="rsnKind='${k}';rsnSel=null;render()">${m[1]} ${cnt[k]}</span>`});
+  h+=`</div>`;
+  if(!all.length)
+    return card(span||"span12","Reasons for Variance",
+      "reasons and comments recorded by the team against activities in VisiLean",
+      `<div class="fnote" style="padding:10px 0">No reasons recorded yet for this selection. They appear here as soon as the team adds a start, completion or delay note against an activity in VisiLean.</div>`);
+  h+=`<div class="twrap" style="max-height:430px;overflow:auto"><table>
+    <tr><th>Activity</th><th>Reason type</th><th>Owner</th><th>Status</th><th class="num">Start var.</th><th class="num">Finish var.</th><th>Reason recorded</th></tr>`;
+  list.forEach(r=>{
+    const sel=rsnSel===r.uid;
+    const ent=rsnKind?r.entries.filter(e=>e.kind===rsnKind):r.entries;
+    // an activity may carry only a description and no typed note - label it rather
+    // than leaving the reason-type cell blank
+    const tags=ent.length?ent.map(e=>{const m=RSN_META[e.kind]||RSN_META.note;return chip(m[0],m[1])}).join(" ")
+                         :chip("mut","Description");
+    const v=n=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n}</span>`:(n<0?`<span style="color:var(--good-text)">${n}</span>`:`<span class="dim">0</span>`);
+    h+=`<tr class="rsnrow" data-u="${r.uid}" style="cursor:pointer${sel?";outline:2px solid var(--blue)":""}">
+      <td><b>${esc(r.name.slice(0,52))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,66))}</div></td>
+      <td>${tags}</td><td>${esc(r.owner||r.ownship||"—")}</td><td>${vlChip(r.vls)}</td>
+      <td class="num">${v(r.sSlip)}</td><td class="num">${v(r.fSlip)}</td>
+      <td style="max-width:340px">${esc(ent.map(e=>e.text).join(" · ").slice(0,150))}${ent.map(e=>e.text).join(" ").length>150?"…":""}</td></tr>`;
+    if(sel)h+=`<tr><td colspan="7">${rsnDetail(r)}</td></tr>`;
+  });
+  h+=`</table></div>`;
+  setTimeout(()=>{document.querySelectorAll(".rsnrow").forEach(el=>{
+    el.addEventListener("click",()=>{const u=+el.dataset.u;rsnSel=(rsnSel===u?null:u);render()})})},0);
+  return card(span||"span12","Reasons for Variance",
+    `recorded by the team in VisiLean · ${late.length} activities are currently delayed · click a row for the full activity detail`,h);
 }
 // ---------- KPI cards ----------
 function kpiCards(rows,projectLevel){
@@ -929,6 +1014,7 @@ function pageSummary(){
     `<div style="display:flex;gap:5px;flex-wrap:wrap"><div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
   h+=card("span5","Stage progress","Actual % vs Baseline Plan %",stageBars(rows));
   h+=critPoints(rows);
+  h+=reasonsCard("","span12");
   h+=card("span6","Open Constraints / Awaiting to Start","live VisiLean constraints log · awaiting-start from schedule",constraints(rows),
     `<div class="toggle2"><button class="${consTab==="await"?"on":""}" onclick="consTab='await';render()">Awaiting Start</button><button class="${consTab==="vl"?"on":""}" onclick="consTab='vl';render()">VisiLean Constraints</button></div>`);
   h+="</div>";
@@ -1094,6 +1180,7 @@ function pageDept(key){
   }else{
     h+=card("span12","Sections","progress by section · Actual % vs Baseline Plan %",stageSecs(rows));
   }
+  h+=reasonsCard(key,"span12");
   h+="</div>";
   setTimeout(()=>{bindPipe("pe");bindPipe("pd")},0);
   return h;
@@ -1195,6 +1282,7 @@ if(_rbtn)_rbtn.addEventListener("click",async()=>{
     const m2=await r.json();
     if(m2.generatedAt&&m2.generatedAt!==M.generatedAt){
       _rbtn.textContent="⟳ new data — reloading…";
+      saveUI();
       setTimeout(()=>location.replace(location.pathname+"?r="+Date.now()),400);
     }else{
       _rbtn.textContent="✓ latest ("+(M.generatedAt||M.statusDate)+")";
@@ -1206,6 +1294,31 @@ if(_rbtn)_rbtn.addEventListener("click",async()=>{
     setTimeout(hideTip,4000);
   }
 });
+// keep the reader's place across a reload
+function saveUI(){
+  try{sessionStorage.setItem("kp-ui",JSON.stringify({
+    page:state.page,unit:state.unit,at:state.at,f:state.f,
+    scSel,pipeSearch,pipeDelOnly,pipeL1,pipeL2,statSel,regQ,regStatus,
+    rsnKind,rsnSel,consTab,y:window.scrollY}))}catch(e){}
+}
+function restoreUI(){
+  let s=null;try{s=JSON.parse(sessionStorage.getItem("kp-ui")||"null")}catch(e){}
+  if(!s)return null;
+  try{
+    if(s.page)state.page=s.page;
+    if(s.unit)state.unit=s.unit;
+    if(typeof s.at==="number")state.at=s.at;
+    if(s.f)state.f=Object.assign(state.f,s.f);
+    if(Array.isArray(s.scSel)&&s.scSel.length)scSel=s.scSel;
+    pipeSearch=s.pipeSearch||"";pipeDelOnly=!!s.pipeDelOnly;
+    Object.assign(pipeL1,s.pipeL1||{});Object.assign(pipeL2,s.pipeL2||{});
+    statSel=s.statSel||"";regQ=s.regQ||"";regStatus=s.regStatus||"";
+    rsnKind=s.rsnKind||"";rsnSel=s.rsnSel||null;consTab=s.consTab||consTab;
+  }catch(e){}
+  return s;
+}
+const _restored=restoreUI();
+addEventListener("beforeunload",saveUI);
 document.getElementById("h-date").textContent=M.statusDate;
 // ---------- data freshness ----------
 // generatedAt looks like "24-Aug-2026 08:05 UTC"; parse it so the page can show how
@@ -1229,20 +1342,28 @@ function paintAge(){
 }
 if(M.generatedAt){document.getElementById("h-gen").textContent="refreshed "+M.generatedAt;paintAge();setInterval(paintAge,30000);}
 // background poll: pick up a new build without anyone pressing Refresh
-let _pollBusy=false;
+let _pollBusy=false,_pending=null;
+// Never reload while somebody is reading. A new build only lights up a button; the
+// reader decides when to take it. (This used to call location.replace(), which threw
+// you back to Project Summary in the middle of a review.)
+function showUpdatePill(){
+  const el=document.getElementById("h-new");if(!el)return;
+  el.style.display="";
+  el.onclick=()=>{saveUI();location.replace(location.pathname+"?r="+Date.now())};
+}
 setInterval(async()=>{
-  if(_pollBusy||document.hidden)return;_pollBusy=true;
+  if(_pollBusy||document.hidden||_pending)return;_pollBusy=true;
   try{
     const r=await fetch("meta.json?t="+Date.now(),{cache:"no-store"});
     const m2=await r.json();
-    if(m2.generatedAt&&m2.generatedAt!==M.generatedAt)
-      location.replace(location.pathname+"?r="+Date.now());
+    if(m2.generatedAt&&m2.generatedAt!==M.generatedAt){_pending=m2.generatedAt;showUpdatePill()}
   }catch(e){}
   _pollBusy=false;
 },60000);
 {const d2=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
  document.getElementById("h-cod").innerHTML=`${d2} days <span style="font-size:8.5px;color:${M.delayDays>0?"var(--crit-text)":"var(--good-text)"}">(${M.delayDays>=0?"+":""}${M.delayDays}d)</span>`;}
 render();
+if(_restored&&_restored.y)setTimeout(()=>window.scrollTo(0,_restored.y),60);
 </script>
 </body>
 </html>

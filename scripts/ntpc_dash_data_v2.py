@@ -125,6 +125,8 @@ for t in TASKS:
          "vls": t.get("status") or "Not Committed",
          "qty": t.get("totalQuantity"), "uom": t.get("quantityUnits") or "",
          "cost": money(cf.get("Cost")), "nd": nodate,
+         "note": t.get("notes") or "", "desc": t.get("description") or "",
+         "crit": (cf.get("Critical Activity") or ""),
          "psd": (pdate(t.get("plannedStartDate")) or bs),
          "ped": (pdate(t.get("plannedEndDate")) or bf), }
     try: r["dur"] = max(0.0, float(t.get("baselineDuration") or t.get("plannedDuration") or 0))
@@ -394,7 +396,80 @@ for c in CONS:
                  "committed": c.get("commitmentDate") or "", "completed": (c.get("completionDate") or "").strip(),
                  "open": not (c.get("completionDate") or "").strip()})
 
-DATA = {"meta": meta, "months": months, "depts": [{"key": k, "name": n} for k, n in DEPTS],
+# ---------- variance reasons (VisiLean task notes) ----------
+# The note type is the variance kind: VisiLean prefixes each note it stores.
+NOTE_KINDS = [("late start note", "latestart", "Late start"),
+              ("late completion note", "latefinish", "Late completion"),
+              ("late note", "latefinish", "Late completion"),
+              ("completion note", "completion", "Completion note"),
+              ("start note", "startnote", "Start note"),
+              ("stopped note", "stopped", "Stopped"),
+              ("rejection note", "rejected", "Rejected at QC")]
+# longest key first so an alternation cannot match a shorter key inside a longer one
+NOTE_KINDS.sort(key=lambda x: -len(x[0]))
+NOTE_RE = "(" + "|".join(re.escape(k).replace(r"\ ", r"\s+") for k, _, _ in NOTE_KINDS) + r")\s*:"
+NOTE_LOOKUP = {k: (c, l) for k, c, l in NOTE_KINDS}
+
+def strip_html(x):
+    x = re.sub(r"<br\s*/?>", " ", x or "")
+    x = re.sub(r"</p>", " ", x)
+    x = re.sub(r"<[^>]+>", "", x)
+    for a, b in (("&amp;", "&"), ("&nbsp;", " "), ("&lt;", "<"), ("&gt;", ">"),
+                 ("&quot;", '"'), ("&#39;", "'")):
+        x = x.replace(a, b)
+    return re.sub(r"\s+", " ", x).strip()
+
+def parse_notes(raw):
+    """Split 'Late start note: a,Late completion note: b' into typed entries."""
+    txt = strip_html(raw)
+    if not txt: return []
+    # One ordered alternation, longest first: scanning left to right means
+    # "Late completion note" is consumed whole and never re-matched as
+    # "Completion note", which would mislabel a variance as a plain remark.
+    marks = []
+    for m in re.finditer(NOTE_RE, txt, re.I):
+        key = re.sub(r"\s+", " ", m.group(1)).strip().lower()
+        code, label = NOTE_LOOKUP[key]
+        marks.append((m.start(), m.end(), code, label))
+    if not marks:
+        return [{"kind": "note", "label": "Note", "text": txt}]
+    out = []
+    for i, (a0, a1, code, label) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(txt)
+        body = txt[a1:end].strip().strip(",").strip()
+        if body: out.append({"kind": code, "label": label, "text": body})
+    return out
+
+reasons = []
+for r in sorted(leafs.values(), key=lambda x: x["uid"]):
+    entries = parse_notes(r["note"])
+    desc = strip_html(r["desc"])
+    if not entries and not desc: continue
+    u = r["uid"]
+    wbs = " > ".join([x for x in r["L"][:5] if x])
+    reasons.append({
+        "uid": u, "name": r["name"][:110], "dept": dept_of(r),
+        "type": r["atype"], "pkg": str(r["pkgcf"] or "")[:70],
+        "wbs": wbs[:170], "area": r["loc"],
+        "owner": (r["assignee"] or "")[:40], "ownship": (r["owner"] or "")[:60],
+        "vls": r["vls"], "pct": round(r["pct"]),
+        "bES": int(r["bES"]), "bEF": int(r["bEF"]),
+        "fES": int(round(fES[u])), "fEF": int(round(fEF[u])),
+        # Slip is measured against what actually happened where VisiLean has an actual
+        # date - for a finished activity the forecast equals the baseline, so a
+        # forecast-based slip would read zero on exactly the rows carrying a late note.
+        "aES": (wd_s(r["aS"]) if r["aS"] else None),
+        "aEF": (wd_f(r["aF"]) if r["aF"] else None),
+        "sSlip": (wd_s(r["aS"]) if r["aS"] else int(round(fES[u]))) - int(r["bES"]),
+        "fSlip": (wd_f(r["aF"]) if r["aF"] else int(round(fEF[u]))) - int(r["bEF"]),
+        "tf": int(round(TF.get(u, 0))),
+        "crit": str(r.get("crit") or "").strip().lower().startswith("y"),
+        "entries": entries, "desc": desc[:400],
+    })
+_rc = Counter(e["kind"] for x in reasons for e in x["entries"])
+print("variance reasons:", len(reasons), "activities |", dict(_rc))
+
+DATA = {"meta": meta, "months": months, "reasons": reasons, "depts": [{"key": k, "name": n} for k, n in DEPTS],
         "milestones": ms, "constraints": cons, "supplyDeliv": SUPPLY_DELIV,
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
