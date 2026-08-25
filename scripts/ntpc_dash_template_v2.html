@@ -154,6 +154,12 @@ tr:hover td{background:var(--blue-wash)}
 #rsnmodal-hd{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);
  position:sticky;top:0;background:var(--surface);z-index:1}
 #rsnmodal-t{flex:1;font-size:12.5px;font-weight:800;line-height:1.35}
+#rsnmodal-back{border:1px solid var(--line2);background:var(--surface);color:var(--blue);font-size:14px;line-height:1;
+ border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto;display:none}
+#rsnmodal-back:hover{background:var(--blue-wash)}
+.rsndrill{border:1px solid var(--blue);background:var(--blue-wash);color:var(--blue);font-weight:700;font-size:10px;
+ border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap}
+.rsndrill:hover{background:var(--blue);color:#fff}
 #rsnmodal-x{border:1px solid var(--line2);background:var(--surface);color:var(--dim);font-size:16px;line-height:1;
  border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto}
 #rsnmodal-x:hover{background:var(--blue-wash);color:var(--blue)}
@@ -262,7 +268,7 @@ html{zoom:1.3}
 <div id="tip"></div>
 <div id="rsnmodal" role="dialog" aria-modal="true" aria-labelledby="rsnmodal-t">
   <div id="rsnmodal-box">
-    <div id="rsnmodal-hd"><div id="rsnmodal-t"></div>
+    <div id="rsnmodal-hd"><button id="rsnmodal-back" title="Back to the activity list" aria-label="Back">&#8592;</button><div id="rsnmodal-t"></div>
       <button id="rsnmodal-x" title="Close (Esc)" aria-label="Close">&times;</button></div>
     <div id="rsnmodal-bd"></div>
   </div>
@@ -449,12 +455,43 @@ function rsnDetail(r){
     ${r.desc?`<div style="margin-top:7px"><div class="small dim">Activity description</div><div style="font-size:11px;line-height:1.5">${esc(r.desc)}</div></div>`:""}
   </div>`;
 }
-function openRsn(uid){
-  const r=(DATA.reasons||[]).find(x=>x.uid===uid);if(!r)return;
-  document.getElementById("rsnmodal-t").innerHTML=esc(r.name)+(r.crit?" "+chip("vlnr","CRITICAL"):"");
-  document.getElementById("rsnmodal-bd").innerHTML=rsnDetail(r);
+let rsnDept="";
+function rsnListHtml(deptKey){
+  const all=reasonsFor(deptKey);
+  const list=(rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all)
+    .slice().sort((a,b)=>Math.abs(b.fSlip)-Math.abs(a.fSlip));
+  let h=rsnCat?`<div style="margin-bottom:7px">${chip("blue","Reason: "+esc(rsnCat))}</div>`:"";
+  h+=`<div class="twrap" style="max-height:60vh;overflow:auto"><table>
+    <tr><th>Activity</th><th>Reason</th><th>Event</th><th>Owner</th><th>Status</th><th class="num">Start var.</th><th class="num">Finish var.</th></tr>`;
+  list.forEach(r=>{
+    const cs=rsnCat?r.cats.filter(c=>c.cat===rsnCat):r.cats;
+    const v=n=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n}</span>`:(n<0?`<span style="color:var(--good-text)">${n}</span>`:`<span class="dim">0</span>`);
+    h+=`<tr class="rsnrow" data-u="${r.uid}" style="cursor:pointer" title="Open activity detail">
+      <td><b>${esc(r.name.slice(0,50))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,62))}</div></td>
+      <td>${cs.map(c=>`<span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>`).join(" ")}</td>
+      <td>${[...new Set(cs.map(c=>c.label))].map(l=>chip(EV_COL[(cs.find(c=>c.label===l)||{}).kind]||"mut",l)).join(" ")}</td>
+      <td>${esc(r.owner||r.ownship||"—")}</td><td>${vlChip(r.vls)}</td>
+      <td class="num">${v(r.sSlip)}</td><td class="num">${v(r.fSlip)}</td></tr>`});
+  h+=`</table></div>`;
+  return {html:h,n:list.length};
+}
+function showRsnPanel(title,body,back){
+  document.getElementById("rsnmodal-t").innerHTML=title;
+  document.getElementById("rsnmodal-bd").innerHTML=body;
+  document.getElementById("rsnmodal-back").style.display=back?"":"none";
   const m=document.getElementById("rsnmodal");m.classList.add("on");m.scrollTop=0;
   document.body.style.overflow="hidden";
+}
+function openRsnList(deptKey){
+  rsnDept=deptKey||"";
+  const {html,n}=rsnListHtml(rsnDept);
+  showRsnPanel(`Reasons for Variance <span class="dim" style="font-weight:600">· ${n} ${n===1?"activity":"activities"}</span>`,html,false);
+  setTimeout(()=>{document.querySelectorAll("#rsnmodal-bd .rsnrow").forEach(el=>{
+    el.addEventListener("click",()=>openRsn(+el.dataset.u,true))})},0);
+}
+function openRsn(uid,fromList){
+  const r=(DATA.reasons||[]).find(x=>x.uid===uid);if(!r)return;
+  showRsnPanel(esc(r.name)+(r.crit?" "+chip("vlnr","CRITICAL"):""),rsnDetail(r),!!fromList);
   rsnSel=uid;
 }
 function closeRsn(){
@@ -494,27 +531,15 @@ function reasonsCard(deptKey,span){
   h+=`</div>`;
   if(rsnCat)h+=`<div style="margin:7px 0 3px">${chip("blue","Filtered: "+esc(rsnCat))}
     <a href="#" onclick="rsnCat='';rsnSel=null;render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear</a></div>`;
-  h+=`<div class="twrap" style="max-height:400px;overflow:auto;margin-top:8px"><table>
-    <tr><th>Activity</th><th>Reason</th><th>Event</th><th>Owner</th><th>Status</th><th class="num">Start var.</th><th class="num">Finish var.</th></tr>`;
-  list.forEach(r=>{
-    const cs=rsnCat?r.cats.filter(c=>c.cat===rsnCat):r.cats;
-    const v=n=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n}</span>`:(n<0?`<span style="color:var(--good-text)">${n}</span>`:`<span class="dim">0</span>`);
-    h+=`<tr class="rsnrow" data-u="${r.uid}" style="cursor:pointer" title="Open activity detail">
-      <td><b>${esc(r.name.slice(0,50))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,62))}</div></td>
-      <td>${cs.map(c=>`<span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>`).join(" ")}</td>
-      <td>${[...new Set(cs.map(c=>c.label))].map(l=>chip(EV_COL[(cs.find(c=>c.label===l)||{}).kind]||"mut",l)).join(" ")}</td>
-      <td>${esc(r.owner||r.ownship||"—")}</td><td>${vlChip(r.vls)}</td>
-      <td class="num">${v(r.sSlip)}</td><td class="num">${v(r.fSlip)}</td></tr>`;
-  });
-  h+=`</table></div>`;
   setTimeout(()=>{
     document.querySelectorAll(".rsnslice,.rsnleg").forEach(el=>{
       el.addEventListener("click",()=>{const c=el.dataset.cat;rsnCat=(rsnCat===c?"":c);rsnSel=null;render()})});
-    document.querySelectorAll(".rsnrow").forEach(el=>{
-      el.addEventListener("click",()=>openRsn(+el.dataset.u))});
+    const d=document.getElementById("rsn-drill");
+    if(d)d.addEventListener("click",()=>openRsnList(deptKey||""));
   },0);
   return card(span||"span12","Reasons for Variance",
-    "categories recorded by the team in VisiLean · click a slice to filter, then an activity for its detail",h);
+    "categories recorded by the team in VisiLean · click a slice to filter, then drill down for the activities",h,
+    `<button id="rsn-drill" class="rsndrill" title="Drill down to the activity list">&#9783; ${list.length} ${list.length===1?"activity":"activities"}</button>`);
 }
 // ---------- KPI cards ----------
 function kpiCards(rows,projectLevel){
@@ -1391,6 +1416,7 @@ function restoreUI(){
 }
 {const m=document.getElementById("rsnmodal");
  if(m){document.getElementById("rsnmodal-x").addEventListener("click",closeRsn);
+   document.getElementById("rsnmodal-back").addEventListener("click",()=>openRsnList(rsnDept));
    m.addEventListener("click",e=>{if(e.target===m)closeRsn()});
    addEventListener("keydown",e=>{if(e.key==="Escape"&&m.classList.contains("on"))closeRsn()});}}
 const _restored=restoreUI();
