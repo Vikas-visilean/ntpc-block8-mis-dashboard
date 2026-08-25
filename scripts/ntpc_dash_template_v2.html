@@ -302,7 +302,7 @@ const VLMAP={"complete":["vlc","Complete"],"started":["vls","Started"],"notcommi
  "warning":["vlw","Warning"],"stopped":["vlst","Stopped"],
  "rejectedatqualitycheck":["vlrq","Rejected at QC"],"qualitychecked":["vlqc","Quality Checked"]};
 function vlChip(v){const k=String(v||"").toLowerCase().replace(/[^a-z]/g,"");const m=VLMAP[k];return m?chip(m[0],m[1]):chip("mut",esc(String(v||"—")))}
-function rowChip(r){return C.vls!==undefined&&r[C.vls]?vlChip(r[C.vls]):rowChip(r)}
+function rowChip(r){return (C.vls!==undefined&&r[C.vls])?vlChip(r[C.vls]):stChip(r[C.state])}
 // ---------- speedometer gauge (semicircle, correct sweep) ----------
 function gauge(a,p){
   const Wc=170,Hc=104,cx=85,cy=90,R=62;
@@ -539,7 +539,7 @@ function colKey(r){
 }
 const ENG_COL_LBL={"Drafting":"Drafting & Conceptual","Int. Check":"Internal Checking","Int. Approval":"Internal Approval","Submission":"Submission to Client","Acceptance":"Final Acceptance","GFC":"GFC Issuance","As-Built":"As-Built"};
 const LONGLEAD=/pv module|mms|tracker|inverter duty|central inverter|main auxiliary|harmonic|ctpt|vcb|33 kv main/i;
-let pipeSearch="", pipeDelOnly=false;
+let pipeSearch="", pipeDelOnly=false, pipeFocus="";
 const pipeColSel={}, pipeColOpen={};   // per-table stage column selection
 const pipeL1={}, pipeL2={};              // per-table L1 (section) / L2-L3 (package) filters
 function cellState(rr){
@@ -551,13 +551,17 @@ function cellState(rr){
   return "future";
 }
 function pipeTable(rows,idp,engMode){
-  const g={};rows.forEach(r=>{(g[r[C.pkg]]=g[r[C.pkg]]||[]).push(r)});
+  // group on the deepest WBS level so each deliverable gets its own row, rather
+  // than one row standing in for its Level-3 parent
+  const K=(C.item!==undefined)?C.item:C.pkg;
+  const g={};rows.forEach(r=>{(g[r[K]]=g[r[K]]||[]).push(r)});
   let groups=Object.entries(g).map(([pkg,rr])=>({pkg,rr,a:actPctAt(rr,SW),
     dl:rr.some(isBehind),cr:rr.some(isCrit),ls:rr.some(isLateStart),
     end:Math.max(...rr.map(r=>r[C.fEF])),seq:Math.min(...rr.map(r=>r[C.seq]))}))
     .sort((x,y)=>x.seq-y.seq);
   if(pipeL1[idp])groups=groups.filter(x=>x.rr.some(r=>r[C.sec]===pipeL1[idp]));
-  if(pipeL2[idp])groups=groups.filter(x=>x.pkg===pipeL2[idp]);
+  // groups are keyed on the deepest level now, so match the package on the rows
+  if(pipeL2[idp])groups=groups.filter(x=>x.rr.some(r=>r[C.pkg]===pipeL2[idp]));
   if(pipeSearch){const q=pipeSearch.toLowerCase();
     // match the package name OR any activity inside it, so an individual drawing
     // (WBS Level 4, e.g. "Transformer Yard- Earthing Layout") is findable here
@@ -633,8 +637,18 @@ function pipeTable(rows,idp,engMode){
 }
 function bindPipe(idp){
   const q=document.getElementById(idp+"-q");
-  if(q){q.addEventListener("change",()=>{pipeSearch=q.value;render()});
-       q.addEventListener("keyup",e=>{if(e.key==="Enter"){pipeSearch=q.value;render()}})}
+  if(q){
+    // Search as you type. render() rebuilds the input, so remember which table was
+    // being typed into and put the caret back afterwards - otherwise every keystroke
+    // would drop focus and the box would appear to ignore what was typed.
+    let tmr=null;
+    const apply=()=>{pipeSearch=q.value;pipeFocus=idp;render()};
+    q.addEventListener("input",()=>{clearTimeout(tmr);tmr=setTimeout(apply,200)});
+    q.addEventListener("change",()=>{clearTimeout(tmr);apply()});
+    q.addEventListener("keyup",e=>{if(e.key==="Enter"){clearTimeout(tmr);apply()}});
+    if(pipeFocus===idp){pipeFocus="";const p=q.value.length;
+      try{q.focus({preventScroll:true});q.setSelectionRange(p,p)}catch(e){}}
+  }
   const d=document.getElementById(idp+"-del");
   if(d)d.addEventListener("click",()=>{pipeDelOnly=!pipeDelOnly;render()});
   const cs=document.getElementById(idp+"-cs");
@@ -1026,10 +1040,9 @@ function statSheet(rows){
   let selbar="";
   if(statSel){use=use.filter(r=>r[C.pkg]===statSel);
     selbar=`<div style="margin-bottom:5px">${chip("blue","Filtered: "+esc(statSel.slice(0,60)))} <a href="#" onclick="statSel='';render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear filter</a></div>`}
-  const SC={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnc","Not Committed"],future:["vlnc","Not Committed"]};
   let h=selbar+`<div class="twrap" style="max-height:420px;overflow:auto"><table><tr><th>Sr</th><th>Document / Activity</th><th>Group</th><th class="num">Timeline (d)</th><th>Scope / Owner</th><th>Target date</th><th>Revised target</th><th>Status</th></tr>`;
   use.forEach((r,i)=>{const late=r[C.pct]<100&&r[C.fEF]>r[C.bEF];
-    h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||r[C.ownship]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${chip(SC[r[C.state]][0],SC[r[C.state]][1])}</td></tr>`});
+    h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||r[C.ownship]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${rowChip(r)}</td></tr>`});
   return h+"</table></div>";
 }
 function engOverview(rows){
