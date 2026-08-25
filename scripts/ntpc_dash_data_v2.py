@@ -31,6 +31,11 @@ TOKENS = _tokens()
 def fetch(kind, attempts=3):
     tp = "task" if kind == "history" else kind
     url = f"{BASE}?accessToken={TOKENS[kind]}&projectId={PROJECT}&type={tp}"
+    if kind == "history":
+        # these flags are what make activityHistory come back populated - it is the
+        # audit trail the variance reasons are written into
+        url += ("&IncludeStatusChange=true&IncludeReschedule=true"
+                "&IncludeQuantities=true&IncludeConstraintNotes=true")
     last = None
     for i in range(attempts):
         try:
@@ -47,11 +52,16 @@ print("fetching VisiLean APIs...")
 try:
     TASKS = fetch("task")
     CONS = fetch("constraintLog")
+    try:
+        HIST = fetch("history")
+    except Exception as he:
+        print("history feed unavailable, variance reasons will be empty:", he)
+        HIST = []
 except Exception as e:
     # transient VisiLean outage: skip this cycle cleanly; the next run recovers
     print(f"SKIP this cycle - VisiLean API unreachable after retries: {e}")
     sys.exit(0)
-print("tasks:", len(TASKS), "| constraints:", len(CONS))
+print("tasks:", len(TASKS), "| constraints:", len(CONS), "| history:", len(HIST))
 RELS = json.load(open(os.path.join(SCR, "vl_relations.json"), encoding="utf-8"))
 
 # ---------- calendar ----------
@@ -396,19 +406,40 @@ for c in CONS:
                  "committed": c.get("commitmentDate") or "", "completed": (c.get("completionDate") or "").strip(),
                  "open": not (c.get("completionDate") or "").strip()})
 
-# ---------- variance reasons (VisiLean task notes) ----------
-# The note type is the variance kind: VisiLean prefixes each note it stores.
-NOTE_KINDS = [("late start note", "latestart", "Late start"),
-              ("late completion note", "latefinish", "Late completion"),
-              ("late note", "latefinish", "Late completion"),
-              ("completion note", "completion", "Completion note"),
-              ("start note", "startnote", "Start note"),
-              ("stopped note", "stopped", "Stopped"),
-              ("rejection note", "rejected", "Rejected at QC")]
-# longest key first so an alternation cannot match a shorter key inside a longer one
-NOTE_KINDS.sort(key=lambda x: -len(x[0]))
-NOTE_RE = "(" + "|".join(re.escape(k).replace(r"\ ", r"\s+") for k, _, _ in NOTE_KINDS) + r")\s*:"
-NOTE_LOOKUP = {k: (c, l) for k, c, l in NOTE_KINDS}
+# ---------- variance reasons (from the task-history audit trail) ----------
+# Event phrasings VisiLean writes into activityHistory. The first four are the ones
+# that represent a schedule variance.
+EVENTS = [
+    (r"started late",            "latestart",  "Started late"),
+    (r"completed late",          "latefinish", "Completed late"),
+    (r"(?:Start|End) Date changed", "resched", "Rescheduled"),
+    (r"set to 'Not Ready'",      "notready",   "Set to Not Ready"),
+    (r"started early",           "startearly", "Started early"),
+    (r"completed early",         "finishearly","Completed early"),
+    (r"started on time",         "startontime","Started on time"),
+    (r"completed on time",       "finishontime","Completed on time"),
+    (r"bulk completed",          "bulk",       "Bulk completed"),
+    (r"was forced ready",        "forcedready","Forced ready"),
+    (r"Constraint '",            "constraint", "Constraint raised"),
+]
+VARIANCE_KINDS = {"latestart", "latefinish", "resched", "notready"}
+
+# VisiLean wraps the text the user typed with the note type; strip it before the
+# category is read, or "Late completion note" is mistaken for a party.
+NOTE_PREFIX_RE = re.compile(
+    r"\b(late start note|late completion note|completion note|start note|"
+    r"stopped note|rejection note|note added to task[^:]*|note added|note)\s*:\s*", re.I)
+
+# The team writes reasons as "<Responsible party>: <Category>".
+PARTIES = ["KP", "Client", "Vendor", "NTPC", "External", "Consultant",
+           "Contractor", "Sub-contractor", "Subcontractor", "PMC", "Site", "Store"]
+PARTY_RE = re.compile(r"\b(" + "|".join(PARTIES) + r")\s*:\s*([A-Za-z][A-Za-z&/ -]{1,24})", re.I)
+CAT_CANON = {"machinery": "Machine", "machines": "Machine", "machine": "Machine",
+             "materials": "Material", "material": "Material",
+             "manpower": "Manpower", "labour": "Manpower", "labor": "Manpower",
+             "approval": "Approval", "approvals": "Approval",
+             "external": "External", "design": "Design", "drawing": "Design",
+             "weather": "Weather", "payment": "Payment", "permit": "Statutory"}
 
 def strip_html(x):
     x = re.sub(r"<br\s*/?>", " ", x or "")
@@ -419,33 +450,75 @@ def strip_html(x):
         x = x.replace(a, b)
     return re.sub(r"\s+", " ", x).strip()
 
-def parse_notes(raw):
-    """Split 'Late start note: a,Late completion note: b' into typed entries."""
-    txt = strip_html(raw)
+def canon_cat(c):
+    c = re.sub(r"\s+", " ", (c or "").strip(" .,-")).strip()
+    return CAT_CANON.get(c.lower(), c[:24].title() if c else "")
+
+def split_events(hist):
+    """Cut the audit trail into one chunk per event, keeping the note with it."""
+    txt = strip_html(hist)
     if not txt: return []
-    # One ordered alternation, longest first: scanning left to right means
-    # "Late completion note" is consumed whole and never re-matched as
-    # "Completion note", which would mislabel a variance as a plain remark.
-    marks = []
-    for m in re.finditer(NOTE_RE, txt, re.I):
-        key = re.sub(r"\s+", " ", m.group(1)).strip().lower()
-        code, label = NOTE_LOOKUP[key]
-        marks.append((m.start(), m.end(), code, label))
-    if not marks:
-        return [{"kind": "note", "label": "Note", "text": txt}]
+    idx = [m.start() for m in re.finditer(r"(?=Task '|Note added to task '|Constraint ')", txt)]
+    if not idx: idx = [0]
+    chunks = [txt[a:b] for a, b in zip(idx, idx[1:] + [len(txt)])]
     out = []
-    for i, (a0, a1, code, label) in enumerate(marks):
-        end = marks[i + 1][0] if i + 1 < len(marks) else len(txt)
-        body = txt[a1:end].strip().strip(",").strip()
-        if body: out.append({"kind": code, "label": label, "text": body})
+    for ch in chunks:
+        kind, label = "other", "Other"
+        for pat, k, lab in EVENTS:
+            if re.search(pat, ch, re.I): kind, label = k, lab; break
+        m = re.search(r"Note added:\s*(.*)$", ch, re.I) or \
+            re.search(r"Note:\s*(.*)$", ch, re.I) or \
+            re.search(r"by [^:]+:\s*(.*)$", ch, re.I)
+        note = NOTE_PREFIX_RE.sub("", (m.group(1).strip() if m else "")).strip()
+        who = ""
+        w = re.search(r"\bby ([A-Za-z][\w.\- ]{1,30}?)(?=[.:,]|$)", ch)
+        if w: who = w.group(1).strip()
+        out.append({"kind": kind, "label": label, "note": note, "by": who})
     return out
 
+# history rows are snapshots; keep the richest trail seen per activity
+hist_by_uid = {}
+for h in HIST:
+    try: hu = int(h.get("externalId"))
+    except Exception: continue
+    a = strip_html(str(h.get("activityHistory") or ""))
+    if not a: continue
+    if len(a) > len(hist_by_uid.get(hu, "")): hist_by_uid[hu] = a
+
 reasons = []
+cat_tally = Counter()
 for r in sorted(leafs.values(), key=lambda x: x["uid"]):
-    entries = parse_notes(r["note"])
-    desc = strip_html(r["desc"])
-    if not entries and not desc: continue
     u = r["uid"]
+    evs = split_events(hist_by_uid.get(u, ""))
+    if not evs: continue
+    cats, seen = [], set()
+    for e in evs:
+        if not e["note"]: continue
+        hits = PARTY_RE.findall(e["note"])
+        if hits:
+            for party, cat in hits:
+                cc = canon_cat(cat)
+                if not cc: continue
+                key = (party.upper(), cc)
+                if key in seen: continue
+                seen.add(key)
+                cats.append({"party": party.upper() if party.upper() == "KP" else party.title(),
+                             "cat": cc, "kind": e["kind"], "label": e["label"], "text": e["note"][:300]})
+        elif e["kind"] in VARIANCE_KINDS:
+            key = ("", "Uncategorised")
+            if key not in seen:
+                seen.add(key)
+                cats.append({"party": "", "cat": "Uncategorised", "kind": e["kind"],
+                             "label": e["label"], "text": e["note"][:300]})
+    var = [e for e in evs if e["kind"] in VARIANCE_KINDS]
+    if not cats and not var: continue          # nothing variance-related to report
+    if not cats:
+        # A real variance the team has not explained yet. Worth its own slice - the
+        # unexplained share is the actionable part of the chart.
+        e0 = var[0]
+        cats = [{"party": "", "cat": "No reason recorded", "kind": e0["kind"],
+                 "label": e0["label"], "text": ""}]
+    for c in cats: cat_tally[c["cat"]] += 1
     wbs = " > ".join([x for x in r["L"][:5] if x])
     reasons.append({
         "uid": u, "name": r["name"][:110], "dept": dept_of(r),
@@ -455,19 +528,18 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
         "vls": r["vls"], "pct": round(r["pct"]),
         "bES": int(r["bES"]), "bEF": int(r["bEF"]),
         "fES": int(round(fES[u])), "fEF": int(round(fEF[u])),
-        # Slip is measured against what actually happened where VisiLean has an actual
-        # date - for a finished activity the forecast equals the baseline, so a
-        # forecast-based slip would read zero on exactly the rows carrying a late note.
         "aES": (wd_s(r["aS"]) if r["aS"] else None),
         "aEF": (wd_f(r["aF"]) if r["aF"] else None),
         "sSlip": (wd_s(r["aS"]) if r["aS"] else int(round(fES[u]))) - int(r["bES"]),
         "fSlip": (wd_f(r["aF"]) if r["aF"] else int(round(fEF[u]))) - int(r["bEF"]),
         "tf": int(round(TF.get(u, 0))),
         "crit": str(r.get("crit") or "").strip().lower().startswith("y"),
-        "entries": entries, "desc": desc[:400],
+        "cats": cats,
+        "events": [{"label": e["label"], "kind": e["kind"], "by": e["by"], "text": e["note"][:300]}
+                   for e in evs if e["kind"] in VARIANCE_KINDS or e["note"]][:8],
+        "desc": strip_html(r["desc"])[:400],
     })
-_rc = Counter(e["kind"] for x in reasons for e in x["entries"])
-print("variance reasons:", len(reasons), "activities |", dict(_rc))
+print("variance reasons:", len(reasons), "activities | categories:", dict(cat_tally))
 
 DATA = {"meta": meta, "months": months, "reasons": reasons, "depts": [{"key": k, "name": n} for k, n in DEPTS],
         "milestones": ms, "constraints": cons, "supplyDeliv": SUPPLY_DELIV,

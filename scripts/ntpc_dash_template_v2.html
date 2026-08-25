@@ -360,24 +360,48 @@ function costCard(){
     <span class="k">FAC</span><span class="v">${cr(bud)}</span>
    </div></div>`;
 }
-// ---------- reasons for variance (VisiLean task notes) ----------
-// VisiLean tags each note with what it was recorded against, and that tag IS the
-// variance kind: a late start, a late completion, or a plain closing remark.
-let rsnKind="", rsnSel=null;
-const RSN_META={latestart:["vlnr","Late start","why the activity started after its baseline start"],
-                latefinish:["vlst","Late completion","why it finished after its baseline finish"],
-                startnote:["vls","Start note","recorded when work started"],
-                stopped:["vlst","Stopped","why work was stopped"],
-                rejected:["vlrq","Rejected at QC","why it was rejected"],
-                completion:["vlc","Completion note","closing remark, not a variance"],
-                note:["mut","Note","free note"]};
-const RSN_VAR=["latestart","latefinish","stopped","rejected"];   // the actual variances
+// ---------- reasons for variance ----------
+// Categories come from the task-history audit trail: the team records them against
+// an activity as "<Responsible party>: <Category>" (Client: Approval, KP: Manpower,
+// Vendor: Material ...). Activities with a real variance and no note recorded get
+// their own slice, so the unexplained share is visible rather than hidden.
+let rsnCat="", rsnSel=null;
+const RSN_COL={"Approval":"#5B8FF9","Manpower":"#61DDAA","Material":"#F6BD16",
+               "Machine":"#7262FD","Design":"#78D3F8","External":"#9661BC",
+               "Weather":"#F6903D","Payment":"#008685","Statutory":"#F08BB4",
+               "Uncategorised":"#9aa4b2","No reason recorded":"#DC1F1F"};
+const RSN_FALLBACK=["#5B8FF9","#61DDAA","#F6BD16","#7262FD","#78D3F8","#9661BC","#F08BB4","#008685"];
+function rsnColor(c,i){return RSN_COL[c]||RSN_FALLBACK[i%RSN_FALLBACK.length]}
+const EV_COL={latestart:"vlnr",latefinish:"vlst",resched:"vlw",notready:"vlnr"};
+
 function reasonsFor(deptKey){
   const f=state.f;
   return (DATA.reasons||[]).filter(r=>
     (!deptKey||r.dept===deptKey)&&(!f.dept||r.dept===f.dept)&&(!f.type||r.type===f.type)
     &&(!f.owner||r.owner===f.owner)
     &&(!f.ownship||String(r.ownship||"").split(/\s*,\s*/).indexOf(f.ownship)>=0));
+}
+// donut: one segment per category, clickable
+function donut(items,total,sel){
+  const W=132,cx=66,cy=66,R=60,ri=36;
+  if(!total)return "";
+  let a0=-Math.PI/2,g=`<svg viewBox="0 0 ${W} ${W}" style="width:132px;height:132px;flex:0 0 auto">`;
+  if(items.length===1){
+    g+=`<circle cx="${cx}" cy="${cy}" r="${(R+ri)/2}" fill="none" stroke="${rsnColor(items[0].k,0)}" stroke-width="${R-ri}" data-cat="${esc(items[0].k)}" class="rsnslice" style="cursor:pointer"/>`;
+  }else{
+    items.forEach((x,i)=>{
+      const frac=x.n/total,a1=a0+frac*Math.PI*2,big=frac>0.5?1:0;
+      const p=(ang,rad)=>[(cx+rad*Math.cos(ang)).toFixed(2),(cy+rad*Math.sin(ang)).toFixed(2)];
+      const[o0x,o0y]=p(a0,R),[o1x,o1y]=p(a1,R),[i1x,i1y]=p(a1,ri),[i0x,i0y]=p(a0,ri);
+      const dim=(sel&&sel!==x.k)?0.28:1;
+      g+=`<path d="M${o0x},${o0y} A${R},${R} 0 ${big},1 ${o1x},${o1y} L${i1x},${i1y} A${ri},${ri} 0 ${big},0 ${i0x},${i0y} Z"
+           fill="${rsnColor(x.k,i)}" opacity="${dim}" class="rsnslice" data-cat="${esc(x.k)}"
+           style="cursor:pointer"><title>${esc(x.k)}: ${x.n}</title></path>`;
+      a0=a1;});
+  }
+  g+=`<text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="17" font-weight="800" fill="var(--text)">${total}</text>`;
+  g+=`<text x="${cx}" y="${cy+11}" text-anchor="middle" font-size="7.5" fill="var(--dim)">reasons</text></svg>`;
+  return g;
 }
 function rsnDetail(r){
   const dd=(n)=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n} d late</span>`
@@ -398,51 +422,71 @@ function rsnDetail(r){
       <span class="k">Finish variance</span><span class="v">${dd(r.fSlip)}</span>
       <span class="k">Total float</span><span class="v">${r.tf} d</span>
     </div>
-    ${r.entries.map(e=>{const m=RSN_META[e.kind]||RSN_META.note;
-      return `<div style="margin-top:7px"><div>${chip(m[0],m[1])}</div>
-        <div style="margin-top:3px;font-size:11px;line-height:1.5;padding:6px 8px;background:var(--surface);border:1px solid var(--line);border-radius:6px">${esc(e.text)}</div></div>`}).join("")}
+    ${r.cats.length?`<div style="margin-top:7px"><div class="small dim">Reason${r.cats.length>1?"s":""} recorded</div>
+      ${r.cats.map(c=>`<div style="margin-top:3px"><span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>
+        ${chip(EV_COL[c.kind]||"mut",c.label)}</div>`).join("")}</div>`:""}
+    ${r.events.length?`<div style="margin-top:7px"><div class="small dim">From the VisiLean activity history</div>
+      ${r.events.map(e=>`<div style="margin-top:3px;font-size:11px;line-height:1.5;padding:5px 8px;background:var(--surface);border:1px solid var(--line);border-radius:6px">
+        <b>${esc(e.label)}</b>${e.by?` <span class="dim">· ${esc(e.by)}</span>`:""}${e.text?`<br>${esc(e.text)}`:""}</div>`).join("")}</div>`:""}
     ${r.desc?`<div style="margin-top:7px"><div class="small dim">Activity description</div><div style="font-size:11px;line-height:1.5">${esc(r.desc)}</div></div>`:""}
   </div>`;
 }
 function reasonsCard(deptKey,span){
   const all=reasonsFor(deptKey);
-  const cnt={};all.forEach(r=>r.entries.forEach(e=>{cnt[e.kind]=(cnt[e.kind]||0)+1}));
-  const kinds=Object.keys(cnt).sort((a,b)=>(RSN_VAR.indexOf(b)-RSN_VAR.indexOf(a))||cnt[b]-cnt[a]);
-  // how many delayed activities still have no reason recorded
-  const withNote=new Set(all.map(r=>r.uid));
-  const late=filtered(deptKey).filter(r=>r[C.dly]);
-  const list=rsnKind?all.filter(r=>r.entries.some(e=>e.kind===rsnKind)):all;
-  let h=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px">
-    <span class="tgl ${rsnKind===""?"on2":""}" onclick="rsnKind='';rsnSel=null;render()">All reasons ${all.length}</span>`;
-  kinds.forEach(k=>{const m=RSN_META[k]||RSN_META.note;
-    h+=`<span class="tgl ${rsnKind===k?"on2":""}" onclick="rsnKind='${k}';rsnSel=null;render()">${m[1]} ${cnt[k]}</span>`});
-  h+=`</div>`;
+  const catN={},partyN={};
+  all.forEach(r=>r.cats.forEach(c=>{catN[c.cat]=(catN[c.cat]||0)+1;
+    if(c.party)partyN[c.party]=(partyN[c.party]||0)+1}));
+  const items=Object.keys(catN).map(k=>({k,n:catN[k]})).sort((a,b)=>b.n-a.n);
+  const total=items.reduce((a,x)=>a+x.n,0);
+  const late=filtered(deptKey).filter(r=>r[C.dly]).length;
   if(!all.length)
     return card(span||"span12","Reasons for Variance",
-      "reasons and comments recorded by the team against activities in VisiLean",
-      `<div class="fnote" style="padding:10px 0">No reasons recorded yet for this selection. They appear here as soon as the team adds a start, completion or delay note against an activity in VisiLean.</div>`);
-  h+=`<div class="twrap" style="max-height:430px;overflow:auto"><table>
-    <tr><th>Activity</th><th>Reason type</th><th>Owner</th><th>Status</th><th class="num">Start var.</th><th class="num">Finish var.</th><th>Reason recorded</th></tr>`;
+      "categories the team records against activities in VisiLean",
+      `<div class="fnote" style="padding:10px 0">No variance reasons recorded yet for this selection. They appear as soon as the team records a late start, late completion or reschedule note in VisiLean.</div>`);
+  const list=(rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all)
+    .slice().sort((a,b)=>Math.abs(b.fSlip)-Math.abs(a.fSlip));
+  let h=`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+    <div style="display:flex;gap:12px;align-items:center">${donut(items,total,rsnCat)}
+      <div style="min-width:190px">`;
+  items.forEach((x,i)=>{
+    const pc=total?(100*x.n/total):0;
+    h+=`<div class="rsnleg" data-cat="${esc(x.k)}" style="display:flex;align-items:center;gap:6px;padding:2px 4px;border-radius:5px;cursor:pointer;${rsnCat===x.k?"background:var(--blue-wash);font-weight:800":""}">
+      <span style="width:10px;height:10px;border-radius:3px;background:${rsnColor(x.k,i)};flex:0 0 auto"></span>
+      <span style="font-size:10.5px;flex:1">${esc(x.k)}</span>
+      <span style="font-size:10.5px;font-weight:700">${x.n}</span>
+      <span class="dim" style="font-size:9.5px;width:34px;text-align:right">${fmt1(pc)}%</span></div>`});
+  h+=`</div></div>`;
+  const pk=Object.keys(partyN).sort((a,b)=>partyN[b]-partyN[a]);
+  if(pk.length)h+=`<div style="min-width:150px">
+    <div class="small dim" style="margin-bottom:3px">Attributed to</div>
+    ${pk.map(p=>`<div style="display:flex;gap:6px;font-size:10.5px;padding:1px 0"><span style="flex:1">${esc(p)}</span><b>${partyN[p]}</b></div>`).join("")}
+    <div class="small dim" style="margin-top:6px">${late} activities delayed · ${all.length} with a variance logged</div></div>`;
+  h+=`</div>`;
+  if(rsnCat)h+=`<div style="margin:7px 0 3px">${chip("blue","Filtered: "+esc(rsnCat))}
+    <a href="#" onclick="rsnCat='';rsnSel=null;render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear</a></div>`;
+  h+=`<div class="twrap" style="max-height:400px;overflow:auto;margin-top:8px"><table>
+    <tr><th>Activity</th><th>Reason</th><th>Event</th><th>Owner</th><th>Status</th><th class="num">Start var.</th><th class="num">Finish var.</th></tr>`;
   list.forEach(r=>{
     const sel=rsnSel===r.uid;
-    const ent=rsnKind?r.entries.filter(e=>e.kind===rsnKind):r.entries;
-    // an activity may carry only a description and no typed note - label it rather
-    // than leaving the reason-type cell blank
-    const tags=ent.length?ent.map(e=>{const m=RSN_META[e.kind]||RSN_META.note;return chip(m[0],m[1])}).join(" ")
-                         :chip("mut","Description");
+    const cs=rsnCat?r.cats.filter(c=>c.cat===rsnCat):r.cats;
     const v=n=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n}</span>`:(n<0?`<span style="color:var(--good-text)">${n}</span>`:`<span class="dim">0</span>`);
     h+=`<tr class="rsnrow" data-u="${r.uid}" style="cursor:pointer${sel?";outline:2px solid var(--blue)":""}">
-      <td><b>${esc(r.name.slice(0,52))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,66))}</div></td>
-      <td>${tags}</td><td>${esc(r.owner||r.ownship||"—")}</td><td>${vlChip(r.vls)}</td>
-      <td class="num">${v(r.sSlip)}</td><td class="num">${v(r.fSlip)}</td>
-      <td style="max-width:340px">${esc(ent.map(e=>e.text).join(" · ").slice(0,150))}${ent.map(e=>e.text).join(" ").length>150?"…":""}</td></tr>`;
+      <td><b>${esc(r.name.slice(0,50))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,62))}</div></td>
+      <td>${cs.map(c=>`<span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>`).join(" ")}</td>
+      <td>${[...new Set(cs.map(c=>c.label))].map(l=>chip(EV_COL[(cs.find(c=>c.label===l)||{}).kind]||"mut",l)).join(" ")}</td>
+      <td>${esc(r.owner||r.ownship||"—")}</td><td>${vlChip(r.vls)}</td>
+      <td class="num">${v(r.sSlip)}</td><td class="num">${v(r.fSlip)}</td></tr>`;
     if(sel)h+=`<tr><td colspan="7">${rsnDetail(r)}</td></tr>`;
   });
   h+=`</table></div>`;
-  setTimeout(()=>{document.querySelectorAll(".rsnrow").forEach(el=>{
-    el.addEventListener("click",()=>{const u=+el.dataset.u;rsnSel=(rsnSel===u?null:u);render()})})},0);
+  setTimeout(()=>{
+    document.querySelectorAll(".rsnslice,.rsnleg").forEach(el=>{
+      el.addEventListener("click",()=>{const c=el.dataset.cat;rsnCat=(rsnCat===c?"":c);rsnSel=null;render()})});
+    document.querySelectorAll(".rsnrow").forEach(el=>{
+      el.addEventListener("click",()=>{const u=+el.dataset.u;rsnSel=(rsnSel===u?null:u);render()})});
+  },0);
   return card(span||"span12","Reasons for Variance",
-    `recorded by the team in VisiLean · ${late.length} activities are currently delayed · click a row for the full activity detail`,h);
+    "categories recorded by the team in VisiLean · click a slice to filter, then an activity for its detail",h);
 }
 // ---------- KPI cards ----------
 function kpiCards(rows,projectLevel){
@@ -1299,7 +1343,7 @@ function saveUI(){
   try{sessionStorage.setItem("kp-ui",JSON.stringify({
     page:state.page,unit:state.unit,at:state.at,f:state.f,
     scSel,pipeSearch,pipeDelOnly,pipeL1,pipeL2,statSel,regQ,regStatus,
-    rsnKind,rsnSel,consTab,y:window.scrollY}))}catch(e){}
+    rsnCat,rsnSel,consTab,y:window.scrollY}))}catch(e){}
 }
 function restoreUI(){
   let s=null;try{s=JSON.parse(sessionStorage.getItem("kp-ui")||"null")}catch(e){}
@@ -1313,7 +1357,7 @@ function restoreUI(){
     pipeSearch=s.pipeSearch||"";pipeDelOnly=!!s.pipeDelOnly;
     Object.assign(pipeL1,s.pipeL1||{});Object.assign(pipeL2,s.pipeL2||{});
     statSel=s.statSel||"";regQ=s.regQ||"";regStatus=s.regStatus||"";
-    rsnKind=s.rsnKind||"";rsnSel=s.rsnSel||null;consTab=s.consTab||consTab;
+    rsnCat=s.rsnCat||"";rsnSel=s.rsnSel||null;consTab=s.consTab||consTab;
   }catch(e){}
   return s;
 }
