@@ -379,7 +379,7 @@ function kpiCards(rows,projectLevel){
 }
 // ---------- S-curve ----------
 let scMode="cum";
-function scurve(rows,elId,monthly){
+function scurve(rows,elId,monthly,label){
   const ms=DATA.months, n=ms.length;
   const plan=ms.map(m=>planPct(rows,m.wd)), fc=ms.map(m=>fcPct(rows,m.wd));
   const act=ms.filter(m=>m.wd<=SW).map(m=>actPctAt(rows,m.wd));
@@ -407,7 +407,7 @@ function scurve(rows,elId,monthly){
       g+=`<circle cx="${X(A.length-1)}" cy="${Y(A[A.length-1])}" r="3" fill="var(--s-act)" stroke="var(--surface)" stroke-width="2"/>`;}
   }
   g+=`<rect id="${elId}-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
-  const leg=`<div class="legend"><span><span class="sw" style="background:var(--s-act)"></span>Actual</span><span><span class="sw" style="background:var(--s-act);opacity:.5"></span>Forecast</span><span><span class="sw" style="background:var(--s-plan)"></span>Plan</span></div>`;
+  const leg=`<div class="legend">${label?`<span style="font-weight:700">${esc(label)}</span>`:""}<span><span class="sw" style="background:var(--s-act)"></span>Actual</span><span><span class="sw" style="background:var(--s-act);opacity:.5"></span>Forecast</span><span><span class="sw" style="background:var(--s-plan)"></span>Plan</span></div>`;
   setTimeout(()=>{const hit=document.getElementById(elId+"-hit");if(!hit)return;
     hit.addEventListener("mousemove",e=>{const svg=document.getElementById(elId+"-svg");const r=svg.getBoundingClientRect();const fx=(e.clientX-r.left)/r.width*Wc;let i=Math.round((fx-padL)/(iw/(n-1)));i=Math.max(0,Math.min(n-1,i));
       showTip(e,`<b>${ms[i].label}</b><br>Plan: ${fmt1(P[i]||0)}%${i<A.length?`<br>Actual: ${fmt1(A[i])}%`:""}<br><span class="t2">Forecast: ${fmt1(F[i]||0)}%</span>`);});
@@ -420,7 +420,13 @@ const SC_SERIES=[["all","Overall",r=>true,"var(--blue)"],
  ["p","Procurement",isProc,"var(--good)"],
  ["c","Construction",isCon,"var(--warn)"]];
 function scurveMulti(rows,elId,monthly){
-  if(scSel.length===1&&scSel[0]==="all")return scurve(rows,elId,monthly);
+  // One discipline selected renders exactly like Overall - so the monthly view is a
+  // Plan-vs-Actual bar chart, not a line. The multi-series line style is only for
+  // comparing two or more disciplines against each other.
+  if(scSel.length===1){
+    const s=SC_SERIES.find(x=>x[0]===scSel[0]);
+    return scurve(s?rows.filter(s[2]):rows,elId,monthly,(s&&s[0]!=="all")?s[1]:"");
+  }
   const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
   const ms=DATA.months,n=ms.length;
   const D=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);
@@ -452,7 +458,10 @@ function scurveMulti(rows,elId,monthly){
   return leg+g;
 }
 function scurveTableMulti(rows){
-  if(scSel.length===1&&scSel[0]==="all")return scurveTable(rows);
+  if(scSel.length===1){
+    const s=SC_SERIES.find(x=>x[0]===scSel[0]);
+    return scurveTable(s?rows.filter(s[2]):rows);
+  }
   const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
   let h=`<div class="twrap"><table><tr><th>Month</th>${sels.map(x=>`<th class="num">${x[1]} Plan %</th><th class="num">${x[1]} Act/Fc %</th>`).join("")}</tr>`;
   DATA.months.forEach(m=>{h+=`<tr><td>${m.label}</td>`;
