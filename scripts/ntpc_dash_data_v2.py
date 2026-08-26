@@ -135,7 +135,11 @@ for t in TASKS:
          "pct": float(t.get("percentComplete") or 0),
          "vls": t.get("status") or "Not Committed",
          "qty": t.get("totalQuantity"), "uom": t.get("quantityUnits") or "",
-         "cost": money(cf.get("Cost")), "nd": nodate,
+         "cost": money(cf.get("Cost")),
+         # KP 26-Aug: progress weight comes from VisiLean's own "Weightage" custom
+         # field - the approved Rev-2 model, which sums to ~100 across the project.
+         # Cost is kept only for the budget card.
+         "wt": money(cf.get("Weightage")), "nd": nodate,
          "note": t.get("notes") or "", "desc": t.get("description") or "",
          "crit": (cf.get("Critical Activity") or ""),
          "psd": (pdate(t.get("plannedStartDate")) or bs),
@@ -329,7 +333,7 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  round(r["pct"]), round(r["dur"], 1), r["qty"], r["uom"][:14],
                  int(round(TF.get(u, 0))), state,
                  (r["assignee"] or "")[:30], sub, round(r["cost"]), len(rows), vs,
-                 (r["owner"] or "")[:40], r["nd"], dly, str(item)[:80]])
+                 (r["owner"] or "")[:40], r["nd"], dly, str(item)[:80], round(r["wt"], 6)])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
 ms = []
@@ -344,7 +348,8 @@ while m0 <= datetime.date(2027, 12, 31):
     months.append({"label": m0.strftime("%b-%y"), "wd": max((i for i, dt in enumerate(wdates) if dt <= m0), default=0) + 1})
     m0 = (m0 + datetime.timedelta(days=46)).replace(day=1) - datetime.timedelta(days=1)
 
-def w_of(x): return x[19] if x[19] and x[19] > 0 else 0.0
+WT_I = 26   # "wt" column - VisiLean's Weightage custom field (asserted below)
+def w_of(x): return x[WT_I] if x[WT_I] and x[WT_I] > 0 else 0.0
 WSUM = sum(w_of(x) for x in rows)
 W = (lambda x: w_of(x)) if WSUM > 0 else (lambda x: x[12])
 WT = sum(W(x) for x in rows) or 1.0
@@ -370,6 +375,9 @@ meta = {"statusDate": TODAY.strftime("%d-%b-%Y"), "statusWd": STATUS_WD, "startD
         "inprog": sum(1 for x in rows if x[16] == "inprog" and not x[23]),
         "late": sum(1 for x in rows if x[16] == "late" and not x[23]),
         "delayed": sum(1 for x in rows if x[24]), "logicCoverage": LOGIC_COV,
+        "wtSum": round(sum(w_of(x) for x in rows), 3),
+        "wtCoverage": round(100.0 * sum(1 for x in rows if w_of(x) > 0) / max(1, len(rows)), 1),
+        "wtMissing": sum(1 for x in rows if not w_of(x)),
         "naExcluded": len(NA_SKIPPED),
         "total": len(rows), "totalTasks": len(rows) + len(ms),
         "undated": sum(1 for x in rows if x[23]),
@@ -575,8 +583,9 @@ DATA = {"meta": meta, "months": months, "reasons": reasons, "depts": [{"key": k,
         "milestones": ms, "constraints": cons, "supplyDeliv": SUPPLY_DELIV,
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
-                 "ownship", "nd", "dly", "item"],
+                 "ownship", "nd", "dly", "item", "wt"],
         "leaves": rows}
+assert DATA["cols"][WT_I] == "wt", f"WT_I points at {DATA['cols'][WT_I]!r}, not 'wt'"
 out = os.path.join(SCR, "ntpc_dashboard_data_v2.json")
 json.dump(DATA, open(out, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 print(f"meta: plan={meta['plan']}% act={meta['act']}% finish {meta['forecastFinish']} (+{meta['delayDays']}d) crit={n_crit}")

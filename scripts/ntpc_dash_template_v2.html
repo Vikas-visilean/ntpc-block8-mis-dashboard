@@ -383,7 +383,12 @@ function gauge(a,p){
 }
 function gaugeCard(rows){
   const p=planPct(rows),a=actPct(rows),spi=p>0.05?a/p:0,sv=a-p;
-  return `<div class="card span4"><h2>Overall progress</h2><div class="hint">vs baseline plan</div>
+  // state the basis: progress is weighted by VisiLean's Weightage custom field, and
+  // activities with no weightage assigned contribute nothing - worth showing plainly
+  const wc=rows.length?100*rows.filter(r=>r[C.wt]>0).length/rows.length:0;
+  const wsum=rows.reduce((x,r)=>x+(r[C.wt]||0),0);
+  return `<div class="card span4"><h2>Overall progress</h2>
+   <div class="hint">weightage-based (VisiLean Weightage field) · ${fmt1(wsum)}% of project weight · covers ${fmt1(wc)}% of activities in view</div>
    <div class="gwrap">${gauge(a,p)}
     <div class="gstats">
      <span class="k">SPI — Schedule Performance Index<br><span style="font-weight:400">(= Actual % ÷ Planned %)</span></span><span class="v">${spi?spi.toFixed(2):"—"}</span>
