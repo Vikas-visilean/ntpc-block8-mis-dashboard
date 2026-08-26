@@ -648,11 +648,8 @@ function reasonsCard(deptKey,span){
       <span style="font-size:10.5px;font-weight:700">${x.n}</span>
       <span class="dim" style="font-size:9.5px;width:34px;text-align:right">${fmt1(pc)}%</span></div>`});
   h+=`</div></div>`;
-  const pk=Object.keys(partyN).sort((a,b)=>partyN[b]-partyN[a]);
-  if(pk.length)h+=`<div style="min-width:150px">
-    <div class="small dim" style="margin-bottom:3px">Attributed to</div>
-    ${pk.map(p=>`<div style="display:flex;gap:6px;font-size:10.5px;padding:1px 0"><span style="flex:1">${esc(p)}</span><b>${partyN[p]}</b></div>`).join("")}
-    <div class="small dim" style="margin-top:6px">${late} activities delayed · ${all.length} with a variance logged</div></div>`;
+  // KP 26-Aug: one consolidated list of VisiLean's own reasons, not a split by party
+  h+=`<div style="min-width:150px"><div class="small dim">${late} activities delayed · ${all.length} with a variance logged</div></div>`;
   h+=`</div>`;
   if(rsnCat)h+=`<div style="margin:7px 0 3px">${chip("blue","Filtered: "+esc(rsnCat))}
     <a href="#" onclick="rsnCat='';rsnSel=null;render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear</a></div>`;
@@ -663,7 +660,7 @@ function reasonsCard(deptKey,span){
     if(d)d.addEventListener("click",()=>openRsnList(deptKey||""));
   },0);
   return card(span||"span12","Reasons for Variance",
-    "categories recorded by the team in VisiLean · click a slice to filter, then drill down for the activities",h,
+    "reasons recorded by the team in VisiLean · click a slice to filter, then drill down for the activities",h,
     `<button id="rsn-drill" class="rsndrill" title="Drill down to the activity list">&#9783; ${list.length} ${list.length===1?"activity":"activities"}</button>`);
 }
 // ---------- KPI cards ----------
@@ -721,7 +718,11 @@ let scMode="cum";
 function scurve(rows,elId,monthly,label){
   const ms=DATA.months, n=ms.length;
   const plan=ms.map(m=>planPct(rows,m.wd)), fc=ms.map(m=>fcPct(rows,m.wd));
-  const act=ms.filter(m=>m.wd<=SW).map(m=>actPctAt(rows,m.wd));
+  // Months are month-ENDS, so the last one that has passed is the previous month -
+  // stopping there left the curve below the gauge. Carry it to the status date.
+  const actMs=ms.filter(m=>m.wd<=SW);
+  const act=actMs.map(m=>actPctAt(rows,m.wd));
+  if(actMs.length<ms.length&&(!actMs.length||actMs[actMs.length-1].wd<SW))act.push(actPctAt(rows,SW));
   let P=plan,F=fc,A=act;
   if(monthly){const d=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);P=d(plan);F=d(fc);A=d(act)}
   const Wc=860,Hc=190,padL=32,padR=10,padT=8,padB=20,iw=Wc-padL-padR,ih=Hc-padT-padB;
@@ -770,7 +771,9 @@ function scurveMulti(rows,elId,monthly){
   const ms=DATA.months,n=ms.length;
   const D=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);
   const series=sels.map(x=>{const rs=rows.filter(x[2]);
-    let plan=ms.map(m=>planPct(rs,m.wd)),fc=ms.map(m=>fcPct(rs,m.wd)),act=ms.filter(m=>m.wd<=SW).map(m=>actPctAt(rs,m.wd));
+    const aMs=ms.filter(m=>m.wd<=SW);
+    let plan=ms.map(m=>planPct(rs,m.wd)),fc=ms.map(m=>fcPct(rs,m.wd)),act=aMs.map(m=>actPctAt(rs,m.wd));
+    if(aMs.length<ms.length&&(!aMs.length||aMs[aMs.length-1].wd<SW))act.push(actPctAt(rs,SW));
     if(monthly){plan=D(plan);fc=D(fc);act=D(act)}
     return {name:x[1],col:x[3],plan,fc,act,cnt:rs.length}});
   const Wc=860,Hc=190,padL=32,padR=10,padT=8,padB=20,iw=Wc-padL-padR,ih=Hc-padT-padB;
@@ -1441,9 +1444,11 @@ function pageDept(key){
   return h;
 }
 function stageSecs(rows){
-  const g={};rows.forEach(r=>{(g[r[C.sec]]=g[r[C.sec]]||[]).push(r)});
+  // rows with no WBS Level 2 in VisiLean would otherwise render as an empty label
+  const g={};rows.forEach(r=>{const k=String(r[C.sec]||"").trim()||"Section not set in VisiLean";
+    (g[k]=g[k]||[]).push(r)});
   let h="";
-  Object.entries(g).forEach(([s,rr])=>{h+=`<div class="prow"><div class="nm">${esc(s.slice(0,30))} <span class="dim">(${rr.length})</span></div>
+  Object.entries(g).forEach(([s,rr])=>{h+=`<div class="prow"><div class="nm">${esc(s.slice(0,34))} <span class="dim">(${rr.length})</span></div>
    <div class="pbar"><div class="fill" style="width:${Math.min(100,actPctAt(rr,SW))}%"></div><div class="tick" style="left:${Math.min(100,planPct(rr,SW))}%"></div></div>
    <div class="val"><b>${fmt1(actPctAt(rr,SW))}%</b> <span class="dim">/ ${fmt1(planPct(rr,SW))}%</span></div></div>`});
   return h;

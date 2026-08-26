@@ -451,6 +451,10 @@ NOTE_PREFIX_RE = re.compile(
 PARTIES = ["KP", "Client", "Vendor", "NTPC", "External", "Consultant",
            "Contractor", "Sub-contractor", "Subcontractor", "PMC", "Site", "Store"]
 PARTY_RE = re.compile(r"\b(" + "|".join(PARTIES) + r")\s*:\s*([A-Za-z][A-Za-z&/ -]{1,24})", re.I)
+# VisiLean also defines reasons with no responsible party, listed on their own in
+# Project Settings > Custom Reasons.
+STANDALONE = ["Predecessor", "Weather", "Rework", "Design Change", "Statutory"]
+STANDALONE_RE = re.compile(r"^\s*(" + "|".join(STANDALONE) + r")\s*\.?\s*$", re.I)
 CAT_CANON = {"machinery": "Machine", "machines": "Machine", "machine": "Machine",
              "materials": "Material", "material": "Material",
              "manpower": "Manpower", "labour": "Manpower", "labor": "Manpower",
@@ -512,19 +516,28 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     for e in evs:
         if not e["note"]: continue
         hits = PARTY_RE.findall(e["note"])
+        solo = STANDALONE_RE.match(e["note"])
         if hits:
             for party, cat in hits:
                 cc = canon_cat(cat)
                 if not cc: continue
-                key = (party.upper(), cc)
-                if key in seen: continue
-                seen.add(key)
-                cats.append({"party": party.upper() if party.upper() == "KP" else party.title(),
-                             "cat": cc, "kind": e["kind"], "label": e["label"], "text": e["note"][:300]})
+                pty = party.upper() if party.upper() == "KP" else party.title()
+                # the reason is the whole "<party>: <category>" string, exactly as it
+                # reads in VisiLean's Custom Reasons list - one consolidated label
+                full = pty + ": " + cc
+                if full in seen: continue
+                seen.add(full)
+                cats.append({"party": pty, "cat": full, "kind": e["kind"],
+                             "label": e["label"], "text": e["note"][:300]})
+        elif solo:
+            full = solo.group(1).title()
+            if full not in seen:
+                seen.add(full)
+                cats.append({"party": "", "cat": full, "kind": e["kind"],
+                             "label": e["label"], "text": e["note"][:300]})
         elif e["kind"] in VARIANCE_KINDS:
-            key = ("", "Uncategorised")
-            if key not in seen:
-                seen.add(key)
+            if "Uncategorised" not in seen:
+                seen.add("Uncategorised")
                 cats.append({"party": "", "cat": "Uncategorised", "kind": e["kind"],
                              "label": e["label"], "text": e["note"][:300]})
     var = [e for e in evs if e["kind"] in VARIANCE_KINDS]
