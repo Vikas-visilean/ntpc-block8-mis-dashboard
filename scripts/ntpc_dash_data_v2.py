@@ -265,6 +265,15 @@ SUB_MAP = [
     (("grnatsite",), "At Site"),
     (("paymentprocess", "invoicebooking", "finalpaymentprocess"), "Payment"),
 ]
+def strip_html(x):
+    x = re.sub(r"<br\s*/?>", " ", x or "")
+    x = re.sub(r"</p>", " ", x)
+    x = re.sub(r"<[^>]+>", "", x)
+    for a, b in (("&amp;", "&"), ("&nbsp;", " "), ("&lt;", "<"), ("&gt;", ">"),
+                 ("&quot;", '"'), ("&#39;", "'")):
+        x = x.replace(a, b)
+    return re.sub(r"\s+", " ", x).strip()
+
 BLOCK_RE = re.compile(r"(?i)^block[\s-]*(no)?\d+")
 # A Level-4 value that appears under many different Packages is a process step,
 # not a deliverable - "MQAP" sits under 32 supply packages, "Field Quality Plan &
@@ -333,7 +342,9 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  round(r["pct"]), round(r["dur"], 1), r["qty"], r["uom"][:14],
                  int(round(TF.get(u, 0))), state,
                  (r["assignee"] or "")[:30], sub, round(r["cost"]), len(rows), vs,
-                 (r["owner"] or "")[:40], r["nd"], dly, str(item)[:80], round(r["wt"], 6)])
+                 (r["owner"] or "")[:40], r["nd"], dly, str(item)[:80], round(r["wt"], 6),
+                 1 if str(r.get("crit") or "").strip().lower().startswith("y") else 0,
+                 strip_html(r["desc"])[:120], strip_html(r["note"])[:220]])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
 ms = []
@@ -354,7 +365,11 @@ WSUM = sum(w_of(x) for x in rows)
 W = (lambda x: w_of(x)) if WSUM > 0 else (lambda x: x[12])
 WT = sum(W(x) for x in rows) or 1.0
 plan_pct = sum(min(1.0, max(0.0, (STATUS_WD - x[7]) / max(0.5, x[12]))) * W(x) for x in rows) / WT
-act_pct = sum(x[11] / 100.0 * W(x) for x in rows) / WT
+# Same formula the dashboard uses for the gauge, so the published figure and the
+# gauge cannot disagree: progress is capped by how much of the activity has actually
+# elapsed, which is what stops work reported before its scheduled start from counting.
+act_pct = sum(min(x[11] / 100.0, max(0.0, (STATUS_WD - x[9]) / max(0.5, x[12]))) * W(x)
+              for x in rows) / WT
 bfin = max(x[8] for x in rows); ffin = max(x[10] for x in rows)
 NOW_UTC = datetime.datetime.now(datetime.timezone.utc)
 IST_NOW = NOW_UTC.astimezone(datetime.timezone(datetime.timedelta(hours=5, minutes=30)))
@@ -470,14 +485,6 @@ CAT_CANON = {"machinery": "Machine", "machines": "Machine", "machine": "Machine"
              "external": "External", "design": "Design", "drawing": "Design",
              "weather": "Weather", "payment": "Payment", "permit": "Statutory"}
 
-def strip_html(x):
-    x = re.sub(r"<br\s*/?>", " ", x or "")
-    x = re.sub(r"</p>", " ", x)
-    x = re.sub(r"<[^>]+>", "", x)
-    for a, b in (("&amp;", "&"), ("&nbsp;", " "), ("&lt;", "<"), ("&gt;", ">"),
-                 ("&quot;", '"'), ("&#39;", "'")):
-        x = x.replace(a, b)
-    return re.sub(r"\s+", " ", x).strip()
 
 def canon_cat(c):
     c = re.sub(r"\s+", " ", (c or "").strip(" .,-")).strip()
@@ -583,7 +590,7 @@ DATA = {"meta": meta, "months": months, "reasons": reasons, "depts": [{"key": k,
         "milestones": ms, "constraints": cons, "supplyDeliv": SUPPLY_DELIV,
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
-                 "ownship", "nd", "dly", "item", "wt"],
+                 "ownship", "nd", "dly", "item", "wt", "vcrit", "desc", "note"],
         "leaves": rows}
 assert DATA["cols"][WT_I] == "wt", f"WT_I points at {DATA['cols'][WT_I]!r}, not 'wt'"
 out = os.path.join(SCR, "ntpc_dashboard_data_v2.json")

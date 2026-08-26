@@ -331,6 +331,8 @@ const isEng=r=>r[C.type]===AT.ENG, isProc=r=>r[C.type]===AT.SUP||r[C.type]===AT.
 const isDone = r=>r[C.state]==="done" && !r[C.nd];
 const isLateStart = r=>r[C.state]==="late";
 const isDelayed = r=>!!r[C.dly];
+const isWip = r=>!r[C.nd] && (r[C.vls]==="Started" || (r[C.pct]>0 && r[C.pct]<100));
+const isStopped = r=>!r[C.nd] && r[C.vls]==="Stopped";
 const isBehind = r=>(r[C.fEF]-r[C.bEF])>=4 && r[C.state]!=="done";
 const isCrit = r=>r[C.tf]<=5 && r[C.state]!=="done";
 function filtered(forceDept){
@@ -340,7 +342,10 @@ function filtered(forceDept){
     &&(f.w1===null||r[C.fEF]>=f.w1)&&(f.w2===null||r[C.fES]<=f.w2)
     &&(!f.crit||isCrit(r))&&(!f.del||isBehind(r)));
 }
-function wgt(rows){const c=rows.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0);return c>0?(r=>(r[C.cost]>0?r[C.cost]:0)):(r=>r[C.dur]);}
+// Progress weight is VisiLean's Weightage custom field - the same basis the adapter
+// publishes, so the gauge and the headline figure cannot drift apart. Duration is a
+// fallback only for a subset that carries no weightage at all.
+function wgt(rows){const c=rows.reduce((a,r)=>a+(r[C.wt]>0?r[C.wt]:0),0);return c>0?(r=>(r[C.wt]>0?r[C.wt]:0)):(r=>r[C.dur]);}
 function wsum(rows){const w=wgt(rows);return rows.reduce((a,r)=>a+w(r),0)||1}
 function planPct(rows,at){at=at||state.at;const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>a+Math.min(1,Math.max(0,(at-r[C.bES])/Math.max(.5,r[C.dur])))*w(r),0)/W}
 function fcPct(rows,at){at=at||state.at;const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>a+Math.min(1,Math.max(0,(at-r[C.fES])/Math.max(.5,r[C.dur])))*w(r),0)/W}
@@ -673,14 +678,16 @@ function reasonsCard(deptKey,span){
 function kpiDrill(kind,rows,deptKey){
   const S={all:{t:"All activities",f:null},
            done:{t:"Completed activities",f:isDone},
-           dly:{t:"Delayed activities",f:isDelayed}}[kind];
+           dly:{t:"Delayed activities",f:isDelayed},
+           wip:{t:"Activities in progress",f:isWip},
+           stp:{t:"Stopped activities",f:isStopped}}[kind];
   if(!S)return;
   const base=rows,sel=S.f?rows.filter(S.f):rows;
   const by={};sel.forEach(r=>{const k=DNAME[r[C.dept]]||"—";by[k]=(by[k]||0)+1});
   drillOpen({
     eyebrow:(deptKey?DNAME[deptKey]:"Project")+" · KPI",
     title:S.t,
-    status:pill(kind==="dly"?"crit":(kind==="done"?"good":"info"),sel.length.toLocaleString()),
+    status:pill((kind==="dly"||kind==="stp")?"crit":(kind==="done"?"good":(kind==="wip"?"warn":"info")),sel.length.toLocaleString()),
     formula:`<b>${sel.length.toLocaleString()}</b> of <b>${base.length.toLocaleString()}</b> activities in scope = <b>${fmt1(base.length?100*sel.length/base.length:0)}%</b>`,
     reconcile:`<span class="pill good">✓ counted live from VisiLean · ${base.length.toLocaleString()} activities in the current filter</span>`,
     breakdownBy:"department",
@@ -691,17 +698,24 @@ function kpiDrill(kind,rows,deptKey){
     cols:[
       {k:"name",label:"Activity",get:r=>r[C.name],
        html:r=>`<b>${esc(String(r[C.name]).slice(0,54))}</b><div class="small dim">${esc(String(r[C.pkg]).slice(0,52))}</div>`},
-      {k:"dept",label:"Department",get:r=>DNAME[r[C.dept]]||"—"},
+      // VisiLean's description, which KP maps to the overall department
+      {k:"desc",label:"Description",get:r=>r[C.desc]||"—"},
       {k:"type",label:"Activity type",get:r=>r[C.type]||"—"},
       {k:"own",label:"Owner",get:r=>r[C.owner]||r[C.ownship]||"—"},
       {k:"st",label:"Status",get:r=>r[C.vls],html:r=>rowChip(r)},
+      // VisiLean's own Critical Activity flag, not a float-derived guess
+      {k:"crit",label:"Critical",get:r=>r[C.vcrit]?"Yes":"No",
+       html:r=>r[C.vcrit]?chip("vlnr","Yes"):`<span class="dim">No</span>`},
       {k:"pct",label:"%",num:true,get:r=>r[C.pct]},
       {k:"bef",label:"Baseline finish",get:r=>r[C.bEF],html:r=>wdate(r[C.bEF],1),txt:r=>wdate(r[C.bEF],1)},
       {k:"fef",label:"Forecast finish",get:r=>r[C.fEF],html:r=>wdate(r[C.fEF],1),txt:r=>wdate(r[C.fEF],1)},
+      {k:"note",label:"Notes",get:r=>r[C.note]||"",
+       html:r=>r[C.note]?`<span title="${esc(r[C.note])}">${esc(String(r[C.note]).slice(0,60))}${String(r[C.note]).length>60?"…":""}</span>`:`<span class="dim">—</span>`},
     ],
   });
 }
 function kpiCards(rows,projectLevel){
+  const inprog=rows.filter(isWip).length, stopped=rows.filter(isStopped).length;
   const total=rows.length,done=rows.filter(isDone).length,dl=rows.filter(isDelayed).length,
         ls=rows.filter(isLateStart).length,cr=rows.filter(isCrit).length;
   const bfin=rows.length?Math.max(...rows.map(r=>r[C.bEF])):0,ffin=rows.length?Math.max(...rows.map(r=>r[C.fEF])):0;
@@ -715,7 +729,11 @@ function kpiCards(rows,projectLevel){
   return c("Total activities",totalAll.toLocaleString(),(projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones`:"in scope",null,"all")
    + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count",null,"done")
    + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"),"dly")
-   + c("Baseline vs Forecast",`<span style="font-size:12px">${wdate(bfin,1)}</span>`,`forecast ${wdate(ffin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):chip("vlc","on plan"))
+   + c("In progress",inprog.toLocaleString(),`started, not yet complete`,null,"wip")
+   + c("Stopped",stopped.toLocaleString(),stopped?`work halted in VisiLean`:`none halted`,
+       stopped?chip("vlst","needs attention"):null,"stp")
+   // the forecast is the live number, so it leads; the baseline is the comparison
+   + c("Forecast vs Baseline",`<span style="font-size:12px">${wdate(ffin,1)}</span>`,`baseline ${wdate(bfin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):((ffin-bfin)<=-4?chip("vlc",(ffin-bfin)+" days"):chip("vlc","on plan")))
    + c("Days to COD",d2cod+" days","forecast "+M.forecastFinish);
 }
 // ---------- S-curve ----------
@@ -1225,10 +1243,10 @@ function longLeadTable(){
   // Every package under VisiLean Activity Type "Procurement - Supply", grouped by the
   // Package custom field (KP observation 5) - not a top-N slice. Delivery row = the
   // package's "GRN at site" activity; if a package has none yet, its last activity.
-  const TOTW=L.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0)||1;
+  const TOTW=L.reduce((a,r)=>a+(r[C.wt]>0?r[C.wt]:0),0)||1;
   const sup=L.filter(r=>r[C.type]===AT.SUP);
   const w={},grn={},last={};
-  sup.forEach(r=>{const k=r[C.pkg];w[k]=(w[k]||0)+(r[C.cost]>0?r[C.cost]:0);
+  sup.forEach(r=>{const k=r[C.pkg];w[k]=(w[k]||0)+(r[C.wt]>0?r[C.wt]:0);
     if(r[C.sub]==="At Site"&&!grn[k])grn[k]=r;
     if(!last[k]||r[C.bEF]>last[k][C.bEF])last[k]=r});
   // Delivery dates come from VisiLean's package summary row (DATA.supplyDeliv), so the
@@ -1245,6 +1263,78 @@ function longLeadTable(){
     const st=x.pc>=100?chip("vlc","Delivered"):chip("vlnc","Not Committed");
     h+=`<tr><td>${i+1}</td><td><b>${esc(x.p)}</b></td><td class="num">${(100*x.w/TOTW).toFixed(2)}</td><td>${wdate(x.b,1)}</td><td>${wdate(x.f,1)}</td><td class="num">${dd}</td><td>${st}</td></tr>`});
   return h+"</table></div>";
+}
+// summary first; the package-by-package table opens in the drill panel
+function longLeadItems(){
+  const TOTW=L.reduce((a,r)=>a+(r[C.wt]>0?r[C.wt]:0),0)||1;
+  const sup=L.filter(r=>r[C.type]===AT.SUP);
+  const w={},grn={},last={};
+  sup.forEach(r=>{const k=r[C.pkg];w[k]=(w[k]||0)+(r[C.wt]>0?r[C.wt]:0);
+    if(r[C.sub]==="At Site"&&!grn[k])grn[k]=r;
+    if(!last[k]||r[C.bEF]>last[k][C.bEF])last[k]=r});
+  const SD=DATA.supplyDeliv||{};
+  return Object.keys(w).map(k=>{const r=grn[k]||last[k],sd=SD[k];
+    const b=sd?sd.b:r[C.bEF], f=sd?sd.f:r[C.fEF];
+    return {p:k,b,f,d:f-b,pc:r[C.pct],w:w[k]||0,wp:100*(w[k]||0)/TOTW};
+  }).sort((a,b)=>b.w-a.w);
+}
+function longLeadCard(){
+  const items=longLeadItems();
+  const late=items.filter(x=>x.d>0), ahead=items.filter(x=>x.d<0), ontime=items.filter(x=>!x.d);
+  const dlv=items.filter(x=>x.pc>=100);
+  const nxt=items.slice().sort((a,b)=>a.f-b.f).filter(x=>x.pc<100).slice(0,3);
+  const stat=(lbl,n,cls,pc)=>`<div style="flex:1;min-width:104px">
+    <div class="eyebrow">${lbl}</div>
+    <div style="font-size:20px;font-weight:800;line-height:1.1;color:var(--ink)">${n}</div>
+    ${pc?`<div class="small dim">${pc}</div>`:""}</div>`;
+  let h=`<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
+    ${stat("Packages",items.length,"", fmt1(items.reduce((a,x)=>a+x.wp,0))+"% of project weight")}
+    ${stat("Delivered",dlv.length,"", fmt1(items.length?100*dlv.length/items.length:0)+"% of packages")}
+    ${stat("Ahead of baseline",ahead.length,"","")}
+    ${stat("On baseline",ontime.length,"","")}
+    ${stat("Behind baseline",late.length,"","")}
+    <div style="flex:2;min-width:230px">
+      <div class="eyebrow">Next deliveries</div>
+      ${nxt.length?nxt.map(x=>`<div style="display:flex;gap:8px;font-size:10.5px;padding:1px 0">
+         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.p)}</span>
+         <b>${wdate(x.f,1)}</b></div>`).join(""):`<div class="small dim">nothing outstanding</div>`}
+    </div></div>`;
+  setTimeout(()=>{const b=document.getElementById("ll-drill");
+    if(b)b.addEventListener("click",openLongLead)},0);
+  return card("span12","Long Lead Item Delivery Status",
+    "all Procurement - Supply packages · baseline / forecast delivery as per VisiLean package summary",h,
+    `<button id="ll-drill" class="rsndrill" title="Open the package-by-package table">&#9783; ${items.length} packages</button>`);
+}
+function openLongLead(){
+  const items=longLeadItems();
+  const late=items.filter(x=>x.d>0).length;
+  drillOpen({
+    eyebrow:"Project · Procurement - Supply",
+    title:"Long Lead Item Delivery Status",
+    status:pill(late?"crit":"good",items.length+" packages"),
+    formula:`<b>${items.length}</b> supply packages · <b>${fmt1(items.reduce((a,x)=>a+x.wp,0))}%</b> of project weight · `+
+            `<b>${items.filter(x=>x.pc>=100).length}</b> delivered · <b>${late}</b> behind baseline`,
+    reconcile:`<span class="pill good">✓ baseline and forecast delivery read from VisiLean's package summary rows</span>`,
+    breakdownBy:"delivery vs baseline",
+    breakdown:[{label:"Ahead of baseline",n:items.filter(x=>x.d<0).length},
+               {label:"On baseline",n:items.filter(x=>!x.d).length},
+               {label:"Behind baseline",n:late}],
+    rows:items,
+    subsets:[{k:"all",label:"All"},{k:"late",label:"Behind",f:x=>x.d>0},
+             {k:"ahead",label:"Ahead",f:x=>x.d<0},{k:"open",label:"Not delivered",f:x=>x.pc<100}],
+    cols:[
+      {k:"p",label:"Long-lead item (supply package)",get:x=>x.p,html:x=>`<b>${esc(x.p)}</b>`},
+      {k:"wp",label:"Wt %",num:true,get:x=>x.wp,html:x=>fmt1(x.wp),txt:x=>fmt1(x.wp)},
+      {k:"b",label:"Baseline delivery",get:x=>x.b,html:x=>wdate(x.b,1),txt:x=>wdate(x.b,1)},
+      {k:"f",label:"Forecast delivery",get:x=>x.f,html:x=>wdate(x.f,1),txt:x=>wdate(x.f,1)},
+      {k:"d",label:"Delay / Ahead",num:true,get:x=>x.d,
+       html:x=>x.d>0?`<span style="color:var(--crit-text);font-weight:700">+${x.d} days</span>`
+              :(x.d<0?`<span style="color:var(--good-text);font-weight:700">${x.d} days</span>`:`<span class="dim">on time</span>`),
+       txt:x=>String(x.d)},
+      {k:"st",label:"Status",get:x=>x.pc>=100?"Delivered":"Not Committed",
+       html:x=>x.pc>=100?chip("vlc","Delivered"):chip("vlnc","Not Committed")},
+    ],
+  });
 }
 function epcScurves(){
   const defs=[["Engineering",isEng],["Procurement",isProc],["Construction",isCon],["Overall",r=>true]];
@@ -1270,7 +1360,7 @@ function pageSummary(){
   h+=gaugeCard(rows)+epcCard()+costCard();
   h+=kpiCards(rows,true);
   h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
-  h+=card("span12","Long Lead Item Delivery Status","all Procurement - Supply packages · baseline / forecast delivery as per VisiLean package summary",longLeadTable());
+  h+=longLeadCard();
   h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
     `<div id="sc-box"><div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">Monthly</div>${scurveMulti(rows,"sc2",true)}</div>`,
     `<div style="display:flex;gap:5px;flex-wrap:wrap"><div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
@@ -1313,7 +1403,7 @@ function pageMom(){
 }
 // ---------- Exec Director dept views (wishlist 10-Aug) ----------
 const n8=x=>String(x||"").toLowerCase().replace(/[^a-z0-9]/g,"");
-function pkgMap(rows){const by={};rows.forEach(r=>{const p=r[C.pkg];(by[p]=by[p]||{rows:[],w:0}).rows.push(r);by[p].w+=(r[C.cost]>0?r[C.cost]:0)});return by}
+function pkgMap(rows){const by={};rows.forEach(r=>{const p=r[C.pkg];(by[p]=by[p]||{rows:[],w:0}).rows.push(r);by[p].w+=(r[C.wt]>0?r[C.wt]:0)});return by}
 function stepOf(info,keys){for(const r of info.rows){const n=n8(r[C.name]);if(keys.some(k=>n.includes(k)))return r}return null}
 function dcell(r){if(!r)return `<td class="dim">—</td>`;
   let col="inherit",w=400,sfx="";
@@ -1333,7 +1423,7 @@ function procDateMatrix(rows){
   return h+"</table></div>";
 }
 function poTracker(rows){
-  const TOTW=L.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0)||1;
+  const TOTW=L.reduce((a,r)=>a+(r[C.wt]>0?r[C.wt]:0),0)||1;
   const by=pkgMap(rows);const pkgs=Object.entries(by).sort((a,b)=>b[1].w-a[1].w);
   let h=`<div class="twrap"><table><tr><th>#</th><th>Package</th><th class="num">Wt %</th><th>Baseline PO</th><th>Forecast / Actual PO</th><th class="num">Δ days</th><th>Status</th><th>Reason / Remark</th></tr>`;
   let i=0;
