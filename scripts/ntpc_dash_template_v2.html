@@ -100,15 +100,22 @@ h1{font-size:14px;font-weight:700}
 table{width:100%;border-collapse:collapse;font-size:10px}
 /* header rows stay put while the body scrolls - both for tables that scroll
    inside their own box and for tables that scroll with the page */
-.twrap{overflow:auto;position:relative}
+/* the table body scrolls inside the card so the header can stay pinned to it */
+.twrap{overflow:auto;position:relative;max-height:calc(100vh - 172px)}
 table thead th, table tr:first-child th{position:sticky;top:0;z-index:3}
+/* a pinned header has no border once it detaches, and must be opaque */
 th{background:var(--surface);box-shadow:inset 0 -1px 0 var(--line2)}
+/* wide matrices keep their first column visible while scrolling sideways */
+.twrap table.frz td:first-child,.twrap table.frz th:first-child{position:sticky;left:0;z-index:2;background:var(--surface)}
+.twrap table.frz tr:first-child th:first-child{z-index:5}
+.twrap table.frz td:first-child{box-shadow:inset -1px 0 0 var(--line2)}
+.twrap table.frz tr:hover td:first-child{background:var(--blue-wash)}
 th{font-size:8.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);text-align:left;padding:4px 5px;border-bottom:1px solid var(--line2);white-space:nowrap}
 th.sortable{cursor:pointer;user-select:none}
 th.sortable:hover{color:var(--blue)}
 td{padding:4px 5px;border-bottom:1px solid var(--line);vertical-align:top}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
-.twrap{overflow-x:auto}
+
 tr:hover td{background:var(--blue-wash)}
 .dim{color:var(--mut)}
 .stickycol th:first-child,.stickycol td:first-child{position:sticky;left:0;background:var(--surface);z-index:2;min-width:150px;box-shadow:1px 0 0 var(--line2)}
@@ -916,7 +923,7 @@ function pipeTable(rows,idp,engMode){
      <div class="fb"><i style="width:${withCol.length?100*doneN/withCol.length:0}%"></i></div></div>`;
   });
   sc+="</div>";
-  let h=`<div class="twrap"><table class="stickycol"><tr><th>Package</th>`+
+  let h=`<div class="twrap"><table class="frz"><tr><th>Package</th>`+
     cols.map(cn=>{const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
       return `<th title="${esc(lbl)}">${esc(lbl.length>16?lbl.slice(0,15)+"…":lbl)}</th>`}).join("")+`<th class="num">%</th></tr>`;
   const PL={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnc","Not Committed"],watch:["vlnc","Not Committed"],future:["vlnc","Not Committed"]};
@@ -1313,7 +1320,7 @@ const PROC_DATE_COLS=[["RFP Floated",["floatingofrfp"]],["Tech Offer Recd",["ven
  ["Mfg / Stage Insp.",["stageinspection","manufacturingclearance"]],["GRN / At Site",["grnatsite"]]];
 function procDateMatrix(rows){
   const by=pkgMap(rows);const pkgs=Object.entries(by).sort((a,b)=>b[1].w-a[1].w);
-  let h=`<div class="twrap"><table><tr><th style="min-width:150px">Package</th>${PROC_DATE_COLS.map(c=>`<th>${c[0]}</th>`).join("")}</tr>`;
+  let h=`<div class="twrap"><table class="frz"><tr><th style="min-width:150px">Package</th>${PROC_DATE_COLS.map(c=>`<th>${c[0]}</th>`).join("")}</tr>`;
   pkgs.forEach(([p,info])=>{h+=`<tr><td><b>${esc(p)}</b></td>${PROC_DATE_COLS.map(c=>dcell(stepOf(info,c[1]))).join("")}</tr>`});
   return h+"</table></div>";
 }
