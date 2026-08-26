@@ -6,30 +6,38 @@
 <title>KPIGEL-NTPC Bikaner Block 8 (200MW) — MIS Dashboard v2 (Live)</title>
 <style>
 :root{
-  --page:#f5f6f8; --surface:#ffffff; --ink:#475057; --ink2:#626e76; --mut:#7e8c96;
-  --grid:#ebeef0; --line:#ebeef0; --line2:#e0e5e9;
-  --blue:#1793e6; --blue-hov:#0e8bdf; --blue-lt:#a2d4f5; --blue-wash:#e6eff8; --focus:#74bef0;
-  --good:#00a455; --good-text:#008344; --good-wash:#e4fbf3;
-  --warn:#f59e00; --warn-text:#c27d00; --warn-wash:#fef5e5;
-  --serious:#ff944b; --crit:#ff4343; --crit-text:#d13636; --crit-wash:#ffecec;
-  --tip-bg:#2b3237; --tip-fg:#ffffff; --tip-fg2:#c2ccd3;
-  --shadow-popover:0 8px 24px rgba(16,20,23,.12),0 0 0 1px rgba(16,20,23,.06);
-  --s-act:#1793e6; --s-plan:#9d4f8c;
+  --page:#f7f9fc; --surface:#ffffff; --ink:#002d62; --ink2:#2a3a55; --mut:#5b6b82;
+  --grid:#e3e8f0; --line:#e3e8f0; --line2:#e5eaf0;
+  --blue:#00a3e0; --blue-hov:#0091c9; --blue-lt:#7fd1f0; --blue-wash:rgba(0,163,224,.10); --focus:#00a3e0;
+  --good:#00a455; --good-text:#00713a; --good-fade:#cff6de; --good-wash:#e6f6ee;
+  --warn:#f59e00; --warn-text:#a66a00; --warn-fade:#ffe8c2; --warn-wash:#fef4e6;
+  --serious:#ff944b; --crit:#ff4343; --crit-text:#c42121; --crit-fade:#ffd0d0; --crit-wash:#ffecec;
+  --cyan-info:#00618a;
+  --tip-bg:#002d62; --tip-fg:#ffffff; --tip-fg2:#b9c7da;
+  --shadow-card:0 1px 0 rgba(0,45,98,.02),0 6px 24px -18px rgba(0,45,98,.15);
+  --shadow-lift:0 10px 30px -12px rgba(0,45,98,.28);
+  --shadow-popover:0 18px 45px -12px rgba(0,45,98,.35),0 0 0 1px rgba(0,45,98,.06);
+  --r-card:14px; --r-tile:12px;
+  --s-act:#00a3e0; --s-plan:#9d4f8c;
 }
 :root[data-theme="dark"]{
-  --page:#0E1216; --surface:#161B20; --ink:#F4F6F8; --ink2:#c2ccd3; --mut:#99aab6;
-  --grid:#232A31; --line:#232A31; --line2:#2D353D;
-  --blue:#45a9eb; --blue-hov:#74bef0; --blue-lt:#0e588a; --blue-wash:rgba(23,147,230,.16); --focus:#45a9eb;
-  --good-text:#52c88f; --good-wash:rgba(0,164,85,.16);
-  --warn-text:#f9c566; --warn-wash:rgba(245,158,0,.18);
-  --crit-text:#ff8e8e; --crit-wash:rgba(255,67,67,.16);
-  --tip-bg:#F4F6F8; --tip-fg:#2b3237; --tip-fg2:#626e76;
-  --shadow-popover:0 8px 24px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);
+  --page:#0a1220; --surface:#101a2b; --ink:#eef3fa; --ink2:#c3d0e2; --mut:#8fa3bd;
+  --grid:#1e2a3d; --line:#1e2a3d; --line2:#27364d;
+  --blue:#38b6ea; --blue-hov:#6bcbf2; --blue-lt:#0b5d80; --blue-wash:rgba(0,163,224,.18); --focus:#38b6ea;
+  --good-text:#5fd39b; --good-fade:#12613a; --good-wash:rgba(0,164,85,.18);
+  --warn-text:#f5c069; --warn-fade:#6b4a08; --warn-wash:rgba(245,158,0,.20);
+  --crit-text:#ff9b9b; --crit-fade:#6d1c1c; --crit-wash:rgba(255,67,67,.18);
+  --cyan-info:#6bcbf2;
+  --tip-bg:#eef3fa; --tip-fg:#0a1220; --tip-fg2:#41506b;
+  --shadow-card:0 1px 0 rgba(0,0,0,.2),0 6px 24px -18px rgba(0,0,0,.7);
+  --shadow-lift:0 10px 30px -12px rgba(0,0,0,.75);
+  --shadow-popover:0 18px 45px -12px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.07);
   --s-act:#1f8fdd; --s-plan:#a85fb5;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font:11px/1.4 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--page);color:var(--ink)}
+body{font:11.5px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--page);color:var(--ink);
+ font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 select,input[type=search]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line2);border-radius:5px;padding:3px 6px;max-width:180px;font-size:10.5px}
@@ -61,15 +69,41 @@ h1{font-size:14px;font-weight:700}
 .fnote{font-size:9.5px;color:var(--mut)}
 .dsl{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--ink2)}
 .dsl input{accent-color:var(--blue);width:110px}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:7px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:9px 11px;grid-column:span 12;min-width:0}
-.card h2{font-size:11px;font-weight:700;margin-bottom:1px}
-.card .hint{color:var(--mut);font-size:9px;margin-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:13px 15px;
+ grid-column:span 12;min-width:0;box-shadow:var(--shadow-card)}
+/* a card that drills through announces itself: pointer + lift on hover */
+.card.clickable{cursor:pointer;transition:box-shadow .18s ease,transform .18s ease}
+.card.clickable:hover{box-shadow:var(--shadow-lift);transform:translateY(-1px)}
+.card.clickable:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* small caps label above a title - metric id, phase, section */
+.eyebrow{text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-size:9.5px;font-weight:700}
+/* status pill */
+.pill{display:inline-flex;align-items:center;gap:4px;text-transform:uppercase;border-radius:999px;
+ padding:2px 8px;font-size:9.5px;font-weight:700;white-space:nowrap}
+.pill.good{background:var(--good-wash);color:var(--good-text)}
+.pill.warn{background:var(--warn-wash);color:var(--warn-text)}
+.pill.crit{background:var(--crit-wash);color:var(--crit-text)}
+.pill.info{background:var(--blue-wash);color:var(--blue)}
+/* plain-language explanation tile that sits at the foot of a metric */
+.tile{margin-top:9px;display:flex;align-items:flex-start;gap:7px;border-radius:var(--r-tile);
+ background:var(--page);padding:8px 11px;font-size:10.5px;line-height:1.45;color:var(--mut)}
+.tile b{color:var(--ink)}
+.tile .ico{color:var(--cyan-info);flex:0 0 auto;font-weight:700}
+/* segmented pill filters */
+.seg{display:inline-flex;gap:4px;flex-wrap:wrap}
+.segbtn{border:0;border-radius:999px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;
+ background:var(--line2);color:var(--mut)}
+.segbtn.on{background:var(--blue);color:#fff}
+.segbtn:hover:not(.on){background:var(--blue-wash);color:var(--blue)}
+.card h2{font-size:13px;font-weight:700;margin-bottom:2px;color:var(--ink);letter-spacing:-.01em}
+.card .hint{color:var(--mut);font-size:10.5px;line-height:1.45;margin-bottom:8px}
 .hdrrow{display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap}
 .span2{grid-column:span 2}.span3{grid-column:span 3}.span4{grid-column:span 4}.span5{grid-column:span 5}.span6{grid-column:span 6}.span7{grid-column:span 7}.span8{grid-column:span 8}.span12{grid-column:span 12}
 @media(max-width:1150px){.span2{grid-column:span 4}.span3,.span4{grid-column:span 6}.span5,.span6,.span7,.span8{grid-column:span 12}}
-.kpi .big{font-size:15px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
-.kpi .cmp{color:var(--mut);font-size:9px;margin-top:1px}
+.kpi .big{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.05;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi .big .u{font-size:14px;font-weight:700;color:var(--mut);margin-left:2px}
+.kpi .cmp{color:var(--mut);font-size:10.5px;margin-top:5px;line-height:1.4}
 .kpi h2{font-size:8.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
 .chip{display:inline-flex;align-items:center;gap:3px;font-size:8.5px;font-weight:700;border-radius:14px;padding:1px 6px;white-space:nowrap}
 .chip.good{background:var(--good-wash);color:var(--good-text)}
@@ -77,11 +111,11 @@ h1{font-size:14px;font-weight:700}
 .chip.crit{background:var(--crit-wash);color:var(--crit-text)}
 .chip.blue{background:var(--blue-wash);color:var(--blue)}
 .chip.mut{background:var(--grid);color:var(--ink2)}
-table{width:100%;border-collapse:collapse;font-size:10px}
-th{font-size:8.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);text-align:left;padding:4px 5px;border-bottom:1px solid var(--line2);white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line2);white-space:nowrap}
 th.sortable{cursor:pointer;user-select:none}
 th.sortable:hover{color:var(--blue)}
-td{padding:4px 5px;border-bottom:1px solid var(--line);vertical-align:top}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .twrap{overflow-x:auto}
 tr:hover td{background:var(--blue-wash)}
@@ -147,13 +181,31 @@ tr:hover td{background:var(--blue-wash)}
 .colpop .cact{display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:5px}
 .colpop .cact button{color:var(--blue);font-size:10px;font-weight:600}
 #rsnmodal{position:fixed;inset:0;z-index:120;display:none;align-items:flex-start;justify-content:center;
- background:rgba(15,23,42,.5);padding:32px 18px;overflow:auto}
-#rsnmodal.on{display:flex}
-#rsnmodal-box{background:var(--surface);border:1px solid var(--line2);border-radius:10px;
- width:100%;max-width:760px;box-shadow:var(--shadow-popover);overflow:hidden}
-#rsnmodal-hd{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);
- position:sticky;top:0;background:var(--surface);z-index:1}
-#rsnmodal-t{flex:1;font-size:12.5px;font-weight:800;line-height:1.35}
+ background:rgba(0,45,98,.42);backdrop-filter:blur(1px);padding:26px 14px;overflow:auto}
+#rsnmodal.on{display:flex;animation:dfade .16s ease}
+@keyframes dfade{from{opacity:0}to{opacity:1}}
+#rsnmodal-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);
+ width:100%;max-width:1024px;box-shadow:var(--shadow-popover);overflow:hidden;animation:drise .18s ease}
+@keyframes drise{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
+#rsnmodal-hd{display:flex;align-items:flex-start;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line);
+ position:sticky;top:0;background:var(--surface);z-index:2}
+#rsnmodal-t{flex:1;font-size:15px;font-weight:800;line-height:1.3;letter-spacing:-.01em;color:var(--ink)}
+#rsnmodal-t .eyebrow{margin-bottom:2px}
+#rsnmodal-bd .dsec{margin-top:14px}
+#rsnmodal-bd .dsec>.eyebrow{margin-bottom:5px}
+#rsnmodal-bd .dbox{border:1px solid var(--line);border-radius:var(--r-tile);overflow:auto}
+#rsnmodal-bd .dbox table{font-size:10.5px}
+#rsnmodal-bd .dbox th{position:sticky;top:0;background:var(--surface);cursor:pointer;user-select:none}
+#rsnmodal-bd .dbox th:hover{color:var(--blue)}
+#rsnmodal-bd .dbox tr:hover td{background:var(--blue-wash)}
+.dfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;
+ margin-top:8px;font-size:10.5px;color:var(--mut)}
+.dfoot button{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);border-radius:7px;
+ padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer}
+.dfoot button:hover:not(:disabled){background:var(--blue-wash);color:var(--blue);border-color:var(--blue-lt)}
+.dfoot button:disabled{opacity:.4;cursor:default}
+.dfilt{width:100%;border:1px solid var(--line2);border-radius:6px;padding:2px 5px;font:inherit;
+ font-size:9.5px;background:var(--surface);color:var(--ink)}
 #rsnmodal-back{border:1px solid var(--line2);background:var(--surface);color:var(--blue);font-size:14px;line-height:1;
  border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto;display:none}
 #rsnmodal-back:hover{background:var(--blue-wash)}
@@ -172,7 +224,7 @@ tr:hover td{background:var(--blue-wash)}
 .small{font-size:9px}
 svg text{fill:var(--ink2);font-family:inherit}
 .gwrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.gstats{display:grid;grid-template-columns:auto auto;gap:3px 12px;font-size:9.5px}
+.gstats{display:grid;grid-template-columns:auto auto;gap:6px 16px;font-size:11px}
 .gstats .k{color:var(--mut)}
 .gstats .v{font-weight:700;font-variant-numeric:tabular-nums}
 .detrow td{background:var(--page)!important}
@@ -322,6 +374,9 @@ function moveTip(e){const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+1
 function hideTip(){tip.style.display="none"}
 document.addEventListener("scroll",hideTip,true);
 function chip(cls,txt){return `<span class="chip ${cls}">${txt}</span>`}
+function pill(kind,txt){return `<span class="pill ${kind}">${txt}</span>`}
+// plain-language tile that explains what a number means, as the reference does
+function tile(html){return `<div class="tile"><span class="ico">i</span><div>${html}</div></div>`}
 function stChip(st){return st==="done"?chip("vlc","Complete"):st==="inprog"?chip("vls","Started"):chip("vlnc","Not Committed")}
 const VLMAP={"complete":["vlc","Complete"],"started":["vls","Started"],"notcommitted":["vlnc","Not Committed"],
  "ready":["vlr","Ready"],"forcedready":["vlfr","Forced Ready"],"notready":["vlnr","Not Ready"],
@@ -456,6 +511,98 @@ function rsnDetail(r){
   </div>`;
 }
 let rsnDept="";
+// ---------- generic drill-through ----------
+// A spec describes any metric: how it reads, how it reconciles, how it breaks down
+// and the rows behind it. Every drill-through on the dashboard renders through this,
+// so they all behave the same way.
+let _dspec=null,_dsub="",_dsort={k:null,dir:1},_dpage=0,_dfilt={};
+const DPAGE=25;
+function drillOpen(spec){
+  _dspec=spec;_dsub=(spec.subsets&&spec.subsets[0]&&spec.subsets[0].k)||"";
+  _dsort={k:null,dir:1};_dpage=0;_dfilt={};
+  drillRender();
+}
+function drillRows(){
+  const s=_dspec;if(!s)return[];
+  let rows=s.rows||[];
+  const sub=(s.subsets||[]).find(x=>x.k===_dsub);
+  if(sub&&sub.f)rows=rows.filter(sub.f);
+  Object.keys(_dfilt).forEach(k=>{
+    const q=(_dfilt[k]||"").toLowerCase();if(!q)return;
+    const col=s.cols.find(c=>c.k===k);if(!col)return;
+    rows=rows.filter(r=>String(col.txt?col.txt(r):col.get(r)??"").toLowerCase().includes(q));
+  });
+  if(_dsort.k){
+    const col=s.cols.find(c=>c.k===_dsort.k);
+    if(col)rows=rows.slice().sort((a,b)=>{
+      const x=col.get(a),y=col.get(b);
+      const n=(typeof x==="number"&&typeof y==="number")?x-y:String(x??"").localeCompare(String(y??""));
+      return n*_dsort.dir;});
+  }
+  return rows;
+}
+function drillRender(){
+  const s=_dspec;if(!s)return;
+  const rows=drillRows(),total=rows.length;
+  const pages=Math.max(1,Math.ceil(total/DPAGE));
+  if(_dpage>=pages)_dpage=pages-1;
+  const page=rows.slice(_dpage*DPAGE,(_dpage+1)*DPAGE);
+  let h="";
+  if(s.formula)h+=`<div class="tile" style="margin-top:0"><span class="ico">=</span><div>${s.formula}</div></div>`;
+  if(s.reconcile)h+=`<div style="margin-top:8px">${s.reconcile}</div>`;
+  if(s.breakdown&&s.breakdown.length){
+    h+=`<div class="dsec"><div class="eyebrow">Breakdown — ${esc(s.breakdownBy||"by dimension")}</div>
+      <div class="dbox" style="max-height:190px"><table><tr><th>Scope</th><th class="num">Count</th><th class="num">Share</th></tr>`;
+    const bt=s.breakdown.reduce((a,x)=>a+x.n,0)||1;
+    s.breakdown.forEach(x=>{h+=`<tr><td>${esc(x.label)}</td><td class="num">${x.n}</td>
+      <td class="num">${fmt1(100*x.n/bt)}%</td></tr>`});
+    h+=`</table></div></div>`;
+  }
+  h+=`<div class="dsec"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+    <div class="eyebrow">Rows</div><div class="seg">`;
+  (s.subsets||[]).forEach(x=>{
+    const n=(x.f?(s.rows||[]).filter(x.f):(s.rows||[])).length;
+    h+=`<button class="segbtn ${_dsub===x.k?"on":""}" data-sub="${esc(x.k)}">${esc(x.label)} ${n}</button>`});
+  h+=`</div><span style="margin-left:auto;font-size:10px;color:var(--mut)">click a header to sort · filter under any column</span></div>`;
+  h+=`<div class="dbox" style="max-height:44vh;margin-top:6px"><table><tr>`;
+  s.cols.forEach(c=>{const ar=_dsort.k===c.k?(_dsort.dir>0?" ▲":" ▼"):"";
+    h+=`<th data-sk="${esc(c.k)}" class="${c.num?"num":""}">${esc(c.label)}${ar}</th>`});
+  h+=`</tr><tr>`;
+  s.cols.forEach(c=>{h+=`<th style="padding-top:0"><input class="dfilt" data-fk="${esc(c.k)}" value="${esc(_dfilt[c.k]||"")}" placeholder="filter"></th>`});
+  h+=`</tr>`;
+  page.forEach(r=>{
+    h+=`<tr${s.onRow?' class="drow" style="cursor:pointer"':""} data-rid="${esc(s.rowId?s.rowId(r):"")}">`;
+    s.cols.forEach(c=>{h+=`<td class="${c.num?"num":""}">${c.html?c.html(r):esc(String(c.get(r)??"—"))}</td>`});
+    h+=`</tr>`});
+  if(!page.length)h+=`<tr><td colspan="${s.cols.length}" style="color:var(--mut);padding:14px">No rows for this selection.</td></tr>`;
+  h+=`</table></div>`;
+  const from=total?_dpage*DPAGE+1:0,to=Math.min(total,(_dpage+1)*DPAGE);
+  h+=`<div class="dfoot"><span>${from}–${to} of ${total}</span>
+    <span><button id="d-copy">Copy</button>
+      <button id="d-prev" ${_dpage<=0?"disabled":""}>Prev</button>
+      <button id="d-next" ${_dpage>=pages-1?"disabled":""}>Next</button></span></div>`;
+  showRsnPanel(`<div class="eyebrow">${esc(s.eyebrow||"")}</div>${esc(s.title)} ${s.status||""}`,h,!!s.back);
+  setTimeout(()=>{
+    const bd=document.getElementById("rsnmodal-bd");if(!bd)return;
+    bd.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{_dsub=b.dataset.sub;_dpage=0;drillRender()}));
+    bd.querySelectorAll("th[data-sk]").forEach(th=>th.addEventListener("click",()=>{
+      const k=th.dataset.sk;_dsort=(_dsort.k===k)?{k,dir:-_dsort.dir}:{k,dir:1};drillRender()}));
+    bd.querySelectorAll(".dfilt").forEach(inp=>{
+      inp.addEventListener("input",()=>{_dfilt[inp.dataset.fk]=inp.value;_dpage=0;drillRender();
+        setTimeout(()=>{const n=document.querySelector(`.dfilt[data-fk="${inp.dataset.fk}"]`);
+          if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},0)});});
+    const p=document.getElementById("d-prev"),n=document.getElementById("d-next"),c=document.getElementById("d-copy");
+    if(p)p.addEventListener("click",()=>{if(_dpage>0){_dpage--;drillRender()}});
+    if(n)n.addEventListener("click",()=>{_dpage++;drillRender()});
+    if(c)c.addEventListener("click",()=>{
+      const s2=_dspec,rs=drillRows();
+      const txt=[s2.cols.map(x=>x.label).join("\t")].concat(
+        rs.map(r=>s2.cols.map(x=>String(x.txt?x.txt(r):x.get(r)??"")).join("\t"))).join("\n");
+      navigator.clipboard.writeText(txt).then(()=>{c.textContent="Copied";setTimeout(()=>c.textContent="Copy",1400)})
+        .catch(()=>{c.textContent="Copy failed";setTimeout(()=>c.textContent="Copy",1400)});});
+    if(_dspec.onRow)bd.querySelectorAll(".drow").forEach(tr=>tr.addEventListener("click",()=>_dspec.onRow(tr.dataset.rid)));
+  },0);
+}
 function rsnListHtml(deptKey){
   const all=reasonsFor(deptKey);
   const list=(rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all)
@@ -484,10 +631,49 @@ function showRsnPanel(title,body,back){
 }
 function openRsnList(deptKey){
   rsnDept=deptKey||"";
-  const {html,n}=rsnListHtml(rsnDept);
-  showRsnPanel(`Reasons for Variance <span class="dim" style="font-weight:600">· ${n} ${n===1?"activity":"activities"}</span>`,html,false);
-  setTimeout(()=>{document.querySelectorAll("#rsnmodal-bd .rsnrow").forEach(el=>{
-    el.addEventListener("click",()=>openRsn(+el.dataset.u,true))})},0);
+  const all=reasonsFor(rsnDept);
+  const scoped=rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all;
+  const lateN=filtered(rsnDept).filter(r=>r[C.dly]).length;
+  const catN={};all.forEach(r=>r.cats.forEach(c=>{catN[c.cat]=(catN[c.cat]||0)+1}));
+  const partyN={};all.forEach(r=>r.cats.forEach(c=>{if(c.party)partyN[c.party]=(partyN[c.party]||0)+1}));
+  const brk=(rsnCat?Object.entries(partyN).map(([k,n])=>({label:"party: "+k,n}))
+                   :Object.entries(catN).map(([k,n])=>({label:"reason: "+k,n})))
+            .sort((a,b)=>b.n-a.n);
+  const cat=(r)=>(rsnCat?r.cats.filter(c=>c.cat===rsnCat):r.cats);
+  const nCat=scoped.length,nAll=all.length;
+  drillOpen({
+    eyebrow:(rsnDept?DNAME[rsnDept]:"Project")+" · Reasons for Variance",
+    title:rsnCat||"All reason categories",
+    status:pill(rsnCat==="No reason recorded"?"crit":"info",`${nCat} ${nCat===1?"activity":"activities"}`),
+    formula:`<b>${nCat}</b> of <b>${nAll}</b> logged variances = <b>${fmt1(nAll?100*nCat/nAll:0)}%</b>`+
+            (rsnCat?` in <b>${esc(rsnCat)}</b>`:``)+
+            ` · <b>${lateN}</b> activities are currently delayed`,
+    reconcile:`<span class="pill ${nAll?"good":"warn"}">${nAll?"✓":"!"} reasons come from the VisiLean activity history · logged ${nAll} · shown ${nCat}</span>`,
+    breakdownBy:rsnCat?"this category by responsible party":"all categories",
+    breakdown:brk,
+    rows:scoped,
+    rowId:r=>String(r.uid),
+    onRow:id=>openRsn(+id,true),
+    back:false,
+    subsets:[{k:"all",label:"All"},
+             {k:"crit",label:"Critical",f:r=>r.crit},
+             {k:"late",label:"Finished late",f:r=>r.fSlip>0},
+             {k:"none",label:"No reason",f:r=>r.cats.some(c=>c.cat==="No reason recorded")}],
+    cols:[
+      {k:"name",label:"Activity",get:r=>r.name,
+       html:r=>`<b>${esc(r.name.slice(0,52))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,62))}</div>`},
+      {k:"cat",label:"Reason",get:r=>cat(r).map(c=>c.cat).join(", "),
+       html:r=>cat(r).map(c=>`<span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>`).join(" ")},
+      {k:"ev",label:"Event",get:r=>[...new Set(cat(r).map(c=>c.label))].join(", "),
+       html:r=>[...new Set(cat(r).map(c=>c.label))].map(l=>chip(EV_COL[(cat(r).find(c=>c.label===l)||{}).kind]||"mut",l)).join(" ")},
+      {k:"own",label:"Owner",get:r=>r.owner||r.ownship||"—"},
+      {k:"st",label:"Status",get:r=>r.vls,html:r=>vlChip(r.vls)},
+      {k:"ss",label:"Start var.",num:true,get:r=>r.sSlip,
+       html:r=>r.sSlip>0?`<span style="color:var(--crit-text);font-weight:700">+${r.sSlip}</span>`:(r.sSlip<0?`<span style="color:var(--good-text)">${r.sSlip}</span>`:`<span class="dim">0</span>`)},
+      {k:"fs",label:"Finish var.",num:true,get:r=>r.fSlip,
+       html:r=>r.fSlip>0?`<span style="color:var(--crit-text);font-weight:700">+${r.fSlip}</span>`:(r.fSlip<0?`<span style="color:var(--good-text)">${r.fSlip}</span>`:`<span class="dim">0</span>`)},
+    ],
+  });
 }
 function openRsn(uid,fromList){
   const r=(DATA.reasons||[]).find(x=>x.uid===uid);if(!r)return;
@@ -542,20 +728,53 @@ function reasonsCard(deptKey,span){
     `<button id="rsn-drill" class="rsndrill" title="Drill down to the activity list">&#9783; ${list.length} ${list.length===1?"activity":"activities"}</button>`);
 }
 // ---------- KPI cards ----------
+// every KPI drills into the rows it counts
+function kpiDrill(kind,rows,deptKey){
+  const S={all:{t:"All activities",f:null},
+           done:{t:"Completed activities",f:isDone},
+           dly:{t:"Delayed activities",f:isDelayed}}[kind];
+  if(!S)return;
+  const base=rows,sel=S.f?rows.filter(S.f):rows;
+  const by={};sel.forEach(r=>{const k=DNAME[r[C.dept]]||"—";by[k]=(by[k]||0)+1});
+  drillOpen({
+    eyebrow:(deptKey?DNAME[deptKey]:"Project")+" · KPI",
+    title:S.t,
+    status:pill(kind==="dly"?"crit":(kind==="done"?"good":"info"),sel.length.toLocaleString()),
+    formula:`<b>${sel.length.toLocaleString()}</b> of <b>${base.length.toLocaleString()}</b> activities in scope = <b>${fmt1(base.length?100*sel.length/base.length:0)}%</b>`,
+    reconcile:`<span class="pill good">✓ counted live from VisiLean · ${base.length.toLocaleString()} activities in the current filter</span>`,
+    breakdownBy:"department",
+    breakdown:Object.entries(by).map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n),
+    rows:sel,
+    subsets:[{k:"all",label:"All"},{k:"crit",label:"Critical",f:r=>isCrit(r)},
+             {k:"nb",label:"Not baselined",f:r=>!!r[C.nd]}],
+    cols:[
+      {k:"name",label:"Activity",get:r=>r[C.name],
+       html:r=>`<b>${esc(String(r[C.name]).slice(0,54))}</b><div class="small dim">${esc(String(r[C.pkg]).slice(0,52))}</div>`},
+      {k:"dept",label:"Department",get:r=>DNAME[r[C.dept]]||"—"},
+      {k:"type",label:"Activity type",get:r=>r[C.type]||"—"},
+      {k:"own",label:"Owner",get:r=>r[C.owner]||r[C.ownship]||"—"},
+      {k:"st",label:"Status",get:r=>r[C.vls],html:r=>rowChip(r)},
+      {k:"pct",label:"%",num:true,get:r=>r[C.pct]},
+      {k:"bef",label:"Baseline finish",get:r=>r[C.bEF],html:r=>wdate(r[C.bEF],1),txt:r=>wdate(r[C.bEF],1)},
+      {k:"fef",label:"Forecast finish",get:r=>r[C.fEF],html:r=>wdate(r[C.fEF],1),txt:r=>wdate(r[C.fEF],1)},
+    ],
+  });
+}
 function kpiCards(rows,projectLevel){
   const total=rows.length,done=rows.filter(isDone).length,dl=rows.filter(isDelayed).length,
         ls=rows.filter(isLateStart).length,cr=rows.filter(isCrit).length;
   const bfin=rows.length?Math.max(...rows.map(r=>r[C.bEF])):0,ffin=rows.length?Math.max(...rows.map(r=>r[C.fEF])):0;
   const d2cod=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
-  const c=(t,big,cmp,ch)=>`<div class="card span2 kpi"><h2>${t}</h2><div class="big">${big}</div><div class="cmp">${cmp||""}</div>${ch?`<div style="margin-top:4px">${ch}</div>`:""}</div>`;
+  const c=(t,big,cmp,ch,dk)=>`<div class="card span2 kpi${dk?" clickable":""}"${dk?` data-kpi="${dk}" tabindex="0" title="Drill through to the activities"`:""}>
+    <div class="eyebrow">${t}</div><div class="big">${big}</div><div class="cmp">${cmp||""}</div>${ch?`<div style="margin-top:6px">${ch}</div>`:""}</div>`;
   // Milestones live outside the activity rows, so they only belong in the headline
   // count when nothing is filtered - otherwise a filtered view (e.g. Activity Type =
   // Construction) would read 9 too high against VisiLean.
   const unfiltered=rows.length===L.length;
   const totalAll=(projectLevel&&unfiltered)? total + DATA.milestones.length : total;
-  return c("Total activities",totalAll.toLocaleString(),(projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones`:"in scope")
-   + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count")
-   + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"))
+  return c("Total activities",totalAll.toLocaleString(),(projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones`:"in scope",null,"all")
+   + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count",null,"done")
+   + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"),"dly")
    + c("Baseline vs Forecast",`<span style="font-size:12px">${wdate(bfin,1)}</span>`,`forecast ${wdate(ffin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):chip("vlc","on plan"))
    + c("Days to COD",d2cod+" days","forecast "+M.forecastFinish);
 }
@@ -1112,6 +1331,7 @@ function pageSummary(){
   h+=card("span5","Stage progress","Actual % vs Baseline Plan %",stageBars(rows));
   h+=critPoints(rows);
   h+=reasonsCard("","span12");
+  setTimeout(()=>bindKpi(rows,""),0);
   h+=card("span6","Open Constraints / Awaiting to Start","live VisiLean constraints log · awaiting-start from schedule",constraints(rows),
     `<div class="toggle2"><button class="${consTab==="await"?"on":""}" onclick="consTab='await';render()">Awaiting Start</button><button class="${consTab==="vl"?"on":""}" onclick="consTab='vl';render()">VisiLean Constraints</button></div>`);
   h+="</div>";
@@ -1279,7 +1499,7 @@ function pageDept(key){
   }
   h+=reasonsCard(key,"span12");
   h+="</div>";
-  setTimeout(()=>{bindPipe("pe");bindPipe("pd")},0);
+  setTimeout(()=>{bindPipe("pe");bindPipe("pd");bindKpi(rows,key)},0);
   return h;
 }
 function stageSecs(rows){
@@ -1320,6 +1540,13 @@ function syncFilterUI(){
   document.getElementById("f-datev").textContent=wdate(state.at,1)+(state.at===SW?" (today)":"");
 }
 let lastPage=null;
+function bindKpi(rows,deptKey){
+  document.querySelectorAll("[data-kpi]").forEach(el=>{
+    const go=()=>kpiDrill(el.dataset.kpi,rows,deptKey);
+    el.addEventListener("click",go);
+    el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
+  });
+}
 function render(){
   const _keep=lastPage===state.page;const _sy=window.scrollY;
   navHtml();syncFilterUI();

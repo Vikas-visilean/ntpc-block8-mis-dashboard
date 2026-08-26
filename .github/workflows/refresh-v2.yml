@@ -55,11 +55,11 @@ jobs:
             n=$((n+1))
             echo "::group::cycle $n  $(date -u '+%H:%M:%S UTC')"
 
-            if python scripts/ntpc_dash_data_v2.py && python scripts/build_ntpc_dash_v2.py ; then
+            if python scripts/ntpc_dash_data_v2.py && python scripts/build_ntpc_dash_v2.py && python scripts/build_ntpc_dash_v3.py ; then
               if git diff --quiet -- v2/.datahash ; then
                 echo "no data change"
               else
-                git add v2/index.html v2/meta.json v2/.datahash
+                git add v2/index.html v2/meta.json v2/.datahash v3/index.html v3/meta.json v3/.datahash
                 git commit -m "v2 auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || true
                 # another worker may have pushed while we were building
                 for try in 1 2 3 ; do
@@ -70,7 +70,7 @@ jobs:
             else
               # a bad cycle must not kill the worker - the next one recovers
               echo "cycle failed (VisiLean unreachable or build error) - continuing"
-              git checkout -- v2 2>/dev/null || true
+              git checkout -- v2 v3 2>/dev/null || true
             fi
             echo "::endgroup::"
 

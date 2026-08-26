@@ -1,0 +1,1698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KPIGEL-NTPC Bikaner Block 8 (200MW) — MIS Dashboard v2 (Live)</title>
+<style>
+:root{
+  --page:#f7f9fc; --surface:#ffffff; --ink:#002d62; --ink2:#2a3a55; --mut:#5b6b82;
+  --grid:#e3e8f0; --line:#e3e8f0; --line2:#e5eaf0;
+  --blue:#00a3e0; --blue-hov:#0091c9; --blue-lt:#7fd1f0; --blue-wash:rgba(0,163,224,.10); --focus:#00a3e0;
+  --good:#00a455; --good-text:#00713a; --good-fade:#cff6de; --good-wash:#e6f6ee;
+  --warn:#f59e00; --warn-text:#a66a00; --warn-fade:#ffe8c2; --warn-wash:#fef4e6;
+  --serious:#ff944b; --crit:#ff4343; --crit-text:#c42121; --crit-fade:#ffd0d0; --crit-wash:#ffecec;
+  --cyan-info:#00618a;
+  --tip-bg:#002d62; --tip-fg:#ffffff; --tip-fg2:#b9c7da;
+  --shadow-card:0 1px 0 rgba(0,45,98,.02),0 6px 24px -18px rgba(0,45,98,.15);
+  --shadow-lift:0 10px 30px -12px rgba(0,45,98,.28);
+  --shadow-popover:0 18px 45px -12px rgba(0,45,98,.35),0 0 0 1px rgba(0,45,98,.06);
+  --r-card:14px; --r-tile:12px;
+  --s-act:#00a3e0; --s-plan:#9d4f8c;
+}
+:root[data-theme="dark"]{
+  --page:#0a1220; --surface:#101a2b; --ink:#eef3fa; --ink2:#c3d0e2; --mut:#8fa3bd;
+  --grid:#1e2a3d; --line:#1e2a3d; --line2:#27364d;
+  --blue:#38b6ea; --blue-hov:#6bcbf2; --blue-lt:#0b5d80; --blue-wash:rgba(0,163,224,.18); --focus:#38b6ea;
+  --good-text:#5fd39b; --good-fade:#12613a; --good-wash:rgba(0,164,85,.18);
+  --warn-text:#f5c069; --warn-fade:#6b4a08; --warn-wash:rgba(245,158,0,.20);
+  --crit-text:#ff9b9b; --crit-fade:#6d1c1c; --crit-wash:rgba(255,67,67,.18);
+  --cyan-info:#6bcbf2;
+  --tip-bg:#eef3fa; --tip-fg:#0a1220; --tip-fg2:#41506b;
+  --shadow-card:0 1px 0 rgba(0,0,0,.2),0 6px 24px -18px rgba(0,0,0,.7);
+  --shadow-lift:0 10px 30px -12px rgba(0,0,0,.75);
+  --shadow-popover:0 18px 45px -12px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.07);
+  --s-act:#1f8fdd; --s-plan:#a85fb5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font:11.5px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--page);color:var(--ink);
+ font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+select,input[type=search]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line2);border-radius:5px;padding:3px 6px;max-width:180px;font-size:10.5px}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:188px;flex:0 0 188px;background:var(--surface);border-right:1px solid var(--line);padding:8px 7px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;gap:7px;align-items:center;padding:2px 5px 8px}
+.brand .kplogo{width:30px;height:30px;border-radius:6px;background:#fff;object-fit:contain;padding:2px;border:1px solid var(--line2)}
+.brand .t1{font-weight:700;font-size:11.5px}
+.brand .t2{color:var(--mut);font-size:9px}
+.navhdr{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);padding:7px 6px 3px}
+.nav a{display:block;padding:4.5px 7px;border-radius:5px;color:var(--ink2);font-weight:500;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav a:hover{background:var(--blue-wash);color:var(--ink)}
+.nav a.on{background:var(--blue-wash);color:var(--blue);font-weight:600}
+.main{flex:1;min-width:0;padding:8px 12px 32px}
+.topbar{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:6px}
+h1{font-size:14px;font-weight:700}
+.sub{color:var(--mut);font-size:9.5px;margin-top:1px}
+.meta{display:flex;gap:10px;align-items:center}
+.meta .k{font-size:8px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.meta .v{font-weight:700;font-size:11px}
+.thm{display:flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden}
+.thm button{padding:2px 7px;font-size:9.5px;color:var(--ink2)}
+.thm button.on{background:var(--blue);color:#fff}
+.fbar{position:sticky;top:0;z-index:30;display:flex;gap:5px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin-bottom:8px;box-shadow:0 2px 8px rgba(16,20,23,.04)}
+.fbar .tgl{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:2.5px 7px;cursor:pointer;user-select:none}
+.fbar .tgl.on{background:var(--crit-wash);color:var(--crit-text);border-color:var(--crit)}
+.fbar .tgl.on2{background:var(--warn-wash);color:var(--warn-text);border-color:var(--warn)}
+.fbar .reset{color:var(--blue);font-weight:600;font-size:10px}
+.fnote{font-size:9.5px;color:var(--mut)}
+.dsl{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--ink2)}
+.dsl input{accent-color:var(--blue);width:110px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:13px 15px;
+ grid-column:span 12;min-width:0;box-shadow:var(--shadow-card)}
+/* a card that drills through announces itself: pointer + lift on hover */
+.card.clickable{cursor:pointer;transition:box-shadow .18s ease,transform .18s ease}
+.card.clickable:hover{box-shadow:var(--shadow-lift);transform:translateY(-1px)}
+.card.clickable:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* small caps label above a title - metric id, phase, section */
+.eyebrow{text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-size:9.5px;font-weight:700}
+/* status pill */
+.pill{display:inline-flex;align-items:center;gap:4px;text-transform:uppercase;border-radius:999px;
+ padding:2px 8px;font-size:9.5px;font-weight:700;white-space:nowrap}
+.pill.good{background:var(--good-wash);color:var(--good-text)}
+.pill.warn{background:var(--warn-wash);color:var(--warn-text)}
+.pill.crit{background:var(--crit-wash);color:var(--crit-text)}
+.pill.info{background:var(--blue-wash);color:var(--blue)}
+/* plain-language explanation tile that sits at the foot of a metric */
+.tile{margin-top:9px;display:flex;align-items:flex-start;gap:7px;border-radius:var(--r-tile);
+ background:var(--page);padding:8px 11px;font-size:10.5px;line-height:1.45;color:var(--mut)}
+.tile b{color:var(--ink)}
+.tile .ico{color:var(--cyan-info);flex:0 0 auto;font-weight:700}
+/* segmented pill filters */
+.seg{display:inline-flex;gap:4px;flex-wrap:wrap}
+.segbtn{border:0;border-radius:999px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;
+ background:var(--line2);color:var(--mut)}
+.segbtn.on{background:var(--blue);color:#fff}
+.segbtn:hover:not(.on){background:var(--blue-wash);color:var(--blue)}
+.card h2{font-size:13px;font-weight:700;margin-bottom:2px;color:var(--ink);letter-spacing:-.01em}
+.card .hint{color:var(--mut);font-size:10.5px;line-height:1.45;margin-bottom:8px}
+.hdrrow{display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap}
+.span2{grid-column:span 2}.span3{grid-column:span 3}.span4{grid-column:span 4}.span5{grid-column:span 5}.span6{grid-column:span 6}.span7{grid-column:span 7}.span8{grid-column:span 8}.span12{grid-column:span 12}
+@media(max-width:1150px){.span2{grid-column:span 4}.span3,.span4{grid-column:span 6}.span5,.span6,.span7,.span8{grid-column:span 12}}
+.kpi .big{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.05;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi .big .u{font-size:14px;font-weight:700;color:var(--mut);margin-left:2px}
+.kpi .cmp{color:var(--mut);font-size:10.5px;margin-top:5px;line-height:1.4}
+.kpi h2{font-size:8.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:8.5px;font-weight:700;border-radius:14px;padding:1px 6px;white-space:nowrap}
+.chip.good{background:var(--good-wash);color:var(--good-text)}
+.chip.warn{background:var(--warn-wash);color:var(--warn-text)}
+.chip.crit{background:var(--crit-wash);color:var(--crit-text)}
+.chip.blue{background:var(--blue-wash);color:var(--blue)}
+.chip.mut{background:var(--grid);color:var(--ink2)}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line2);white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--blue)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.twrap{overflow-x:auto}
+tr:hover td{background:var(--blue-wash)}
+.dim{color:var(--mut)}
+.stickycol th:first-child,.stickycol td:first-child{position:sticky;left:0;background:var(--surface);z-index:2;min-width:150px;box-shadow:1px 0 0 var(--line2)}
+.stickycol tr:hover td:first-child{background:var(--blue-wash)}
+.pcell{min-width:86px}
+.pcell .d{font-size:8.5px;color:var(--mut);margin-top:1px}
+.pcell .d.red{color:var(--crit-text);font-weight:600}
+.pbar{position:relative;height:10px;background:var(--grid);border-radius:3px;overflow:hidden;min-width:56px}
+.pbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--s-act);border-radius:3px 0 0 3px}
+.pbar .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--s-plan)}
+.prow{display:grid;grid-template-columns:160px 1fr 96px;gap:7px;align-items:center;padding:2.5px 0}
+.prow .nm{font-size:10px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow .val{font-size:9.5px;text-align:right;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:9px;font-size:9px;color:var(--ink2);margin:2px 0 5px;flex-wrap:wrap}
+.legend .sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px;vertical-align:-1px}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:7px}
+.ftile{border:1px solid var(--line2);border-radius:7px;padding:7px 9px;cursor:pointer;background:var(--surface)}
+.ftile:hover{border-color:var(--blue)}
+.ftile.sel{outline:2px solid var(--blue)}
+.ftile .bn{font-size:10px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.ftile .bp{font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums}
+.ftile .bpl{font-size:8.5px;color:var(--mut);margin-bottom:4px}
+.frow{display:grid;grid-template-columns:56px 1fr 84px;gap:4px;align-items:center;padding:1px 0}
+.frow .fn{font-size:8.5px;color:var(--mut)}
+.frow .fv{font-size:8.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);white-space:nowrap}
+.frow .fb{height:4px;background:var(--grid);border-radius:2px;overflow:hidden}
+.frow .fb i{display:block;height:100%;background:var(--s-act);border-radius:2px}
+.stgcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:5px;margin-bottom:7px}
+.stgc{border:1px solid var(--line2);border-radius:6px;padding:5px 7px}
+.stgc .n{font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);white-space:nowrap;overflow:hidden}
+.stgc .v{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums}
+.stgc .v small{font-size:8.5px;color:var(--mut);font-weight:600}
+.stgc .fb{height:3px;background:var(--grid);border-radius:2px;margin-top:3px;overflow:hidden}
+.stgc .fb i{display:block;height:100%;background:var(--blue);border-radius:2px}
+.mswrap{overflow-x:auto}
+/* milestone cards + mini track */
+.mstrack{position:relative;height:26px;margin:4px 6px 10px}
+.mstline{position:absolute;top:12px;left:0;right:0;height:4px;background:var(--grid);border-radius:2px}
+.mstdone{position:absolute;top:12px;left:0;height:4px;background:var(--blue);border-radius:2px;opacity:.5}
+.mstdot{position:absolute;top:8px;width:12px;height:12px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line2);transform:translateX(-50%);cursor:pointer}
+.mstdot:hover{transform:translateX(-50%) scale(1.25)}
+.msttoday{position:absolute;top:0;bottom:0;width:2px;background:var(--warn);transform:translateX(-50%)}
+.msttoday span{position:absolute;top:-2px;left:5px;font-size:7.5px;color:var(--warn-text);white-space:nowrap}
+.mscards{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:6px}
+.msc{border:1px solid var(--line2);border-radius:7px;padding:7px 9px;background:var(--surface)}
+.msc:hover{border-color:var(--blue)}
+.mscn{font-size:10px;font-weight:700;line-height:1.3;min-height:26px;display:flex;gap:5px;align-items:flex-start}
+.mscdot{flex:0 0 8px;width:8px;height:8px;border-radius:50%;margin-top:2px}
+.mscch{display:flex;gap:4px;margin:4px 0 5px;flex-wrap:wrap}
+.mscd{display:flex;justify-content:space-between;font-size:9px;padding:1px 0}
+.mscd .k{color:var(--mut)}
+.mscd b{font-variant-numeric:tabular-nums}
+/* column selector */
+.colsel{position:relative;display:inline-block}
+.colsel summary{list-style:none;cursor:pointer;font-size:10px;color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:2.5px 8px;user-select:none}
+.colsel summary::-webkit-details-marker{display:none}
+.colsel[open] summary{background:var(--blue-wash);color:var(--blue);border-color:var(--blue)}
+.colpop{position:absolute;z-index:50;top:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--line2);border-radius:7px;box-shadow:var(--shadow-popover);padding:8px 10px;min-width:230px;max-height:300px;overflow:auto}
+.colpop label{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--ink2);padding:2px 0;cursor:pointer;white-space:nowrap}
+.colpop input{accent-color:var(--blue)}
+.colpop .cact{display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:5px}
+.colpop .cact button{color:var(--blue);font-size:10px;font-weight:600}
+#rsnmodal{position:fixed;inset:0;z-index:120;display:none;align-items:flex-start;justify-content:center;
+ background:rgba(0,45,98,.42);backdrop-filter:blur(1px);padding:26px 14px;overflow:auto}
+#rsnmodal.on{display:flex;animation:dfade .16s ease}
+@keyframes dfade{from{opacity:0}to{opacity:1}}
+#rsnmodal-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);
+ width:100%;max-width:1024px;box-shadow:var(--shadow-popover);overflow:hidden;animation:drise .18s ease}
+@keyframes drise{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
+#rsnmodal-hd{display:flex;align-items:flex-start;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line);
+ position:sticky;top:0;background:var(--surface);z-index:2}
+#rsnmodal-t{flex:1;font-size:15px;font-weight:800;line-height:1.3;letter-spacing:-.01em;color:var(--ink)}
+#rsnmodal-t .eyebrow{margin-bottom:2px}
+#rsnmodal-bd .dsec{margin-top:14px}
+#rsnmodal-bd .dsec>.eyebrow{margin-bottom:5px}
+#rsnmodal-bd .dbox{border:1px solid var(--line);border-radius:var(--r-tile);overflow:auto}
+#rsnmodal-bd .dbox table{font-size:10.5px}
+#rsnmodal-bd .dbox th{position:sticky;top:0;background:var(--surface);cursor:pointer;user-select:none}
+#rsnmodal-bd .dbox th:hover{color:var(--blue)}
+#rsnmodal-bd .dbox tr:hover td{background:var(--blue-wash)}
+.dfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;
+ margin-top:8px;font-size:10.5px;color:var(--mut)}
+.dfoot button{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);border-radius:7px;
+ padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer}
+.dfoot button:hover:not(:disabled){background:var(--blue-wash);color:var(--blue);border-color:var(--blue-lt)}
+.dfoot button:disabled{opacity:.4;cursor:default}
+.dfilt{width:100%;border:1px solid var(--line2);border-radius:6px;padding:2px 5px;font:inherit;
+ font-size:9.5px;background:var(--surface);color:var(--ink)}
+#rsnmodal-back{border:1px solid var(--line2);background:var(--surface);color:var(--blue);font-size:14px;line-height:1;
+ border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto;display:none}
+#rsnmodal-back:hover{background:var(--blue-wash)}
+.rsndrill{border:1px solid var(--blue);background:var(--blue-wash);color:var(--blue);font-weight:700;font-size:10px;
+ border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap}
+.rsndrill:hover{background:var(--blue);color:#fff}
+#rsnmodal-x{border:1px solid var(--line2);background:var(--surface);color:var(--dim);font-size:16px;line-height:1;
+ border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto}
+#rsnmodal-x:hover{background:var(--blue-wash);color:var(--blue)}
+#rsnmodal-bd{padding:10px 14px 14px}
+#tip{position:fixed;z-index:99;background:var(--tip-bg);color:var(--tip-fg);border-radius:6px;padding:6px 9px;font-size:10px;pointer-events:none;box-shadow:var(--shadow-popover);display:none;max-width:290px;line-height:1.45}
+#tip .t2{color:var(--tip-fg2)}
+.toggle2{display:flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden;font-size:9.5px}
+.toggle2 button{padding:2.5px 7px;color:var(--ink2)}
+.toggle2 button.on{background:var(--blue);color:#fff}
+.small{font-size:9px}
+svg text{fill:var(--ink2);font-family:inherit}
+.gwrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.gstats{display:grid;grid-template-columns:auto auto;gap:6px 16px;font-size:11px}
+.gstats .k{color:var(--mut)}
+.gstats .v{font-weight:700;font-variant-numeric:tabular-nums}
+.detrow td{background:var(--page)!important}
+:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+
+/* NTPC default zoom (exec readability). Steps down on smaller screens. */
+html{zoom:1.3}
+@media (max-width:1680px){html{zoom:1.15}}
+@media (max-width:1400px){html{zoom:1}}
+
+.chip.vlc{background:rgba(27,138,47,.15);color:#1b8a2f}
+.chip.vls{background:rgba(92,45,145,.13);color:#7a4fb3}
+.chip.vlnr{background:rgba(255,90,70,.15);color:#e04b3a}
+.chip.vlnc{background:rgba(230,198,25,.22);color:#8a7500}
+.chip.vlw{background:rgba(245,166,35,.16);color:#b57508}
+[data-theme=dark] .chip.vlc{color:#4ecb6a}[data-theme=dark] .chip.vls{color:#b08fe0}
+[data-theme=dark] .chip.vlnr{color:#ff8a7a}[data-theme=dark] .chip.vlnc{color:#e0c545}[data-theme=dark] .chip.vlw{color:#ffb84d}
+.vleg{display:inline-flex;gap:5px;align-items:center;font-size:9.5px;color:var(--mut);flex-wrap:wrap}
+.fbar input[type=date]{font-size:10px;padding:2px 4px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);color:var(--ink)}
+
+.chip.vlr{background:rgba(56,212,48,.16);color:#1f9e18}
+.chip.vlfr{background:rgba(164,198,57,.2);color:#7a8f14}
+.chip.vlst{background:rgba(229,57,53,.15);color:#d32f2f}
+.chip.vlrq{background:rgba(121,134,203,.18);color:#5c6bc0}
+.chip.vlqc{background:rgba(11,93,30,.16);color:#0b5d1e}
+
+/* VisiLean STANDARD status colours (solid swatches) — override all prior chip washes */
+.chip.vlnc,[data-theme=dark] .chip.vlnc{background:#E5D24B;color:#4d4400}
+.chip.vlnr,[data-theme=dark] .chip.vlnr{background:#F0796B;color:#fff}
+.chip.vlr,[data-theme=dark] .chip.vlr{background:#66E353;color:#0b4d00}
+.chip.vlfr,[data-theme=dark] .chip.vlfr{background:#AFCB37;color:#3b4700}
+.chip.vls,[data-theme=dark] .chip.vls{background:#41127E;color:#fff}
+.chip.vlw,[data-theme=dark] .chip.vlw{background:#E0B520;color:#4d3f00}
+.chip.vlst,[data-theme=dark] .chip.vlst{background:#DC1F1F;color:#fff}
+.chip.vlc,[data-theme=dark] .chip.vlc{background:#57A344;color:#fff}
+.chip.vlrq,[data-theme=dark] .chip.vlrq{background:#7B85C9;color:#fff}
+.chip.vlqc,[data-theme=dark] .chip.vlqc{background:#1C2050;color:#fff}
+#h-new{margin-left:6px;border:1px solid var(--blue);background:var(--blue-wash);color:var(--blue);font-weight:700;font-size:9.5px;border-radius:5px;padding:1px 6px;cursor:pointer}
+#h-age{font-weight:700;font-size:9.5px;border-radius:5px;padding:1px 5px;margin-left:5px;white-space:nowrap}
+#h-age.fresh{background:#57A34422;color:var(--good-text)}
+#h-age.aging{background:#E0B52022;color:var(--warn-text,#8a6100)}
+#h-age.stale{background:#DC1F1F22;color:var(--crit-text)}
+#btn-refresh{border:1px solid var(--line2);background:var(--surface);color:var(--blue);font-weight:700;font-size:10.5px;border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap}
+#btn-refresh:hover{background:var(--blue-wash)}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="kplogo" src="__LOGO__" alt="KP Group">
+      <div><div class="t1">KP Group · MIS</div><div class="t2">Powered by VisiLean</div></div>
+    </div>
+    <div class="navhdr">Project</div>
+    <nav class="nav" id="nav-top"></nav>
+    <div class="navhdr">Departments</div>
+    <nav class="nav" id="nav-dept"></nav>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>NTPC Bikaner Block 8 · 200 MW</h1>
+        <div class="sub">KPI Green Energy · LIVE from VisiLean · 6-day weeks · LOA 07-May-2026 · <span id="h-gen" style="color:var(--blue);font-weight:600"></span><span id="h-age"></span><button id="h-new" style="display:none" title="A newer VisiLean build is available. Your current view is kept.">● New data — load</button></div>
+      </div>
+      <div class="meta">
+        <div class="m"><div class="k">Capacity</div><div class="v">200 MWac</div></div>
+        <div class="m"><div class="k">Data as of</div><div class="v" id="h-date"></div></div>
+        <div class="m"><div class="k">Days to COD</div><div class="v" id="h-cod"></div></div>
+        <div class="m"><button id="btn-refresh" title="Fetch the latest VisiLean data build">⟳ Refresh</button></div>
+        <div class="m thm" id="thm">
+          <button data-t="auto">Auto</button><button data-t="light">Light</button><button data-t="dark">Dark</button>
+        </div>
+      </div>
+    </div>
+    <div class="fbar" id="fbar">
+      <select id="f-dept"><option value="">All departments</option></select>
+      <select id="f-type"><option value="">All activity types</option></select>
+      <select id="f-area"><option value="">All locations</option></select>
+      <select id="f-pkg"><option value="">All packages</option></select>
+      <select id="f-owner"><option value="">All owners</option></select>
+      <select id="f-ownship"><option value="">All ownership</option></select>
+      <span class="dsl">From <input type="date" id="f-d1"></span><span class="dsl">To <input type="date" id="f-d2"></span>
+      <span class="tgl" id="f-crit">⚠ Critical</span>
+      <span class="tgl" id="f-del">⏰ Delayed</span>
+      <span class="dsl">Date <input type="range" id="f-date" min="0" max="0" step="1"><b id="f-datev"></b></span>
+      <button class="reset" id="f-reset">Reset</button>
+      <span class="vleg" style="margin-left:auto">VisiLean status (live):<span class="chip vlnc">Not Committed</span><span class="chip vlnr">Not Ready</span><span class="chip vlr">Ready</span><span class="chip vlfr">Forced Ready</span><span class="chip vls">Started</span><span class="chip vlw">Warning</span><span class="chip vlst">Stopped</span><span class="chip vlc">Complete</span><span class="chip vlrq">Rejected at QC</span><span class="chip vlqc">Quality Checked</span></span>
+      <span class="fnote" id="f-count"></span>
+    </div>
+    <div id="page"></div>
+  </main>
+</div>
+<div id="tip"></div>
+<div id="rsnmodal" role="dialog" aria-modal="true" aria-labelledby="rsnmodal-t">
+  <div id="rsnmodal-box">
+    <div id="rsnmodal-hd"><button id="rsnmodal-back" title="Back to the activity list" aria-label="Back">&#8592;</button><div id="rsnmodal-t"></div>
+      <button id="rsnmodal-x" title="Close (Esc)" aria-label="Close">&times;</button></div>
+    <div id="rsnmodal-bd"></div>
+  </div>
+</div>
+<script>
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+const DATA = __DATA__;
+const M = DATA.meta, L = DATA.leaves;
+const C = {}; DATA.cols.forEach((c,i)=>C[c]=i);
+const DEPTS = DATA.depts, DNAME = {}; DEPTS.forEach(d=>DNAME[d.key]=d.name);
+const SW = M.statusWd;
+const WD=[]; {let d=new Date(2026,4,7); while(WD.length<1100){ if(d.getDay()!==0) WD.push(new Date(d)); d.setDate(d.getDate()+1);} }
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function wdate(w,fin){ const i=Math.min(WD.length-1,Math.max(0,Math.round(w)-(fin?1:0))); const d=WD[i]; return d.getDate().toString().padStart(2,"0")+"-"+MON[d.getMonth()]+"-"+String(d.getFullYear()).slice(2); }
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const fmt1=x=>(Math.round(x*10)/10).toFixed(1);
+const fq=x=>x>=1e6?(x/1e6).toFixed(1)+"M":x>=1000?(x/1000).toFixed(x>=10000?0:1)+"k":Math.round(x*10)/10;
+// ---------- state ----------
+const state = {page:"summary", unit:"%", at:SW, f:{dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false}};
+// status rules aligned with the schedule Excel 'Status' column
+// VisiLean 'Activity Type' custom field values, verbatim. Every E/P/C figure on
+// this dashboard is counted off this field so it ties back to VisiLean 1:1.
+const AT={ENG:"Engineering",SUP:"Procurement - Supply",SVC:"Procurement - Services",CON:"Construction"};
+const isEng=r=>r[C.type]===AT.ENG, isProc=r=>r[C.type]===AT.SUP||r[C.type]===AT.SVC, isCon=r=>r[C.type]===AT.CON;
+// Not baselined in VisiLean -> counted in Total, left out of Completed / Delayed,
+// exactly as VisiLean's own counters do.
+const isDone = r=>r[C.state]==="done" && !r[C.nd];
+const isLateStart = r=>r[C.state]==="late";
+const isDelayed = r=>!!r[C.dly];
+const isBehind = r=>(r[C.fEF]-r[C.bEF])>=4 && r[C.state]!=="done";
+const isCrit = r=>r[C.tf]<=5 && r[C.state]!=="done";
+function filtered(forceDept){
+  const f=state.f, dept=forceDept||f.dept;
+  return L.filter(r=>(!dept||r[C.dept]===dept)&&(!f.type||r[C.type]===f.type)&&(!f.area||r[C.area]===f.area)
+    &&(!f.pkg||r[C.pkg]===f.pkg)&&(!f.owner||r[C.owner]===f.owner)&&(!f.ownship||String(r[C.ownship]||"").split(/\s*,\s*/).indexOf(f.ownship)>=0)
+    &&(f.w1===null||r[C.fEF]>=f.w1)&&(f.w2===null||r[C.fES]<=f.w2)
+    &&(!f.crit||isCrit(r))&&(!f.del||isBehind(r)));
+}
+function wgt(rows){const c=rows.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0);return c>0?(r=>(r[C.cost]>0?r[C.cost]:0)):(r=>r[C.dur]);}
+function wsum(rows){const w=wgt(rows);return rows.reduce((a,r)=>a+w(r),0)||1}
+function planPct(rows,at){at=at||state.at;const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>a+Math.min(1,Math.max(0,(at-r[C.bES])/Math.max(.5,r[C.dur])))*w(r),0)/W}
+function fcPct(rows,at){at=at||state.at;const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>a+Math.min(1,Math.max(0,(at-r[C.fES])/Math.max(.5,r[C.dur])))*w(r),0)/W}
+function actPctAt(rows,at){const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>{const el=Math.max(0,(at-r[C.fES])/Math.max(.5,r[C.dur]));return a+Math.min(r[C.pct]/100,el)*w(r)},0)/W}
+function actPct(rows){return state.at<=SW ? actPctAt(rows,state.at) : fcPct(rows,state.at)}
+const unitVal=(pct,mw)=>state.unit==="MW"?fmt1(pct/100*(mw||300))+" MW":fmt1(pct)+"%";
+// ---------- tooltip ----------
+const tip=document.getElementById("tip");
+function showTip(e,html){tip.innerHTML=html;tip.style.display="block";moveTip(e)}
+function moveTip(e){const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+12,y=e.clientY+10;if(x+w>innerWidth-8)x=e.clientX-w-8;if(y+h>innerHeight-8)y=e.clientY-h-8;tip.style.left=x+"px";tip.style.top=y+"px"}
+function hideTip(){tip.style.display="none"}
+document.addEventListener("scroll",hideTip,true);
+function chip(cls,txt){return `<span class="chip ${cls}">${txt}</span>`}
+function pill(kind,txt){return `<span class="pill ${kind}">${txt}</span>`}
+// plain-language tile that explains what a number means, as the reference does
+function tile(html){return `<div class="tile"><span class="ico">i</span><div>${html}</div></div>`}
+function stChip(st){return st==="done"?chip("vlc","Complete"):st==="inprog"?chip("vls","Started"):chip("vlnc","Not Committed")}
+const VLMAP={"complete":["vlc","Complete"],"started":["vls","Started"],"notcommitted":["vlnc","Not Committed"],
+ "ready":["vlr","Ready"],"forcedready":["vlfr","Forced Ready"],"notready":["vlnr","Not Ready"],
+ "warning":["vlw","Warning"],"stopped":["vlst","Stopped"],
+ "rejectedatqualitycheck":["vlrq","Rejected at QC"],"qualitychecked":["vlqc","Quality Checked"]};
+function vlChip(v){const k=String(v||"").toLowerCase().replace(/[^a-z]/g,"");const m=VLMAP[k];return m?chip(m[0],m[1]):chip("mut",esc(String(v||"—")))}
+function rowChip(r){return (C.vls!==undefined&&r[C.vls])?vlChip(r[C.vls]):stChip(r[C.state])}
+// ---------- speedometer gauge (semicircle, correct sweep) ----------
+function gauge(a,p){
+  const Wc=170,Hc=104,cx=85,cy=90,R=62;
+  const ang=v=>Math.PI*(1-Math.min(100,Math.max(0,v))/100);
+  const pt=(v,r)=>[cx+r*Math.cos(ang(v)),cy-r*Math.sin(ang(v))];
+  const arc=(v0,v1,col)=>{const[x0,y0]=pt(v0,R),[x1,y1]=pt(v1,R);
+    return `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round"/>`};
+  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:170px;height:auto">`;
+  g+=arc(0,100,"var(--grid)");
+  if(a>0.5)g+=arc(0,Math.min(100,a),a>=p?"var(--good)":a>=p*.85?"var(--warn)":"var(--crit)");
+  const[t0,t1]=pt(p,R-8),[t2,t3]=pt(p,R+8);
+  g+=`<line x1="${t0}" y1="${t1}" x2="${t2}" y2="${t3}" stroke="var(--s-plan)" stroke-width="2.5"/>`;
+  const[n0,n1]=pt(a,R-17);
+  g+=`<line x1="${cx}" y1="${cy}" x2="${n0.toFixed(1)}" y2="${n1.toFixed(1)}" stroke="var(--ink)" stroke-width="2"/><circle cx="${cx}" cy="${cy}" r="3.5" fill="var(--ink)"/>`;
+  g+=`<text x="${cx}" y="${cy-24}" font-size="16" font-weight="800" text-anchor="middle" style="fill:var(--ink)">${fmt1(a)}%</text>`;
+  g+=`<text x="${cx}" y="${cy-11}" font-size="8" text-anchor="middle">plan ${fmt1(p)}%</text>`;
+  g+=`<text x="${cx-R}" y="${cy+11}" font-size="7.5" text-anchor="middle">0%</text><text x="${cx+R}" y="${cy+11}" font-size="7.5" text-anchor="middle">100%</text>`;
+  return g+"</svg>";
+}
+function gaugeCard(rows){
+  const p=planPct(rows),a=actPct(rows),spi=p>0.05?a/p:0,sv=a-p;
+  return `<div class="card span4"><h2>Overall progress</h2><div class="hint">vs baseline plan</div>
+   <div class="gwrap">${gauge(a,p)}
+    <div class="gstats">
+     <span class="k">SPI — Schedule Performance Index<br><span style="font-weight:400">(= Actual % ÷ Planned %)</span></span><span class="v">${spi?spi.toFixed(2):"—"}</span>
+     <span class="k">Progress Variance<br><span style="font-weight:400">(= Actual − Plan)</span></span><span class="v" style="color:${sv>=0?"var(--good-text)":"var(--crit-text)"}">${sv>=0?"+":""}${fmt1(sv)}%</span>
+    </div></div></div>`;
+}
+function epcCard(){
+  const segs=[["Engineering",L.filter(isEng)],
+   ["Procurement",L.filter(isProc)],
+   ["Construction",L.filter(isCon)]];
+  let h=`<div class="card span4"><h2>EPC bifurcation</h2><div class="hint">counted on VisiLean's <b>Activity Type</b> · Actual % vs Baseline Plan % · Δ = progress variation (Actual − Plan)</div>`;
+  segs.forEach(([n,rr])=>{const a=actPct(rr),p=planPct(rr),spi=p>0.05?a/p:0,dv=a-p;
+    h+=`<div class="prow"><div class="nm"><b>${n}</b> <span class="dim">${rr.length} activities</span></div>
+     <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div>
+     <div class="val"><b>${fmt1(a)}%</b> <span class="dim">/ ${fmt1(p)}%</span> <span style="color:${dv>=0?"var(--good-text)":"var(--crit-text)"};font-weight:600">Δ ${dv>=0?"+":""}${fmt1(dv)}%</span> ${spi?`<span class="chip ${spi>=0.95?"vlc":spi>=0.8?"vlw":"vlnr"}">SPI ${spi.toFixed(2)}</span>`:""}</div></div>`});
+  // everything that is not E / P / C, so the three rows above reconcile to the total
+  const cov={[AT.ENG]:1,[AT.SUP]:1,[AT.SVC]:1,[AT.CON]:1},oth={};
+  L.forEach(r=>{if(!cov[r[C.type]]){const k=r[C.type]||"Unclassified";oth[k]=(oth[k]||0)+1}});
+  const ks=Object.keys(oth).sort((a,b)=>oth[b]-oth[a]);
+  if(ks.length)h+=`<div class="hint" style="margin-top:7px;padding-top:6px;border-top:1px solid var(--line)">Other activity types — ${ks.map(k=>`${esc(k)} <b>${oth[k].toLocaleString()}</b>`).join(" · ")}</div>`;
+  return h+`</div>`;
+}
+function costCard(){
+  const rows=filtered();
+  const bud=rows.reduce((a,r)=>a+(r[C.cost]||0),0), ev=rows.reduce((a,r)=>a+(r[C.cost]||0)*r[C.pct]/100,0);
+  const cr=x=>"₹"+(x/1e7>=100?Math.round(x/1e7).toLocaleString():fmt1(x/1e7))+" Cr";
+  return `<div class="card span4"><h2>Cost</h2>
+   <div class="gstats" style="margin-top:3px">
+    <span class="k">Budget (BAC)</span><span class="v">${cr(bud)}</span>
+    <span class="k">Earned value</span><span class="v">${cr(ev)}</span>
+    <span class="k">Actual / CPI</span><span class="v">—</span>
+    <span class="k">FAC</span><span class="v">${cr(bud)}</span>
+   </div></div>`;
+}
+// ---------- reasons for variance ----------
+// Categories come from the task-history audit trail: the team records them against
+// an activity as "<Responsible party>: <Category>" (Client: Approval, KP: Manpower,
+// Vendor: Material ...). Activities with a real variance and no note recorded get
+// their own slice, so the unexplained share is visible rather than hidden.
+let rsnCat="", rsnSel=null;
+const RSN_COL={"Approval":"#5B8FF9","Manpower":"#61DDAA","Material":"#F6BD16",
+               "Machine":"#7262FD","Design":"#78D3F8","External":"#9661BC",
+               "Weather":"#F6903D","Payment":"#008685","Statutory":"#F08BB4",
+               "Uncategorised":"#9aa4b2","No reason recorded":"#DC1F1F"};
+const RSN_FALLBACK=["#5B8FF9","#61DDAA","#F6BD16","#7262FD","#78D3F8","#9661BC","#F08BB4","#008685"];
+function rsnColor(c,i){return RSN_COL[c]||RSN_FALLBACK[i%RSN_FALLBACK.length]}
+const EV_COL={latestart:"vlnr",latefinish:"vlst",resched:"vlw",notready:"vlnr"};
+
+function reasonsFor(deptKey){
+  const f=state.f;
+  return (DATA.reasons||[]).filter(r=>
+    (!deptKey||r.dept===deptKey)&&(!f.dept||r.dept===f.dept)&&(!f.type||r.type===f.type)
+    &&(!f.owner||r.owner===f.owner)
+    &&(!f.ownship||String(r.ownship||"").split(/\s*,\s*/).indexOf(f.ownship)>=0));
+}
+// donut: one segment per category, clickable
+function donut(items,total,sel){
+  const W=132,cx=66,cy=66,R=60,ri=36;
+  if(!total)return "";
+  let a0=-Math.PI/2,g=`<svg viewBox="0 0 ${W} ${W}" style="width:132px;height:132px;flex:0 0 auto">`;
+  if(items.length===1){
+    g+=`<circle cx="${cx}" cy="${cy}" r="${(R+ri)/2}" fill="none" stroke="${rsnColor(items[0].k,0)}" stroke-width="${R-ri}" data-cat="${esc(items[0].k)}" class="rsnslice" style="cursor:pointer"/>`;
+  }else{
+    items.forEach((x,i)=>{
+      const frac=x.n/total,a1=a0+frac*Math.PI*2,big=frac>0.5?1:0;
+      const p=(ang,rad)=>[(cx+rad*Math.cos(ang)).toFixed(2),(cy+rad*Math.sin(ang)).toFixed(2)];
+      const[o0x,o0y]=p(a0,R),[o1x,o1y]=p(a1,R),[i1x,i1y]=p(a1,ri),[i0x,i0y]=p(a0,ri);
+      const dim=(sel&&sel!==x.k)?0.28:1;
+      g+=`<path d="M${o0x},${o0y} A${R},${R} 0 ${big},1 ${o1x},${o1y} L${i1x},${i1y} A${ri},${ri} 0 ${big},0 ${i0x},${i0y} Z"
+           fill="${rsnColor(x.k,i)}" opacity="${dim}" class="rsnslice" data-cat="${esc(x.k)}"
+           style="cursor:pointer"><title>${esc(x.k)}: ${x.n}</title></path>`;
+      a0=a1;});
+  }
+  g+=`<text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="17" font-weight="800" fill="var(--text)">${total}</text>`;
+  g+=`<text x="${cx}" y="${cy+11}" text-anchor="middle" font-size="7.5" fill="var(--dim)">reasons</text></svg>`;
+  return g;
+}
+function rsnDetail(r){
+  const dd=(n)=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n} d late</span>`
+            :(n<0?`<span style="color:var(--good-text);font-weight:700">${n} d early</span>`:`<span class="dim">on time</span>`);
+  return `<div>
+    <div class="small dim" style="margin-bottom:8px">WBS: ${esc(r.wbs||"—")}</div>
+    <div class="gstats">
+      <span class="k">VisiLean status</span><span class="v">${vlChip(r.vls)}</span>
+      <span class="k">Progress</span><span class="v">${r.pct}%</span>
+      <span class="k">Owner</span><span class="v">${esc(r.owner||"—")}</span>
+      <span class="k">Ownership</span><span class="v">${esc(r.ownship||"—")}</span>
+      <span class="k">Package</span><span class="v">${esc(r.pkg||"—")}</span>
+      <span class="k">Location</span><span class="v">${esc(r.area||"—")}</span>
+      <span class="k">Baseline start → finish</span><span class="v">${wdate(r.bES)} → ${wdate(r.bEF,1)}</span>
+      <span class="k">${r.aEF!=null?"Actual":"Forecast"} start → finish</span><span class="v">${wdate(r.aES!=null?r.aES:r.fES)} → ${wdate(r.aEF!=null?r.aEF:r.fEF,1)}</span>
+      <span class="k">Start variance</span><span class="v">${dd(r.sSlip)}</span>
+      <span class="k">Finish variance</span><span class="v">${dd(r.fSlip)}</span>
+      <span class="k">Total float</span><span class="v">${r.tf} d</span>
+    </div>
+    ${r.cats.length?`<div style="margin-top:7px"><div class="small dim">Reason${r.cats.length>1?"s":""} recorded</div>
+      ${r.cats.map(c=>`<div style="margin-top:3px"><span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>
+        ${chip(EV_COL[c.kind]||"mut",c.label)}</div>`).join("")}</div>`:""}
+    ${r.events.length?`<div style="margin-top:7px"><div class="small dim">From the VisiLean activity history</div>
+      ${r.events.map(e=>`<div style="margin-top:3px;font-size:11px;line-height:1.5;padding:5px 8px;background:var(--surface);border:1px solid var(--line);border-radius:6px">
+        <b>${esc(e.label)}</b>${e.by?` <span class="dim">· ${esc(e.by)}</span>`:""}${e.text?`<br>${esc(e.text)}`:""}</div>`).join("")}</div>`:""}
+    ${r.desc?`<div style="margin-top:7px"><div class="small dim">Activity description</div><div style="font-size:11px;line-height:1.5">${esc(r.desc)}</div></div>`:""}
+  </div>`;
+}
+let rsnDept="";
+// ---------- generic drill-through ----------
+// A spec describes any metric: how it reads, how it reconciles, how it breaks down
+// and the rows behind it. Every drill-through on the dashboard renders through this,
+// so they all behave the same way.
+let _dspec=null,_dsub="",_dsort={k:null,dir:1},_dpage=0,_dfilt={};
+const DPAGE=25;
+function drillOpen(spec){
+  _dspec=spec;_dsub=(spec.subsets&&spec.subsets[0]&&spec.subsets[0].k)||"";
+  _dsort={k:null,dir:1};_dpage=0;_dfilt={};
+  drillRender();
+}
+function drillRows(){
+  const s=_dspec;if(!s)return[];
+  let rows=s.rows||[];
+  const sub=(s.subsets||[]).find(x=>x.k===_dsub);
+  if(sub&&sub.f)rows=rows.filter(sub.f);
+  Object.keys(_dfilt).forEach(k=>{
+    const q=(_dfilt[k]||"").toLowerCase();if(!q)return;
+    const col=s.cols.find(c=>c.k===k);if(!col)return;
+    rows=rows.filter(r=>String(col.txt?col.txt(r):col.get(r)??"").toLowerCase().includes(q));
+  });
+  if(_dsort.k){
+    const col=s.cols.find(c=>c.k===_dsort.k);
+    if(col)rows=rows.slice().sort((a,b)=>{
+      const x=col.get(a),y=col.get(b);
+      const n=(typeof x==="number"&&typeof y==="number")?x-y:String(x??"").localeCompare(String(y??""));
+      return n*_dsort.dir;});
+  }
+  return rows;
+}
+function drillRender(){
+  const s=_dspec;if(!s)return;
+  const rows=drillRows(),total=rows.length;
+  const pages=Math.max(1,Math.ceil(total/DPAGE));
+  if(_dpage>=pages)_dpage=pages-1;
+  const page=rows.slice(_dpage*DPAGE,(_dpage+1)*DPAGE);
+  let h="";
+  if(s.formula)h+=`<div class="tile" style="margin-top:0"><span class="ico">=</span><div>${s.formula}</div></div>`;
+  if(s.reconcile)h+=`<div style="margin-top:8px">${s.reconcile}</div>`;
+  if(s.breakdown&&s.breakdown.length){
+    h+=`<div class="dsec"><div class="eyebrow">Breakdown — ${esc(s.breakdownBy||"by dimension")}</div>
+      <div class="dbox" style="max-height:190px"><table><tr><th>Scope</th><th class="num">Count</th><th class="num">Share</th></tr>`;
+    const bt=s.breakdown.reduce((a,x)=>a+x.n,0)||1;
+    s.breakdown.forEach(x=>{h+=`<tr><td>${esc(x.label)}</td><td class="num">${x.n}</td>
+      <td class="num">${fmt1(100*x.n/bt)}%</td></tr>`});
+    h+=`</table></div></div>`;
+  }
+  h+=`<div class="dsec"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+    <div class="eyebrow">Rows</div><div class="seg">`;
+  (s.subsets||[]).forEach(x=>{
+    const n=(x.f?(s.rows||[]).filter(x.f):(s.rows||[])).length;
+    h+=`<button class="segbtn ${_dsub===x.k?"on":""}" data-sub="${esc(x.k)}">${esc(x.label)} ${n}</button>`});
+  h+=`</div><span style="margin-left:auto;font-size:10px;color:var(--mut)">click a header to sort · filter under any column</span></div>`;
+  h+=`<div class="dbox" style="max-height:44vh;margin-top:6px"><table><tr>`;
+  s.cols.forEach(c=>{const ar=_dsort.k===c.k?(_dsort.dir>0?" ▲":" ▼"):"";
+    h+=`<th data-sk="${esc(c.k)}" class="${c.num?"num":""}">${esc(c.label)}${ar}</th>`});
+  h+=`</tr><tr>`;
+  s.cols.forEach(c=>{h+=`<th style="padding-top:0"><input class="dfilt" data-fk="${esc(c.k)}" value="${esc(_dfilt[c.k]||"")}" placeholder="filter"></th>`});
+  h+=`</tr>`;
+  page.forEach(r=>{
+    h+=`<tr${s.onRow?' class="drow" style="cursor:pointer"':""} data-rid="${esc(s.rowId?s.rowId(r):"")}">`;
+    s.cols.forEach(c=>{h+=`<td class="${c.num?"num":""}">${c.html?c.html(r):esc(String(c.get(r)??"—"))}</td>`});
+    h+=`</tr>`});
+  if(!page.length)h+=`<tr><td colspan="${s.cols.length}" style="color:var(--mut);padding:14px">No rows for this selection.</td></tr>`;
+  h+=`</table></div>`;
+  const from=total?_dpage*DPAGE+1:0,to=Math.min(total,(_dpage+1)*DPAGE);
+  h+=`<div class="dfoot"><span>${from}–${to} of ${total}</span>
+    <span><button id="d-copy">Copy</button>
+      <button id="d-prev" ${_dpage<=0?"disabled":""}>Prev</button>
+      <button id="d-next" ${_dpage>=pages-1?"disabled":""}>Next</button></span></div>`;
+  showRsnPanel(`<div class="eyebrow">${esc(s.eyebrow||"")}</div>${esc(s.title)} ${s.status||""}`,h,!!s.back);
+  setTimeout(()=>{
+    const bd=document.getElementById("rsnmodal-bd");if(!bd)return;
+    bd.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{_dsub=b.dataset.sub;_dpage=0;drillRender()}));
+    bd.querySelectorAll("th[data-sk]").forEach(th=>th.addEventListener("click",()=>{
+      const k=th.dataset.sk;_dsort=(_dsort.k===k)?{k,dir:-_dsort.dir}:{k,dir:1};drillRender()}));
+    bd.querySelectorAll(".dfilt").forEach(inp=>{
+      inp.addEventListener("input",()=>{_dfilt[inp.dataset.fk]=inp.value;_dpage=0;drillRender();
+        setTimeout(()=>{const n=document.querySelector(`.dfilt[data-fk="${inp.dataset.fk}"]`);
+          if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},0)});});
+    const p=document.getElementById("d-prev"),n=document.getElementById("d-next"),c=document.getElementById("d-copy");
+    if(p)p.addEventListener("click",()=>{if(_dpage>0){_dpage--;drillRender()}});
+    if(n)n.addEventListener("click",()=>{_dpage++;drillRender()});
+    if(c)c.addEventListener("click",()=>{
+      const s2=_dspec,rs=drillRows();
+      const txt=[s2.cols.map(x=>x.label).join("\t")].concat(
+        rs.map(r=>s2.cols.map(x=>String(x.txt?x.txt(r):x.get(r)??"")).join("\t"))).join("\n");
+      navigator.clipboard.writeText(txt).then(()=>{c.textContent="Copied";setTimeout(()=>c.textContent="Copy",1400)})
+        .catch(()=>{c.textContent="Copy failed";setTimeout(()=>c.textContent="Copy",1400)});});
+    if(_dspec.onRow)bd.querySelectorAll(".drow").forEach(tr=>tr.addEventListener("click",()=>_dspec.onRow(tr.dataset.rid)));
+  },0);
+}
+function rsnListHtml(deptKey){
+  const all=reasonsFor(deptKey);
+  const list=(rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all)
+    .slice().sort((a,b)=>Math.abs(b.fSlip)-Math.abs(a.fSlip));
+  let h=rsnCat?`<div style="margin-bottom:7px">${chip("blue","Reason: "+esc(rsnCat))}</div>`:"";
+  h+=`<div class="twrap" style="max-height:60vh;overflow:auto"><table>
+    <tr><th>Activity</th><th>Reason</th><th>Event</th><th>Owner</th><th>Status</th><th class="num">Start var.</th><th class="num">Finish var.</th></tr>`;
+  list.forEach(r=>{
+    const cs=rsnCat?r.cats.filter(c=>c.cat===rsnCat):r.cats;
+    const v=n=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n}</span>`:(n<0?`<span style="color:var(--good-text)">${n}</span>`:`<span class="dim">0</span>`);
+    h+=`<tr class="rsnrow" data-u="${r.uid}" style="cursor:pointer" title="Open activity detail">
+      <td><b>${esc(r.name.slice(0,50))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,62))}</div></td>
+      <td>${cs.map(c=>`<span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>`).join(" ")}</td>
+      <td>${[...new Set(cs.map(c=>c.label))].map(l=>chip(EV_COL[(cs.find(c=>c.label===l)||{}).kind]||"mut",l)).join(" ")}</td>
+      <td>${esc(r.owner||r.ownship||"—")}</td><td>${vlChip(r.vls)}</td>
+      <td class="num">${v(r.sSlip)}</td><td class="num">${v(r.fSlip)}</td></tr>`});
+  h+=`</table></div>`;
+  return {html:h,n:list.length};
+}
+function showRsnPanel(title,body,back){
+  document.getElementById("rsnmodal-t").innerHTML=title;
+  document.getElementById("rsnmodal-bd").innerHTML=body;
+  document.getElementById("rsnmodal-back").style.display=back?"":"none";
+  const m=document.getElementById("rsnmodal");m.classList.add("on");m.scrollTop=0;
+  document.body.style.overflow="hidden";
+}
+function openRsnList(deptKey){
+  rsnDept=deptKey||"";
+  const all=reasonsFor(rsnDept);
+  const scoped=rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all;
+  const lateN=filtered(rsnDept).filter(r=>r[C.dly]).length;
+  const catN={};all.forEach(r=>r.cats.forEach(c=>{catN[c.cat]=(catN[c.cat]||0)+1}));
+  const partyN={};all.forEach(r=>r.cats.forEach(c=>{if(c.party)partyN[c.party]=(partyN[c.party]||0)+1}));
+  const brk=(rsnCat?Object.entries(partyN).map(([k,n])=>({label:"party: "+k,n}))
+                   :Object.entries(catN).map(([k,n])=>({label:"reason: "+k,n})))
+            .sort((a,b)=>b.n-a.n);
+  const cat=(r)=>(rsnCat?r.cats.filter(c=>c.cat===rsnCat):r.cats);
+  const nCat=scoped.length,nAll=all.length;
+  drillOpen({
+    eyebrow:(rsnDept?DNAME[rsnDept]:"Project")+" · Reasons for Variance",
+    title:rsnCat||"All reason categories",
+    status:pill(rsnCat==="No reason recorded"?"crit":"info",`${nCat} ${nCat===1?"activity":"activities"}`),
+    formula:`<b>${nCat}</b> of <b>${nAll}</b> logged variances = <b>${fmt1(nAll?100*nCat/nAll:0)}%</b>`+
+            (rsnCat?` in <b>${esc(rsnCat)}</b>`:``)+
+            ` · <b>${lateN}</b> activities are currently delayed`,
+    reconcile:`<span class="pill ${nAll?"good":"warn"}">${nAll?"✓":"!"} reasons come from the VisiLean activity history · logged ${nAll} · shown ${nCat}</span>`,
+    breakdownBy:rsnCat?"this category by responsible party":"all categories",
+    breakdown:brk,
+    rows:scoped,
+    rowId:r=>String(r.uid),
+    onRow:id=>openRsn(+id,true),
+    back:false,
+    subsets:[{k:"all",label:"All"},
+             {k:"crit",label:"Critical",f:r=>r.crit},
+             {k:"late",label:"Finished late",f:r=>r.fSlip>0},
+             {k:"none",label:"No reason",f:r=>r.cats.some(c=>c.cat==="No reason recorded")}],
+    cols:[
+      {k:"name",label:"Activity",get:r=>r.name,
+       html:r=>`<b>${esc(r.name.slice(0,52))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,62))}</div>`},
+      {k:"cat",label:"Reason",get:r=>cat(r).map(c=>c.cat).join(", "),
+       html:r=>cat(r).map(c=>`<span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>`).join(" ")},
+      {k:"ev",label:"Event",get:r=>[...new Set(cat(r).map(c=>c.label))].join(", "),
+       html:r=>[...new Set(cat(r).map(c=>c.label))].map(l=>chip(EV_COL[(cat(r).find(c=>c.label===l)||{}).kind]||"mut",l)).join(" ")},
+      {k:"own",label:"Owner",get:r=>r.owner||r.ownship||"—"},
+      {k:"st",label:"Status",get:r=>r.vls,html:r=>vlChip(r.vls)},
+      {k:"ss",label:"Start var.",num:true,get:r=>r.sSlip,
+       html:r=>r.sSlip>0?`<span style="color:var(--crit-text);font-weight:700">+${r.sSlip}</span>`:(r.sSlip<0?`<span style="color:var(--good-text)">${r.sSlip}</span>`:`<span class="dim">0</span>`)},
+      {k:"fs",label:"Finish var.",num:true,get:r=>r.fSlip,
+       html:r=>r.fSlip>0?`<span style="color:var(--crit-text);font-weight:700">+${r.fSlip}</span>`:(r.fSlip<0?`<span style="color:var(--good-text)">${r.fSlip}</span>`:`<span class="dim">0</span>`)},
+    ],
+  });
+}
+function openRsn(uid,fromList){
+  const r=(DATA.reasons||[]).find(x=>x.uid===uid);if(!r)return;
+  showRsnPanel(esc(r.name)+(r.crit?" "+chip("vlnr","CRITICAL"):""),rsnDetail(r),!!fromList);
+  rsnSel=uid;
+}
+function closeRsn(){
+  document.getElementById("rsnmodal").classList.remove("on");
+  document.body.style.overflow="";rsnSel=null;
+}
+function reasonsCard(deptKey,span){
+  const all=reasonsFor(deptKey);
+  const catN={},partyN={};
+  all.forEach(r=>r.cats.forEach(c=>{catN[c.cat]=(catN[c.cat]||0)+1;
+    if(c.party)partyN[c.party]=(partyN[c.party]||0)+1}));
+  const items=Object.keys(catN).map(k=>({k,n:catN[k]})).sort((a,b)=>b.n-a.n);
+  const total=items.reduce((a,x)=>a+x.n,0);
+  const late=filtered(deptKey).filter(r=>r[C.dly]).length;
+  if(!all.length)
+    return card(span||"span12","Reasons for Variance",
+      "categories the team records against activities in VisiLean",
+      `<div class="fnote" style="padding:10px 0">No variance reasons recorded yet for this selection. They appear as soon as the team records a late start, late completion or reschedule note in VisiLean.</div>`);
+  const list=(rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all)
+    .slice().sort((a,b)=>Math.abs(b.fSlip)-Math.abs(a.fSlip));
+  let h=`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+    <div style="display:flex;gap:12px;align-items:center">${donut(items,total,rsnCat)}
+      <div style="min-width:190px">`;
+  items.forEach((x,i)=>{
+    const pc=total?(100*x.n/total):0;
+    h+=`<div class="rsnleg" data-cat="${esc(x.k)}" style="display:flex;align-items:center;gap:6px;padding:2px 4px;border-radius:5px;cursor:pointer;${rsnCat===x.k?"background:var(--blue-wash);font-weight:800":""}">
+      <span style="width:10px;height:10px;border-radius:3px;background:${rsnColor(x.k,i)};flex:0 0 auto"></span>
+      <span style="font-size:10.5px;flex:1">${esc(x.k)}</span>
+      <span style="font-size:10.5px;font-weight:700">${x.n}</span>
+      <span class="dim" style="font-size:9.5px;width:34px;text-align:right">${fmt1(pc)}%</span></div>`});
+  h+=`</div></div>`;
+  const pk=Object.keys(partyN).sort((a,b)=>partyN[b]-partyN[a]);
+  if(pk.length)h+=`<div style="min-width:150px">
+    <div class="small dim" style="margin-bottom:3px">Attributed to</div>
+    ${pk.map(p=>`<div style="display:flex;gap:6px;font-size:10.5px;padding:1px 0"><span style="flex:1">${esc(p)}</span><b>${partyN[p]}</b></div>`).join("")}
+    <div class="small dim" style="margin-top:6px">${late} activities delayed · ${all.length} with a variance logged</div></div>`;
+  h+=`</div>`;
+  if(rsnCat)h+=`<div style="margin:7px 0 3px">${chip("blue","Filtered: "+esc(rsnCat))}
+    <a href="#" onclick="rsnCat='';rsnSel=null;render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear</a></div>`;
+  setTimeout(()=>{
+    document.querySelectorAll(".rsnslice,.rsnleg").forEach(el=>{
+      el.addEventListener("click",()=>{const c=el.dataset.cat;rsnCat=(rsnCat===c?"":c);rsnSel=null;render()})});
+    const d=document.getElementById("rsn-drill");
+    if(d)d.addEventListener("click",()=>openRsnList(deptKey||""));
+  },0);
+  return card(span||"span12","Reasons for Variance",
+    "categories recorded by the team in VisiLean · click a slice to filter, then drill down for the activities",h,
+    `<button id="rsn-drill" class="rsndrill" title="Drill down to the activity list">&#9783; ${list.length} ${list.length===1?"activity":"activities"}</button>`);
+}
+// ---------- KPI cards ----------
+// every KPI drills into the rows it counts
+function kpiDrill(kind,rows,deptKey){
+  const S={all:{t:"All activities",f:null},
+           done:{t:"Completed activities",f:isDone},
+           dly:{t:"Delayed activities",f:isDelayed}}[kind];
+  if(!S)return;
+  const base=rows,sel=S.f?rows.filter(S.f):rows;
+  const by={};sel.forEach(r=>{const k=DNAME[r[C.dept]]||"—";by[k]=(by[k]||0)+1});
+  drillOpen({
+    eyebrow:(deptKey?DNAME[deptKey]:"Project")+" · KPI",
+    title:S.t,
+    status:pill(kind==="dly"?"crit":(kind==="done"?"good":"info"),sel.length.toLocaleString()),
+    formula:`<b>${sel.length.toLocaleString()}</b> of <b>${base.length.toLocaleString()}</b> activities in scope = <b>${fmt1(base.length?100*sel.length/base.length:0)}%</b>`,
+    reconcile:`<span class="pill good">✓ counted live from VisiLean · ${base.length.toLocaleString()} activities in the current filter</span>`,
+    breakdownBy:"department",
+    breakdown:Object.entries(by).map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n),
+    rows:sel,
+    subsets:[{k:"all",label:"All"},{k:"crit",label:"Critical",f:r=>isCrit(r)},
+             {k:"nb",label:"Not baselined",f:r=>!!r[C.nd]}],
+    cols:[
+      {k:"name",label:"Activity",get:r=>r[C.name],
+       html:r=>`<b>${esc(String(r[C.name]).slice(0,54))}</b><div class="small dim">${esc(String(r[C.pkg]).slice(0,52))}</div>`},
+      {k:"dept",label:"Department",get:r=>DNAME[r[C.dept]]||"—"},
+      {k:"type",label:"Activity type",get:r=>r[C.type]||"—"},
+      {k:"own",label:"Owner",get:r=>r[C.owner]||r[C.ownship]||"—"},
+      {k:"st",label:"Status",get:r=>r[C.vls],html:r=>rowChip(r)},
+      {k:"pct",label:"%",num:true,get:r=>r[C.pct]},
+      {k:"bef",label:"Baseline finish",get:r=>r[C.bEF],html:r=>wdate(r[C.bEF],1),txt:r=>wdate(r[C.bEF],1)},
+      {k:"fef",label:"Forecast finish",get:r=>r[C.fEF],html:r=>wdate(r[C.fEF],1),txt:r=>wdate(r[C.fEF],1)},
+    ],
+  });
+}
+function kpiCards(rows,projectLevel){
+  const total=rows.length,done=rows.filter(isDone).length,dl=rows.filter(isDelayed).length,
+        ls=rows.filter(isLateStart).length,cr=rows.filter(isCrit).length;
+  const bfin=rows.length?Math.max(...rows.map(r=>r[C.bEF])):0,ffin=rows.length?Math.max(...rows.map(r=>r[C.fEF])):0;
+  const d2cod=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
+  const c=(t,big,cmp,ch,dk)=>`<div class="card span2 kpi${dk?" clickable":""}"${dk?` data-kpi="${dk}" tabindex="0" title="Drill through to the activities"`:""}>
+    <div class="eyebrow">${t}</div><div class="big">${big}</div><div class="cmp">${cmp||""}</div>${ch?`<div style="margin-top:6px">${ch}</div>`:""}</div>`;
+  // Milestones live outside the activity rows, so they only belong in the headline
+  // count when nothing is filtered - otherwise a filtered view (e.g. Activity Type =
+  // Construction) would read 9 too high against VisiLean.
+  const unfiltered=rows.length===L.length;
+  const totalAll=(projectLevel&&unfiltered)? total + DATA.milestones.length : total;
+  return c("Total activities",totalAll.toLocaleString(),(projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones`:"in scope",null,"all")
+   + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count",null,"done")
+   + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"),"dly")
+   + c("Baseline vs Forecast",`<span style="font-size:12px">${wdate(bfin,1)}</span>`,`forecast ${wdate(ffin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):chip("vlc","on plan"))
+   + c("Days to COD",d2cod+" days","forecast "+M.forecastFinish);
+}
+// ---------- S-curve ----------
+let scMode="cum";
+function scurve(rows,elId,monthly,label){
+  const ms=DATA.months, n=ms.length;
+  const plan=ms.map(m=>planPct(rows,m.wd)), fc=ms.map(m=>fcPct(rows,m.wd));
+  const act=ms.filter(m=>m.wd<=SW).map(m=>actPctAt(rows,m.wd));
+  let P=plan,F=fc,A=act;
+  if(monthly){const d=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);P=d(plan);F=d(fc);A=d(act)}
+  const Wc=860,Hc=190,padL=32,padR=10,padT=8,padB=20,iw=Wc-padL-padR,ih=Hc-padT-padB;
+  const ymax=Math.max(5,...P,...F,...A)*1.06;
+  const X=i=>padL+iw*i/(n-1), Y=v=>padT+ih*(1-v/ymax);
+  const path=arr=>arr.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:100%;height:auto" id="${elId}-svg">`;
+  for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="8" text-anchor="end">${Math.round(v)}%</text>`}
+  ms.forEach((m,i)=>{if(i%2===0)g+=`<text x="${X(i)}" y="${Hc-5}" font-size="8" text-anchor="middle">${m.label}</text>`});
+  let si=ms.findIndex(m=>m.wd>state.at); if(si<0)si=n-1;
+  const sx=X(Math.max(0,si-0.5));
+  g+=`<line x1="${sx}" x2="${sx}" y1="${padT}" y2="${padT+ih}" stroke="var(--warn)" stroke-dasharray="3 3"/>`;
+  if(monthly){
+    const bw=iw/n*0.34;
+    P.forEach((v,i)=>{g+=`<rect x="${X(i)-bw-1}" y="${Y(v)}" width="${bw}" height="${Math.max(0,padT+ih-Y(v))}" rx="2" fill="var(--s-plan)" opacity=".8"/>`});
+    A.forEach((v,i)=>{g+=`<rect x="${X(i)+1}" y="${Y(v)}" width="${bw}" height="${Math.max(0,padT+ih-Y(v))}" rx="2" fill="var(--s-act)"/>`});
+  }else{
+    g+=`<path d="${path(P)}" fill="none" stroke="var(--s-plan)" stroke-width="2"/>`;
+    g+=`<path d="${path(F)}" fill="none" stroke="var(--s-act)" stroke-width="1.5" stroke-dasharray="5 4" opacity=".75"/>`;
+    if(A.length){g+=`<path d="${path(A)} L ${X(A.length-1)} ${Y(0)} L ${X(0)} ${Y(0)} Z" fill="var(--s-act)" opacity=".10"/>`;
+      g+=`<path d="${path(A)}" fill="none" stroke="var(--s-act)" stroke-width="2.2"/>`;
+      g+=`<circle cx="${X(A.length-1)}" cy="${Y(A[A.length-1])}" r="3" fill="var(--s-act)" stroke="var(--surface)" stroke-width="2"/>`;}
+  }
+  g+=`<rect id="${elId}-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+  const leg=`<div class="legend">${label?`<span style="font-weight:700">${esc(label)}</span>`:""}<span><span class="sw" style="background:var(--s-act)"></span>Actual</span><span><span class="sw" style="background:var(--s-act);opacity:.5"></span>Forecast</span><span><span class="sw" style="background:var(--s-plan)"></span>Plan</span></div>`;
+  setTimeout(()=>{const hit=document.getElementById(elId+"-hit");if(!hit)return;
+    hit.addEventListener("mousemove",e=>{const svg=document.getElementById(elId+"-svg");const r=svg.getBoundingClientRect();const fx=(e.clientX-r.left)/r.width*Wc;let i=Math.round((fx-padL)/(iw/(n-1)));i=Math.max(0,Math.min(n-1,i));
+      showTip(e,`<b>${ms[i].label}</b><br>Plan: ${fmt1(P[i]||0)}%${i<A.length?`<br>Actual: ${fmt1(A[i])}%`:""}<br><span class="t2">Forecast: ${fmt1(F[i]||0)}%</span>`);});
+    hit.addEventListener("mouseleave",hideTip);},0);
+  return leg+g;
+}
+let scSel=["all"];
+const SC_SERIES=[["all","Overall",r=>true,"var(--blue)"],
+ ["e","Engineering",isEng,"var(--s-plan)"],
+ ["p","Procurement",isProc,"var(--good)"],
+ ["c","Construction",isCon,"var(--warn)"]];
+function scurveMulti(rows,elId,monthly){
+  // One discipline selected renders exactly like Overall - so the monthly view is a
+  // Plan-vs-Actual bar chart, not a line. The multi-series line style is only for
+  // comparing two or more disciplines against each other.
+  if(scSel.length===1){
+    const s=SC_SERIES.find(x=>x[0]===scSel[0]);
+    return scurve(s?rows.filter(s[2]):rows,elId,monthly,(s&&s[0]!=="all")?s[1]:"");
+  }
+  const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
+  const ms=DATA.months,n=ms.length;
+  const D=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);
+  const series=sels.map(x=>{const rs=rows.filter(x[2]);
+    let plan=ms.map(m=>planPct(rs,m.wd)),fc=ms.map(m=>fcPct(rs,m.wd)),act=ms.filter(m=>m.wd<=SW).map(m=>actPctAt(rs,m.wd));
+    if(monthly){plan=D(plan);fc=D(fc);act=D(act)}
+    return {name:x[1],col:x[3],plan,fc,act,cnt:rs.length}});
+  const Wc=860,Hc=190,padL=32,padR=10,padT=8,padB=20,iw=Wc-padL-padR,ih=Hc-padT-padB;
+  const ymax=Math.max(5,...series.flatMap(x=>[...x.plan,...x.fc,...x.act]))*1.06;
+  const X=i=>padL+iw*i/(n-1),Y=v=>padT+ih*(1-v/ymax);
+  const path=arr=>arr.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:100%;height:auto" id="${elId}-svg">`;
+  for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="8" text-anchor="end">${Math.round(v)}%</text>`}
+  ms.forEach((m,i)=>{if(i%2===0)g+=`<text x="${X(i)}" y="${Hc-5}" font-size="8" text-anchor="middle">${m.label}</text>`});
+  let si=ms.findIndex(m=>m.wd>state.at); if(si<0)si=n-1;
+  const sx=X(Math.max(0,si-0.5));
+  g+=`<line x1="${sx}" x2="${sx}" y1="${padT}" y2="${padT+ih}" stroke="var(--warn)" stroke-dasharray="3 3"/>`;
+  series.forEach(x=>{
+    g+=`<path d="${path(x.plan)}" fill="none" stroke="${x.col}" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>`;
+    g+=`<path d="${path(x.fc)}" fill="none" stroke="${x.col}" stroke-width="1.4" stroke-dasharray="5 4" opacity=".7"/>`;
+    if(x.act.length){g+=`<path d="${path(x.act)}" fill="none" stroke="${x.col}" stroke-width="2.2"/>`;
+      g+=`<circle cx="${X(x.act.length-1)}" cy="${Y(x.act[x.act.length-1])}" r="2.6" fill="${x.col}" stroke="var(--surface)" stroke-width="1.5"/>`}});
+  g+=`<rect id="${elId}-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+  const leg=`<div class="legend">${series.map(x=>`<span><span class="sw" style="background:${x.col}"></span>${x.name}</span>`).join("")}<span class="dim">solid = actual · dashed = forecast · dotted = plan</span></div>`;
+  setTimeout(()=>{const hit=document.getElementById(elId+"-hit");if(!hit)return;
+    hit.addEventListener("mousemove",e=>{const svg=document.getElementById(elId+"-svg");const r=svg.getBoundingClientRect();const fx=(e.clientX-r.left)/r.width*Wc;let i=Math.round((fx-padL)/(iw/(n-1)));i=Math.max(0,Math.min(n-1,i));
+      showTip(e,`<b>${ms[i].label}</b>`+series.map(x=>`<br>${x.name}: ${i<x.act.length?fmt1(x.act[i])+"%":"<span class='t2'>fc "+fmt1(x.fc[i]||0)+"%</span>"} <span class="t2">(plan ${fmt1(x.plan[i]||0)}%)</span>`).join(""));});
+    hit.addEventListener("mouseleave",hideTip);},0);
+  return leg+g;
+}
+function scurveTableMulti(rows){
+  if(scSel.length===1){
+    const s=SC_SERIES.find(x=>x[0]===scSel[0]);
+    return scurveTable(s?rows.filter(s[2]):rows);
+  }
+  const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
+  let h=`<div class="twrap"><table><tr><th>Month</th>${sels.map(x=>`<th class="num">${x[1]} Plan %</th><th class="num">${x[1]} Act/Fc %</th>`).join("")}</tr>`;
+  DATA.months.forEach(m=>{h+=`<tr><td>${m.label}</td>`;
+    sels.forEach(x=>{const rs=rows.filter(x[2]);
+      h+=`<td class="num">${fmt1(planPct(rs,m.wd))}</td><td class="num">${m.wd<=SW?fmt1(actPctAt(rs,m.wd)):fmt1(fcPct(rs,m.wd))+" fc"}</td>`});
+    h+=`</tr>`});
+  return h+"</table></div>";
+}
+function scurveTable(rows){
+  let h=`<div class="twrap"><table><tr><th>Month</th><th class="num">Plan %</th><th class="num">Actual %</th><th class="num">Forecast %</th></tr>`;
+  DATA.months.forEach(m=>{h+=`<tr><td>${m.label}</td><td class="num">${fmt1(planPct(rows,m.wd))}</td><td class="num">${m.wd<=SW?fmt1(actPctAt(rows,m.wd)):"—"}</td><td class="num">${fmt1(fcPct(rows,m.wd))}</td></tr>`});
+  return h+"</table></div>";
+}
+// ---------- milestones: card stepper ----------
+function msTimeline(){
+  const ms=DATA.milestones;
+  const CH={done:["good","Achieved"],ontrack:["good","On track"],watch:["warn","Watch"],late:["crit","Late"]};
+  const DOT={done:"var(--good)",ontrack:"var(--good)",watch:"var(--warn)",late:"var(--crit)"};
+  // progress along project duration for the mini track
+  const w1=Math.max(M.forecastFinishWd,M.baselineFinishWd);
+  let h=`<div class="legend" style="margin-bottom:4px"><span><span class="sw" style="background:var(--good)"></span>On track / Achieved (slip ≤ 6 days)</span><span><span class="sw" style="background:var(--warn)"></span>Watch (7–15 days)</span><span><span class="sw" style="background:var(--crit)"></span>Late (&gt; 15 days)</span></div><div class="mstrack"><div class="mstline"></div><div class="mstdone" style="width:${Math.min(100,100*SW/w1)}%"></div>`;
+  ms.forEach((m2,i)=>{h+=`<div class="mstdot" style="left:${100*m2.f/w1}%;background:${DOT[m2.status]}" data-i="${i}"></div>`});
+  h+=`<div class="msttoday" style="left:${100*SW/w1}%"><span>today</span></div></div>`;
+  h+=`<div class="mscards">`;
+  ms.forEach((m2,i)=>{
+    h+=`<div class="msc" data-i="${i}">
+      <div class="mscn"><span class="mscdot" style="background:${DOT[m2.status]}"></span>${esc(m2.name.replace(/^MS-\d+\s*/,""))}</div>
+      <div class="mscch">${m2.slip>0?chip(m2.slip>15?"vlnr":"vlw","+"+m2.slip+" days"):chip("vlc","on plan")}</div>
+      <div class="mscd"><span class="k">Baseline</span><b>${wdate(m2.b,1)}</b></div>
+      <div class="mscd"><span class="k">Forecast</span><b style="color:${m2.slip>0?"var(--crit-text)":"var(--good-text)"}">${wdate(m2.f,1)}</b></div>
+    </div>`;
+  });
+  h+="</div>";
+  setTimeout(()=>{document.querySelectorAll(".mstdot").forEach(el=>{
+    el.addEventListener("mousemove",e=>{const m2=ms[+el.dataset.i];
+      showTip(e,`<b>${esc(m2.name)}</b><br>Baseline: ${wdate(m2.b,1)} · Forecast: ${wdate(m2.f,1)}<br><span class="t2">+${m2.slip} days · ${m2.status}</span>`)});
+    el.addEventListener("mouseleave",hideTip);});},0);
+  return h;
+}
+// ---------- stage bars ----------
+function stageKey(r){
+  const d=r[C.dept], n=(r[C.pkg]+" "+r[C.name]).toLowerCase();
+  if(d==="engineering")return "Engineering";
+  if(d==="supply")return "Supply";
+  if(d==="services")return "Services";
+  if(d==="quality")return "Quality";
+  if(d==="liaisoning"||d==="regulatory")return "Statutory & Approvals";
+  if(d==="hoto")return "HOTO";
+  if(d==="initiation")return "Initiation";
+  if(d==="tnc")return "T&C";
+  if(/pile|piling/.test(n))return "Piling";
+  if(/termination|jointing/.test(n))return "Laying & Terminations";
+  const s=r[C.stage];
+  if(s==="AC / HT Works"||s==="DC Works")return "Laying & Terminations";
+  return s||"Other Site Works";
+}
+function stageBars(rows){
+  const set={};rows.forEach(r=>{const s=stageKey(r);(set[s]=set[s]||[]).push(r)});
+  const order=["Initiation","Engineering","Quality","Supply","Services","Statutory & Approvals","Civil & Foundations","Piling","MMS & Module","Laying & Terminations","Earthing & LA","Equipment","PSS & Switchyard","Other Site Works","T&C","HOTO"];
+  let h=`<div class="legend"><span><span class="sw" style="background:var(--s-act)"></span>Actual</span><span><span class="sw" style="background:var(--s-plan)"></span>Plan (tick)</span></div>`;
+  order.forEach(s=>{if(!set[s])return;const rr=set[s];const a=actPct(rr),p=planPct(rr);
+    h+=`<div class="prow"><div class="nm">${s} <span class="dim">(${rr.length})</span></div>
+     <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div>
+     <div class="val"><b>${unitVal(a)}</b> <span class="dim">/ ${unitVal(p)}</span></div></div>`});
+  return h;
+}
+// ---------- pipeline table: schedule-step columns ----------
+const MQAP_SUBS=new Set(["draftingconceptualdiscussion","internalcheckingofmqap","internalapproval","submissiontocustomer","finalacceptanceofmqap"]);
+const nrm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,"");
+function colKey(r){
+  const k=nrm(r[C.name]);
+  if(r[C.dept]==="supply"&&MQAP_SUBS.has(k))return "MQAP";
+  if(r[C.dept]==="engineering")return r[C.stage]||r[C.name];
+  return r[C.name];
+}
+const ENG_COL_LBL={"Drafting":"Drafting & Conceptual","Int. Check":"Internal Checking","Int. Approval":"Internal Approval","Submission":"Submission to Client","Acceptance":"Final Acceptance","GFC":"GFC Issuance","As-Built":"As-Built"};
+const LONGLEAD=/pv module|mms|tracker|inverter duty|central inverter|main auxiliary|harmonic|ctpt|vcb|33 kv main/i;
+let pipeSearch="", pipeDelOnly=false, pipeFocus="";
+const pipeColSel={}, pipeColOpen={};   // per-table stage column selection
+const pipeL1={}, pipeL2={};              // per-table L1 (section) / L2-L3 (package) filters
+function cellState(rr){
+  if(!rr||!rr.length)return null;
+  if(rr.every(isDone))return "done";
+  if(rr.some(r=>r[C.pct]>0))return "inprog";
+  if(rr.some(r=>r[C.state]==="late"))return "late";
+  if(rr.some(isBehind))return "watch";
+  return "future";
+}
+function pipeTable(rows,idp,engMode){
+  // group on the deepest WBS level so each deliverable gets its own row, rather
+  // than one row standing in for its Level-3 parent
+  const K=(C.item!==undefined)?C.item:C.pkg;
+  const g={};rows.forEach(r=>{(g[r[K]]=g[r[K]]||[]).push(r)});
+  let groups=Object.entries(g).map(([pkg,rr])=>({pkg,rr,a:actPctAt(rr,SW),
+    dl:rr.some(isBehind),cr:rr.some(isCrit),ls:rr.some(isLateStart),
+    end:Math.max(...rr.map(r=>r[C.fEF])),seq:Math.min(...rr.map(r=>r[C.seq]))}))
+    .sort((x,y)=>x.seq-y.seq);
+  if(pipeL1[idp])groups=groups.filter(x=>x.rr.some(r=>r[C.sec]===pipeL1[idp]));
+  // groups are keyed on the deepest level now, so match the package on the rows
+  if(pipeL2[idp])groups=groups.filter(x=>x.rr.some(r=>r[C.pkg]===pipeL2[idp]));
+  if(pipeSearch){const q=pipeSearch.toLowerCase();
+    // match the package name OR any activity inside it, so an individual drawing
+    // (WBS Level 4, e.g. "Transformer Yard- Earthing Layout") is findable here
+    groups=groups.filter(x=>x.pkg.toLowerCase().includes(q)||x.rr.some(r=>String(r[C.name]).toLowerCase().includes(q)));}
+  if(pipeDelOnly)groups=groups.filter(x=>x.dl||x.ls);
+  // columns = schedule steps ordered by earliest baseline start
+  const colMin={};
+  groups.forEach(x=>x.rr.forEach(r=>{const k=colKey(r);colMin[k]=Math.min(colMin[k]??1e9,r[C.bES])}));
+  const allCols=Object.keys(colMin).sort((a,b)=>colMin[a]-colMin[b]).slice(0,32);
+  const sel=pipeColSel[idp];
+  let cols=sel&&sel.size?allCols.filter(c=>sel.has(c)):allCols;
+  // stage summary cards
+  let sc=`<div class="stgcards">`;
+  cols.forEach(cn=>{
+    const withCol=groups.filter(x=>x.rr.some(r=>colKey(r)===cn));
+    const doneN=withCol.filter(x=>cellState(x.rr.filter(r=>colKey(r)===cn))==="done").length;
+    const liveN=withCol.filter(x=>cellState(x.rr.filter(r=>colKey(r)===cn))==="inprog").length;
+    const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
+    sc+=`<div class="stgc"><div class="n" title="${esc(lbl)}">${esc(lbl.length>15?lbl.slice(0,14)+"…":lbl)}</div><div class="v">${doneN}<small>/${withCol.length}${liveN?" · "+liveN+" in progress":""}</small></div>
+     <div class="fb"><i style="width:${withCol.length?100*doneN/withCol.length:0}%"></i></div></div>`;
+  });
+  sc+="</div>";
+  let h=`<div class="twrap"><table class="stickycol"><tr><th>Package</th>`+
+    cols.map(cn=>{const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
+      return `<th title="${esc(lbl)}">${esc(lbl.length>16?lbl.slice(0,15)+"…":lbl)}</th>`}).join("")+`<th class="num">%</th></tr>`;
+  const PL={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnc","Not Committed"],watch:["vlnc","Not Committed"],future:["vlnc","Not Committed"]};
+  groups.forEach((x,gi)=>{
+    h+=`<tr class="prowclick" data-g="${idp}-${gi}"><td><b>${esc(x.pkg.slice(0,40))}</b>
+      ${x.cr?chip("crit","CRIT"):""}${!engMode&&LONGLEAD.test(x.pkg)?chip("blue","LL"):""}
+      <div class="small dim">end ${wdate(x.end,1)}</div></td>`;
+    cols.forEach(cn=>{
+      const rr=x.rr.filter(r=>colKey(r)===cn);
+      const st=cellState(rr);
+      if(!st){h+=`<td class="dim">—</td>`;return}
+      const due=Math.max(...rr.map(r=>r[C.fEF])),bdue=Math.max(...rr.map(r=>r[C.bEF]));
+      const overdue=st!=="done"&&(bdue<SW||due-bdue>=4);
+      const [cls,txt]=PL[st];
+      const qt=rr.reduce((a2,r)=>a2+(r[C.qty]||0),0);
+      h+=`<td class="pcell" data-q="${qt}" >${chip(cls,txt)}
+        <div class="d ${overdue?"red":""}">${st==="done"?"done "+wdate(due,1):(bdue<SW?"was due ":"due ")+wdate(st==="done"?due:bdue,1)}</div></td>`;
+    });
+    h+=`<td class="num"><b>${fmt1(x.a)}</b></td></tr>`;
+    h+=`<tr class="detrow" id="det-${idp}-${gi}" style="display:none"><td colspan="${cols.length+2}"></td></tr>`;
+  });
+  h+="</table></div>";
+  setTimeout(()=>{document.querySelectorAll(".prowclick").forEach(el=>{
+    el.style.cursor="pointer";
+    el.addEventListener("click",()=>{
+      const id=el.dataset.g,box=document.getElementById("det-"+id);
+      const vis=box.style.display!=="none";box.style.display=vis?"none":"";
+      if(!vis&&!box.firstElementChild.innerHTML){
+        const gi=+id.split("-").pop();const x=groups[gi];
+        let t=`<table><tr><th>Activity</th><th>Status</th><th class="num">%</th><th class="num">Qty</th><th>Owner</th><th>Baseline end</th><th>Forecast end</th><th class="num">Var</th></tr>`;
+        x.rr.slice().sort((a2,b2)=>a2[C.fES]-b2[C.fES]).forEach(r=>{const v=r[C.fEF]-r[C.bEF];
+          t+=`<tr><td>${esc(r[C.name])}</td><td>${rowChip(r)}</td><td class="num">${r[C.pct]}</td>
+           <td class="num">${r[C.qty]?fq(r[C.qty])+" "+esc(r[C.uom]):"—"}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")}</td>
+           <td>${wdate(r[C.bEF],1)}</td><td>${wdate(r[C.fEF],1)}</td>
+           <td class="num" ${v>=4?'style="color:var(--crit-text);font-weight:700"':""}>${v>0?"+":""}${v}</td></tr>`});
+        box.firstElementChild.innerHTML=t+"</table>";
+      }});});},0);
+  const colpop=`<details class="colsel" id="${idp}-cs" ${pipeColOpen[idp]?"open":""}><summary>Stages ${cols.length}/${allCols.length} ▾</summary>
+    <div class="colpop"><div class="cact"><button data-ca="all" data-p="${idp}">Select all</button><button data-ca="none" data-p="${idp}">Clear</button></div>
+    ${allCols.map(cn=>{const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
+      return `<label><input type="checkbox" data-cc="${esc(cn)}" data-p="${idp}" ${(!sel||!sel.size||sel.has(cn))?"checked":""}> ${esc(lbl.length>34?lbl.slice(0,33)+"…":lbl)}</label>`}).join("")}
+    </div></details>`;
+  return sc+`<div style="display:flex;gap:7px;align-items:center;margin-bottom:5px;flex-wrap:wrap">
+    <select onchange="pipeL1['${idp}']=this.value;pipeL2['${idp}']='';render()">${["",...new Set(rows.map(r=>r[C.sec]))].map(v=>`<option value="${esc(v)}" ${pipeL1[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"All sections"}</option>`).join("")}</select>
+    <select onchange="pipeL2['${idp}']=this.value;render()">${["",...new Set(rows.filter(r=>!pipeL1[idp]||r[C.sec]===pipeL1[idp]).map(r=>r[C.pkg]))].map(v=>`<option value="${esc(v)}" ${pipeL2[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"All packages"}</option>`).join("")}</select>
+    <input type="search" id="${idp}-q" placeholder="Search packages or drawings…" value="${esc(pipeSearch)}">
+    <span class="tgl ${pipeDelOnly?"on2":""}" id="${idp}-del">Delayed only</span>
+    ${colpop}
+    <span class="fnote">${groups.length} packages · click a row for activities</span></div>`+h;
+}
+function bindPipe(idp){
+  const q=document.getElementById(idp+"-q");
+  if(q){
+    // Search as you type. render() rebuilds the input, so remember which table was
+    // being typed into and put the caret back afterwards - otherwise every keystroke
+    // would drop focus and the box would appear to ignore what was typed.
+    let tmr=null;
+    const apply=()=>{pipeSearch=q.value;pipeFocus=idp;render()};
+    q.addEventListener("input",()=>{clearTimeout(tmr);tmr=setTimeout(apply,200)});
+    q.addEventListener("change",()=>{clearTimeout(tmr);apply()});
+    q.addEventListener("keyup",e=>{if(e.key==="Enter"){clearTimeout(tmr);apply()}});
+    if(pipeFocus===idp){pipeFocus="";const p=q.value.length;
+      try{q.focus({preventScroll:true});q.setSelectionRange(p,p)}catch(e){}}
+  }
+  const d=document.getElementById(idp+"-del");
+  if(d)d.addEventListener("click",()=>{pipeDelOnly=!pipeDelOnly;render()});
+  const cs=document.getElementById(idp+"-cs");
+  if(cs){
+    cs.addEventListener("toggle",()=>{pipeColOpen[idp]=cs.open});
+    cs.querySelectorAll("input[data-cc]").forEach(cb=>cb.addEventListener("change",()=>{
+      const checked=[...cs.querySelectorAll("input[data-cc]")].filter(x=>x.checked).map(x=>x.dataset.cc);
+      pipeColSel[idp]=new Set(checked);pipeColOpen[idp]=true;render();
+    }));
+    cs.querySelectorAll("button[data-ca]").forEach(b=>b.addEventListener("click",e=>{
+      e.preventDefault();
+      pipeColSel[idp]=b.dataset.ca==="none"?new Set(["__none__"]):null;
+      if(b.dataset.ca==="all")delete pipeColSel[idp];
+      pipeColOpen[idp]=true;render();
+    }));
+  }
+}
+// ---------- scope vs order vs deliver ----------
+function scopeOrderDeliver(rows){
+  const g={};rows.filter(r=>r[C.dept]==="supply").forEach(r=>{(g[r[C.pkg]]=g[r[C.pkg]]||[]).push(r)});
+  let h=`<div class="twrap"><table><tr><th>Package</th><th class="num">Scope qty</th><th class="num">Ordered</th><th class="num">Delivered</th><th>Order</th><th>Delivery plan → forecast</th></tr>`;
+  Object.entries(g).sort().forEach(([pkg,rr])=>{
+    const scope=Math.max(...rr.map(r=>r[C.qty]||0),0);
+    if(!scope||scope<=1)return;
+    const po=rr.filter(r=>nrm(r[C.name])==="poplacement");
+    const poDone=po.length&&po.every(isDone);
+    const grn=rr.filter(r=>nrm(r[C.name])==="grnatsite");
+    const del=grn.reduce((a,r)=>a+(r[C.qty]||0)*r[C.pct]/100,0);
+    const gplan=grn.length?Math.max(...grn.map(r=>r[C.bEF])):0,gfc=grn.length?Math.max(...grn.map(r=>r[C.fEF])):0;
+    h+=`<tr><td>${esc(pkg.slice(0,38))}</td><td class="num">${fq(scope)}</td>
+     <td class="num">${poDone?fq(scope):po.some(r=>r[C.pct]>0)?"in tender":"0"}</td><td class="num">${fq(del)}</td>
+     <td>${poDone?chip("good","ordered"):po.some(r=>r[C.pct]>0)?chip("blue","ordering"):chip("mut","pending")}</td>
+     <td class="small">${wdate(gplan,1)} → ${wdate(gfc,1)}${gfc-gplan>=4?` <span style="color:var(--crit-text)">(+${gfc-gplan}d)</span>`:""}</td></tr>`;
+  });
+  return h+"</table></div>";
+}
+// ---------- feeder tiles ----------
+const FCATS=[["Civil",r=>/Civil & Foundations|Other Site Works/.test(r[C.stage])&&!/pile/i.test(r[C.pkg]+r[C.name])],
+ ["Piling",r=>/pile/i.test(r[C.pkg]+" "+r[C.name])],
+ ["MMS",r=>r[C.stage]==="MMS & Module"&&/mms|mounting/i.test(r[C.pkg]+r[C.name])&&!/module in/i.test(r[C.name])],
+ ["Module",r=>r[C.stage]==="MMS & Module"&&/module/i.test(r[C.name])],
+ ["DC Cabling",r=>r[C.stage]==="DC Works"],
+ ["AC/HT",r=>r[C.stage]==="AC / HT Works"],
+ ["BOP",r=>/Equipment|Earthing & LA|PSS & Switchyard|T&C/.test(r[C.stage])]];
+function areaList(rows){
+  const set={};rows.forEach(r=>{(set[r[C.area]]=set[r[C.area]]||[]).push(r)});
+  return Object.keys(set).sort((a,b)=>{const na=a.match(/^Block[ -]?(\d+)/i),nb=b.match(/^Block[ -]?(\d+)/i);
+    if(na&&nb)return +na[1]-+nb[1]; if(na)return -1; if(nb)return 1; return a.localeCompare(b)}).map(k=>[k,set[k]]);
+}
+function feederTiles(rows){
+  let h=`<div class="bgrid">`;
+  areaList(rows).forEach(([k,rr])=>{
+    const a=actPctAt(rr,SW),p=planPct(rr,SW),dl=rr.filter(isBehind).length;
+    const isBlock=/^Block/i.test(k);
+    let cats="";
+    FCATS.forEach(([cn,fn])=>{
+      const cr2=rr.filter(fn);if(!cr2.length)return;
+      const q2=cr2.filter(r=>r[C.uom]&&r[C.uom]!=="Lot"&&r[C.uom]!=="%");
+      const qt=q2.reduce((x,r)=>x+(r[C.qty]||0),0),qd=q2.reduce((x,r)=>x+(r[C.qty]||0)*r[C.pct]/100,0);
+      const cp=actPctAt(cr2,SW);
+      const uom=q2.length?(q2[0][C.uom]||""):"";
+      const val=qt>0?`${fq(qd)}/${fq(qt)} ${esc(uom)} · ${Math.round(cp)}%`:`${Math.round(cp)}%`;
+      cats+=`<div class="frow"><div class="fn">${cn}</div><div class="fb"><i style="width:${Math.min(100,cp)}%"></i></div><div class="fv">${val}</div></div>`;
+    });
+    const big=`<span style="color:${a+0.05<p?"var(--crit-text)":"inherit"}">${fmt1(a)}%</span>`;
+    h+=`<div class="ftile ${state.f.area===k?"sel":""}" data-area="${esc(k)}">
+     <div class="bn">${esc(k)} ${dl?`<span class="chip crit">⏰${dl}</span>`:""}</div>
+     <div class="bp">${big}</div><div class="bpl">plan ${fmt1(p)}% · ${rr.length} activities</div>${cats}</div>`;
+  });
+  return h+"</div>";
+}
+function scorecard(rows){
+  let h=`<div class="twrap"><table><tr><th>Area / Block</th><th class="num">Activities</th><th class="num">Plan %</th><th class="num">Actual %</th><th class="num">SPI</th><th class="num">Delayed</th><th class="num">Critical</th><th>Status</th></tr>`;
+  areaList(rows).forEach(([k,rr])=>{
+    const a=actPctAt(rr,SW),p=planPct(rr,SW),spi=p>0.05?a/p:null,dl=rr.filter(isBehind).length,cr2=rr.filter(isCrit).length;
+    h+=`<tr><td>${esc(k)}</td><td class="num">${rr.length}</td><td class="num">${fmt1(p)}</td><td class="num">${fmt1(a)}</td>
+     <td class="num">${spi===null?"—":spi.toFixed(2)}</td><td class="num">${dl}</td><td class="num">${cr2}</td>
+     <td>${spi===null?chip("vlnc","Not Committed"):spi>=0.95?chip("vlc","On track"):spi>=0.8?chip("vlw","Warning"):chip("vlnr","Behind")}</td></tr>`});
+  return h+"</table></div>";
+}
+// ---------- regulatory tracker (schedule order, sortable, filterable) ----------
+const REG_CRIT=["connectivityassessment","baynoallocation","connbgsubmissions","finalgrantofconnectivity","conntd4application",
+ "catiiconnectionagreement","sec681application","ceasec681for33kv","newspaperpublication","gazettepublication",
+ "section164","gedaprovisionalregistration","finalgedaregistration","gedawtgid","gedacodapplication","modnoc",
+ "ministryofdefence","airportauthority","assessmentofpsslocation","pollutioncategory","nationalhighway",
+ "getcotranscocrossings","ptccapproval","ceachargingapplicationapprovalehvline","ceachargingapplicationapprovalpss",
+ "ceaapplicationapprovalsolar","ceaapplicationapprovalwind","ftcfeesandcharges","firsttimecharging","trialrun","noar"];
+let regSort={key:"seq",dir:1}, regQ="", regStatus="", statSel="";
+function regItems(rows,critOnly){
+  const g={};rows.forEach(r=>{(g[r[C.pkg]]=g[r[C.pkg]]||[]).push(r)});
+  let items=Object.entries(g).map(([pkg,rr])=>{
+    const st=cellState(rr)||"future";
+    const nd=rr.filter(r=>!isDone(r));
+    const nxt=nd.length?nd.reduce((m2,r)=>r[C.fES]<m2[C.fES]?r:m2):null;
+    return {pkg,rr,st,a:actPctAt(rr,SW),bf:Math.max(...rr.map(r=>r[C.bEF])),ff:Math.max(...rr.map(r=>r[C.fEF])),
+      v:Math.max(...rr.map(r=>r[C.fEF]))-Math.max(...rr.map(r=>r[C.bEF])),
+      tf:Math.min(...rr.map(r=>r[C.tf])),seq:Math.min(...rr.map(r=>r[C.seq])),
+      nxt:nxt?nxt[C.name]:"",nxtD:nxt?nxt[C.fES]:1e9,
+      crit:REG_CRIT.some(k=>nrm(pkg).includes(k))};
+  });
+  if(critOnly)items=items.filter(x=>x.crit);
+  if(regQ)items=items.filter(x=>x.pkg.toLowerCase().includes(regQ.toLowerCase()));
+  if(regStatus)items=items.filter(x=>x.st===regStatus);
+  const k=regSort.key,d=regSort.dir;
+  items.sort((a,b)=>{const va=a[k],vb=b[k];return (typeof va==="string"?va.localeCompare(vb):va-vb)*d});
+  return items;
+}
+function regTable(rows,critOnly,idp){
+  const items=regItems(rows,critOnly);
+  const hd=(key,lbl,num)=>`<th class="sortable ${num?"num":""}" data-k="${key}" data-p="${idp}">${lbl}${regSort.key===key?(regSort.dir>0?" ▲":" ▼"):""}</th>`;
+  let h=`<div style="display:flex;gap:7px;align-items:center;margin-bottom:5px">
+    <input type="search" id="${idp}-q" placeholder="Search approvals…" value="${esc(regQ)}">
+    <select id="${idp}-st"><option value="">All statuses</option>
+      <option value="done" ${regStatus==="done"?"selected":""}>Complete</option>
+      <option value="inprog" ${regStatus==="inprog"?"selected":""}>In progress</option>
+      <option value="late" ${regStatus==="late"?"selected":""}>Delayed</option>
+      <option value="future" ${regStatus==="future"?"selected":""}>Not Committed</option></select>
+    <span class="fnote">${items.length} items · click headers to sort</span></div>`;
+  h+=`<div class="twrap"><table><tr>${hd("seq","# Schedule order",1)}${hd("pkg","Approval / Permission")}${hd("st","Status")}${hd("a","%",1)}${hd("bf","Baseline finish",1)}${hd("ff","Forecast finish",1)}${hd("v","Var",1)}${hd("nxtD","Next step",0)}${hd("tf","Float",1)}</tr>`;
+  items.forEach((x,i)=>{
+    h+=`<tr class="regrow ${statSel===x.pkg?"selrow":""}" data-pkg="${esc(x.pkg)}" style="cursor:pointer${statSel===x.pkg?";outline:2px solid var(--blue)":""}"><td class="num dim">${i+1}</td><td><b>${esc(x.pkg.slice(0,50))}</b>${x.crit?" "+chip("crit","CRITICAL"):""}</td>
+     <td>${stChip(x.st==="watch"?"future":x.st)}</td>
+     <td class="num">${Math.round(x.a)}</td><td class="num">${wdate(x.bf,1)}</td><td class="num">${wdate(x.ff,1)}</td>
+     <td class="num" ${x.v>=4?'style="color:var(--crit-text);font-weight:700"':""}>${x.v>0?"+":""}${x.v}</td>
+     <td class="small">${x.nxt?esc(x.nxt.slice(0,38))+" · "+wdate(x.nxtD):"—"}</td><td class="num">${x.tf}</td></tr>`;
+  });
+  h+="</table></div>";
+  setTimeout(()=>{
+    document.querySelectorAll(`th.sortable[data-p="${idp}"]`).forEach(el=>{
+      el.addEventListener("click",()=>{const k=el.dataset.k;
+        if(regSort.key===k)regSort.dir*=-1;else regSort={key:k,dir:1};render()});});
+    const q=document.getElementById(idp+"-q");
+    if(q){q.addEventListener("change",()=>{regQ=q.value;render()});
+         q.addEventListener("keyup",e=>{if(e.key==="Enter"){regQ=q.value;render()}})}
+    const st=document.getElementById(idp+"-st");
+    if(st)st.addEventListener("change",()=>{regStatus=st.value;render()});
+  },0);
+  return h;
+}
+// ---------- engineering extras ----------
+function engExtras(rows){
+  const docs={};rows.forEach(r=>{(docs[r[C.pkg]]=docs[r[C.pkg]]||[]).push(r)});
+  let sub=0,subDone=0,accDone=0;
+  Object.values(docs).forEach(rr=>{
+    const s=rr.filter(r=>r[C.stage]==="Submission"),a=rr.filter(r=>r[C.stage]==="Acceptance");
+    if(s.length){sub++;if(s.every(isDone))subDone++}
+    if(a.length&&a.every(isDone))accDone++;
+  });
+  let h=`<div class="card span4 kpi"><h2>Drawings — submitted vs approved</h2>
+   <div class="big">${subDone} <small style="font-size:10px;color:var(--mut)">submitted</small> · ${accDone} <small style="font-size:10px;color:var(--mut)">approved</small></div>
+   <div class="cmp">of ${sub} documents · ${subDone-accDone} awaiting approval</div>
+   <div style="margin-top:4px">${chip(accDone/Math.max(1,subDone)>0.7?"good":"warn","approval ratio "+Math.round(100*accDone/Math.max(1,subDone))+"%")}</div></div>`;
+  const ms=DATA.months.slice(0,14);
+  const planM=ms.map(()=>0),actM=ms.map(()=>0);
+  rows.filter(r=>r[C.stage]==="Submission").forEach(r=>{
+    const pi=ms.findIndex(m2=>r[C.bEF]<=m2.wd);if(pi>=0)planM[pi]++;
+    if(isDone(r)){const ai=ms.findIndex(m2=>r[C.fEF]<=m2.wd);if(ai>=0)actM[ai]++}
+  });
+  const Wc=560,Hc=130,padL=26,padB=17,iw=Wc-padL-8,ih=Hc-8-padB;
+  const ymax=Math.max(2,...planM,...actM)*1.1;
+  const X=i=>padL+iw*i/ms.length,Y=v=>8+ih*(1-v/ymax),bw=iw/ms.length*0.32;
+  let g2=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:100%;height:auto">`;
+  ms.forEach((m2,i)=>{g2+=`<text x="${X(i)+bw}" y="${Hc-5}" font-size="7.5" text-anchor="middle">${m2.label}</text>`;
+    g2+=`<rect x="${X(i)}" y="${Y(planM[i])}" width="${bw}" height="${Math.max(0,8+ih-Y(planM[i]))}" rx="2" fill="var(--s-plan)" opacity=".8"/>`;
+    g2+=`<rect x="${X(i)+bw+1}" y="${Y(actM[i])}" width="${bw}" height="${Math.max(0,8+ih-Y(actM[i]))}" rx="2" fill="var(--s-act)"/>`;});
+  g2+=`</svg>`;
+  h+=`<div class="card span8"><h2>Month-wise submission tracking</h2><div class="hint">plan vs actual submissions</div>
+   <div class="legend"><span><span class="sw" style="background:var(--s-plan)"></span>Plan</span><span><span class="sw" style="background:var(--s-act)"></span>Actual</span></div>${g2}</div>`;
+  return h;
+}
+// ---------- watchlist / constraints / lookahead ----------
+function watchTable(rows,cap){
+  const items=rows.filter(r=>isBehind(r)||isCrit(r)).sort((a,b)=>(b[C.fEF]-b[C.bEF])-(a[C.fEF]-a[C.bEF])).slice(0,cap||30);
+  let h=`<div class="twrap"><table><tr><th>Activity</th><th>Dept</th><th>Package / Area</th><th>Status</th><th>Baseline end</th><th>Forecast end</th><th class="num">Var</th><th class="num">Float</th></tr>`;
+  items.forEach(r=>{const v=r[C.fEF]-r[C.bEF];
+    h+=`<tr><td>${esc(r[C.name])}${isCrit(r)?" "+chip("crit","CRIT"):""}</td><td class="dim">${esc((DNAME[r[C.dept]]||"").slice(0,16))}</td>
+     <td class="dim">${esc(r[C.pkg].slice(0,26))} · ${esc(r[C.area])}</td><td>${rowChip(r)}</td>
+     <td>${wdate(r[C.bEF],1)}</td><td>${wdate(r[C.fEF],1)}</td>
+     <td class="num" style="color:var(--crit-text);font-weight:700">+${v}</td><td class="num">${r[C.tf]}</td></tr>`});
+  return h+"</table></div>";
+}
+let consTab="await";
+function constraints(rows){
+  if(consTab==="vl"){
+    const cs=DATA.constraints||[];
+    if(!cs.length)return `<div style="padding:14px 6px;text-align:center"><div style="font-weight:700;margin:4px 0">No constraints logged yet</div><div class="hint">The VisiLean constraints log is connected — entries appear here as teams raise them.</div></div>`;
+    const open=cs.filter(c=>c.open);
+    const byPri={};cs.forEach(c=>{byPri[c.pri]=(byPri[c.pri]||0)+1});
+    const byCat={};cs.forEach(c=>{byCat[c.cat]=(byCat[c.cat]||0)+1});
+    let h=`<div style="margin-bottom:6px">${chip("blue","Total: "+cs.length)} ${chip(open.length?"vlnr":"vlc","Open: "+open.length)} ${chip("vlc","Closed: "+(cs.length-open.length))}
+      <span class="dim" style="margin-left:8px">Priority: ${Object.entries(byPri).map(([k,v])=>k+" "+v).join(" · ")}</span>
+      <span class="dim" style="margin-left:8px">Category: ${Object.entries(byCat).map(([k,v])=>k+" "+v).join(" · ")}</span></div>`;
+    h+=`<div class="twrap" style="max-height:300px;overflow:auto"><table><tr><th>#</th><th>Constraint</th><th>Owner</th><th>Priority</th><th>Category</th><th>Raised</th><th>Target</th><th>Status</th></tr>`;
+    cs.slice().sort((a,b)=>(b.open?1:0)-(a.open?1:0)).forEach((c,i)=>{
+      h+=`<tr><td>${i+1}</td><td><b>${esc(c.title)}</b>${c.desc?`<div class="small dim">${esc(c.desc)}</div>`:""}</td><td>${esc(c.owner)}</td>
+        <td>${chip(c.pri==="High"?"vlnr":c.pri==="Medium"?"vlw":"mut",esc(c.pri))}</td><td class="dim">${esc(c.cat)}</td>
+        <td>${esc(c.created)}</td><td>${esc(c.target)}</td>
+        <td>${c.open?chip("vlnr","Open"):chip("vlc","Closed "+esc(c.completed))}</td></tr>`});
+    return h+"</table></div>";
+  }
+  const items=rows.filter(isLateStart).sort((a,b)=>a[C.bES]-b[C.bES]).slice(0,18);
+  let h=`<div class="twrap"><table><tr><th>Activity (awaiting start)</th><th>WBS</th><th>Owner · Dept</th><th>Planned start</th><th class="num">Pending since (days)</th></tr>`;
+  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,26))} · ${esc(String(r[C.sec]).slice(0,22))}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")} <span class="dim">· ${esc((DNAME[r[C.dept]]||"").slice(0,14))}</span></td><td>${wdate(r[C.bES])}</td><td class="num">${SW-r[C.bES]}</td></tr>`});
+  return h+"</table></div>";
+}
+function lookahead(rows){
+  const items=rows.filter(r=>!isDone(r)&&r[C.fES]>=SW-2&&r[C.fES]<=SW+18).sort((a,b)=>a[C.fES]-b[C.fES]).slice(0,18);
+  let h=`<div class="twrap"><table><tr><th>Activity</th><th>Package</th><th>Owner</th><th>Start</th><th>Finish</th></tr>`;
+  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim">${esc(r[C.pkg].slice(0,28))}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")}</td><td>${wdate(r[C.fES])}</td><td>${wdate(r[C.fEF],1)}</td></tr>`});
+  return h+"</table></div>";
+}
+function critPoints(rows){
+  const EXCL=/project buffer|project closeout|documents submission closure/i;
+  const sup=rows.filter(r=>r[C.tf]<=0&&!isDone(r)&&!EXCL.test(r[C.name]));
+  const top=rows.filter(r=>isCrit(r)&&!EXCL.test(r[C.name])&&r[C.fES]<=SW+60)
+    .sort((a,b)=>a[C.tf]-b[C.tf]||a[C.fES]-b[C.fES]).slice(0,5);
+  let h=`<div class="card span6"><h2>Critical points — management attention</h2><div class="hint">immediate critical activities (due within ~60 days) · buffer &amp; closeout excluded</div>`;
+  h+=`<div style="margin-bottom:5px">${chip("vlnr","Supercritical (zero float): "+sup.length)} ${chip("mut","with owner: "+sup.filter(r=>r[C.owner]||r[C.ownship]).length)}</div>`;
+  top.forEach((r,i)=>{h+=`<div style="padding:4px 0;border-bottom:1px solid var(--line)"><b>Point-${i+1}:</b> ${esc(r[C.name])} ${rowChip(r)}
+   <div class="small dim" style="margin-top:1px">WBS: ${esc(DNAME[r[C.dept]]||"")} › ${esc(String(r[C.sec]).slice(0,28))} › ${esc(String(r[C.pkg]).slice(0,32))}${r[C.area]&&r[C.area]!=="Off-site / Office"?" › "+esc(r[C.area]):""}</div>
+   <div class="small dim">float ${r[C.tf]} days · window ${wdate(r[C.fES])} → ${wdate(r[C.fEF],1)} · owner: ${esc(r[C.owner]||r[C.ownship]||"unassigned")}</div></div>`});
+  return h+"</div>";
+}
+
+// ---------- Executive Director page-1 sections ----------
+function longLeadTable(){
+  // Every package under VisiLean Activity Type "Procurement - Supply", grouped by the
+  // Package custom field (KP observation 5) - not a top-N slice. Delivery row = the
+  // package's "GRN at site" activity; if a package has none yet, its last activity.
+  const TOTW=L.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0)||1;
+  const sup=L.filter(r=>r[C.type]===AT.SUP);
+  const w={},grn={},last={};
+  sup.forEach(r=>{const k=r[C.pkg];w[k]=(w[k]||0)+(r[C.cost]>0?r[C.cost]:0);
+    if(r[C.sub]==="At Site"&&!grn[k])grn[k]=r;
+    if(!last[k]||r[C.bEF]>last[k][C.bEF])last[k]=r});
+  // Delivery dates come from VisiLean's package summary row (DATA.supplyDeliv), so the
+  // Baseline / Forecast columns read exactly what VisiLean shows for the package. Only
+  // if a package has no summary do we fall back to its GRN-at-site or last activity.
+  const SD=DATA.supplyDeliv||{};
+  const items=Object.keys(w).map(k=>{const r=grn[k]||last[k],sd=SD[k];
+    const b=sd?sd.b:r[C.bEF], f=sd?sd.f:r[C.fEF];
+    return {p:k,b,f,d:f-b,pc:r[C.pct],w:w[k]||0}});
+  items.sort((a,b)=>b.w-a.w);
+  let h=`<div class="twrap"><table><tr><th>#</th><th>Long-lead item (supply package)</th><th class="num">Wt %</th><th>Baseline delivery</th><th>Forecast delivery</th><th class="num">Delay / Ahead</th><th>Status</th></tr>`;
+  items.forEach((x,i)=>{
+    const dd=x.d>0?`<span style="color:var(--crit-text);font-weight:700">+${x.d} days</span>`:(x.d<0?`<span style="color:var(--good);font-weight:700">${x.d} days</span>`:`<span class="dim">on time</span>`);
+    const st=x.pc>=100?chip("vlc","Delivered"):chip("vlnc","Not Committed");
+    h+=`<tr><td>${i+1}</td><td><b>${esc(x.p)}</b></td><td class="num">${(100*x.w/TOTW).toFixed(2)}</td><td>${wdate(x.b,1)}</td><td>${wdate(x.f,1)}</td><td class="num">${dd}</td><td>${st}</td></tr>`});
+  return h+"</table></div>";
+}
+function epcScurves(){
+  const defs=[["Engineering",isEng],["Procurement",isProc],["Construction",isCon],["Overall",r=>true]];
+  let h=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px">`;
+  defs.forEach((d,i)=>{const rs=L.filter(d[1]);
+    h+=`<div><div style="font-size:11px;font-weight:700;margin-bottom:2px">${d[0]} S-Curve <span class="dim" style="font-weight:500">(${rs.length} activities)</span></div>${scurve(rs,"sc-epc"+i,false).replaceAll('font-size="8"','font-size="11"')}</div>`});
+  return h+"</div>";
+}
+function msL2Table(){
+  const CH={done:["good","Achieved"],ontrack:["good","On track"],watch:["warn","Watch"],late:["crit","Late"]};
+  let h=`<div class="twrap"><table><tr><th>#</th><th>Milestone</th><th>Baseline</th><th>Forecast</th><th class="num">Lead / Lag</th><th>Status</th></tr>`;
+  DATA.milestones.forEach((m,i)=>{const sp=m.slip;
+    const sl=sp>0?`<span style="color:var(--crit-text);font-weight:700">+${sp} days lag</span>`:(sp<0?`<span style="color:var(--good);font-weight:700">${-sp} days lead</span>`:`<span class="dim">on plan</span>`);
+    h+=`<tr><td>${i+1}</td><td><b>${esc(m.name)}</b></td><td>${wdate(m.b,1)}</td><td>${wdate(m.f,1)}</td><td class="num">${sl}</td><td>${chip(CH[m.status][0],CH[m.status][1])}</td></tr>`});
+  return h+"</table></div>";
+}
+// ---------- pages ----------
+function card(cls,title,hint,body,extraHdr){return `<div class="card ${cls}"><div class="hdrrow"><div><h2>${title}</h2><div class="hint">${hint}</div></div>${extraHdr||""}</div>${body}</div>`}
+const unitToggle=()=>`<div class="toggle2"><button id="u-pct" class="${state.unit==="%"?"on":""}">%</button><button id="u-mw" class="${state.unit==="MW"?"on":""}">MW</button></div>`;
+function pageSummary(){
+  const rows=filtered();
+  let h=`<div class="grid">`;
+  h+=gaugeCard(rows)+epcCard()+costCard();
+  h+=kpiCards(rows,true);
+  h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
+  h+=card("span12","Long Lead Item Delivery Status","all Procurement - Supply packages · baseline / forecast delivery as per VisiLean package summary",longLeadTable());
+  h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
+    `<div id="sc-box"><div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">Monthly</div>${scurveMulti(rows,"sc2",true)}</div>`,
+    `<div style="display:flex;gap:5px;flex-wrap:wrap"><div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
+  h+=card("span5","Stage progress","Actual % vs Baseline Plan %",stageBars(rows));
+  h+=critPoints(rows);
+  h+=reasonsCard("","span12");
+  setTimeout(()=>bindKpi(rows,""),0);
+  h+=card("span6","Open Constraints / Awaiting to Start","live VisiLean constraints log · awaiting-start from schedule",constraints(rows),
+    `<div class="toggle2"><button class="${consTab==="await"?"on":""}" onclick="consTab='await';render()">Awaiting Start</button><button class="${consTab==="vl"?"on":""}" onclick="consTab='vl';render()">VisiLean Constraints</button></div>`);
+  h+="</div>";
+  return h;
+}
+function pageLayout(){
+  const rows=filtered();
+  const site=rows.filter(r=>r[C.dept]==="execution"||r[C.dept]==="tnc"||r[C.dept]==="hoto");
+  const use=site.length?site:rows;
+  let h=`<div class="grid">`;
+  h+=card("span12","Plant Layout — Block / Feeder Scorecard","click a tile to filter · Actual % (red = behind baseline plan)",feederTiles(use));
+  h+=card("span12","Area Scorecard","weightage-based vs plan",scorecard(use));
+  h+="</div>";
+  return h;
+}
+function pagePipeline(){
+  const rows=filtered().filter(r=>r[C.dept]==="supply"||r[C.dept]==="services");
+  let h=`<div class="grid">`;
+  h+=card("span12","Procurement Pipeline — schedule stages","per package · red date = overdue vs baseline",pipeTable(rows,"pp",false));
+  h+=card("span12","Scope vs Order vs Deliver","supply quantities",scopeOrderDeliver(filtered()));
+  h+="</div>";
+  setTimeout(()=>bindPipe("pp"),0);
+  return h;
+}
+function pageMom(){
+  return `<div class="grid">`+
+   card("span12","MOM & Action Tracker","will sync from the VisiLean action log (MOM category) via API",
+   `<div class="twrap"><table><tr><th>#</th><th>Action</th><th>Source MOM</th><th>Responsible</th><th>Due</th><th>Status</th></tr>
+    <tr><td>1</td><td>Crash SLD client-approval cycle to 7 days</td><td>MIS review 05-Aug</td><td>Engineering Head</td><td>12-Aug-26</td><td>${chip("vls","Started")}</td></tr>
+    <tr><td>2</td><td>PSS fast-track decision — early civil + transformer delivery</td><td>MIS review 05-Aug</td><td>Projects</td><td>19-Aug-26</td><td>${chip("vls","Started")}</td></tr>
+    <tr><td>3</td><td>Confirm final BOQ quantities & budget per package</td><td>MIS review 05-Aug</td><td>Procurement</td><td>26-Aug-26</td><td>${chip("vlnc","Not Committed")}</td></tr>
+   </table></div>`)+"</div>";
+}
+// ---------- Exec Director dept views (wishlist 10-Aug) ----------
+const n8=x=>String(x||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+function pkgMap(rows){const by={};rows.forEach(r=>{const p=r[C.pkg];(by[p]=by[p]||{rows:[],w:0}).rows.push(r);by[p].w+=(r[C.cost]>0?r[C.cost]:0)});return by}
+function stepOf(info,keys){for(const r of info.rows){const n=n8(r[C.name]);if(keys.some(k=>n.includes(k)))return r}return null}
+function dcell(r){if(!r)return `<td class="dim">—</td>`;
+  let col="inherit",w=400,sfx="";
+  if(r[C.pct]>=100){col="#1b8a2f";w=600;sfx=" ✓"}                                  // VisiLean Complete
+  else if(r[C.pct]>0){col="#7a4fb3";w=600;sfx=" ▶"}                                 // VisiLean Started
+  else if(r[C.bEF]<SW){col="#e04b3a";w=600}                                          // overdue vs baseline (date fact)
+  return `<td style="white-space:nowrap;color:${col};font-weight:${w}">${wdate(r[C.fEF],1)}${sfx}</td>`}
+const PROC_DATE_COLS=[["RFP Floated",["floatingofrfp"]],["Tech Offer Recd",["vendorproposalcollection"]],
+ ["Tech Evaluation",["technicalbidevaluation"]],["Comm. Bid + NFA",["commercialbidevaluation","managementapproval"]],
+ ["PR Raised",["prfraising"]],["PO Release",["poplacement"]],["Advance Payment",["advancepaymentrelease"]],
+ ["Vendor Drawing Subm.",["designdocumentreview"]],["Drawing Approval (Client)",["designdocumentapprovalfromendclient"]],
+ ["Mfg / Stage Insp.",["stageinspection","manufacturingclearance"]],["GRN / At Site",["grnatsite"]]];
+function procDateMatrix(rows){
+  const by=pkgMap(rows);const pkgs=Object.entries(by).sort((a,b)=>b[1].w-a[1].w);
+  let h=`<div class="twrap"><table><tr><th style="min-width:150px">Package</th>${PROC_DATE_COLS.map(c=>`<th>${c[0]}</th>`).join("")}</tr>`;
+  pkgs.forEach(([p,info])=>{h+=`<tr><td><b>${esc(p)}</b></td>${PROC_DATE_COLS.map(c=>dcell(stepOf(info,c[1]))).join("")}</tr>`});
+  return h+"</table></div>";
+}
+function poTracker(rows){
+  const TOTW=L.reduce((a,r)=>a+(r[C.cost]>0?r[C.cost]:0),0)||1;
+  const by=pkgMap(rows);const pkgs=Object.entries(by).sort((a,b)=>b[1].w-a[1].w);
+  let h=`<div class="twrap"><table><tr><th>#</th><th>Package</th><th class="num">Wt %</th><th>Baseline PO</th><th>Forecast / Actual PO</th><th class="num">Δ days</th><th>Status</th><th>Reason / Remark</th></tr>`;
+  let i=0;
+  pkgs.forEach(([p,info])=>{const po=stepOf(info,["poplacement"]);if(!po)return;i++;
+    const d=po[C.fEF]-po[C.bEF];
+    const dd=d>0?`<span style="color:var(--crit-text);font-weight:700">+${d}</span>`:(d<0?`<span style="color:var(--good);font-weight:700">${d}</span>`:"0");
+    const st=po[C.pct]>=100?chip("vlc","Complete"):chip("vlnc","Not Committed");
+    h+=`<tr><td>${i}</td><td><b>${esc(p)}</b></td><td class="num">${(100*info.w/TOTW).toFixed(2)}</td><td>${wdate(po[C.bEF],1)}</td><td>${wdate(po[C.fEF],1)}</td><td class="num">${dd}</td><td>${st}</td><td class="dim">— (manual feed)</td></tr>`});
+  return h+"</table></div>";
+}
+function committedCard(rows){
+  const by=pkgMap(rows);let bud=0,com=0;
+  Object.values(by).forEach(info=>{bud+=info.w;const po=stepOf(info,["poplacement"]);if(po&&po[C.pct]>=100)com+=info.w});
+  const cr=x=>"₹"+(x/1e7>=100?Math.round(x/1e7).toLocaleString():fmt1(x/1e7))+" Cr";
+  return `<div class="card span4"><h2>Committed vs Budgeted</h2>
+   <div class="gstats" style="margin-top:3px">
+    <span class="k">Budgeted (weight basis)</span><span class="v">${cr(bud)}</span>
+    <span class="k">Committed (PO placed)</span><span class="v">${cr(com)}</span>
+    <span class="k">Gap</span><span class="v">${cr(bud-com)}</span>
+    <span class="k">Reason / makeup plan</span><span class="v">— manual</span>
+   </div><div class="hint" style="margin-top:4px">values are weightage carriers — real BOQ/committed cost awaits accounts feed</div></div>`;
+}
+const DELAY_HEADS=[["a. Receipt of RFQ from engineering",["rfppreparation"]],
+ ["b. Receipt of offers from vendors",["vendorproposalcollection"]],
+ ["c. Tech bid evaluation",["technicalbidevaluation"]],
+ ["d. Receipt of PR",["prfraising"]],["e. Placement of PO",["poplacement"]]];
+function delayHeads(rows){
+  const by=pkgMap(rows);const tot=Object.keys(by).length||1;
+  let h="";
+  DELAY_HEADS.forEach(([nm,keys])=>{
+    let n=0,slip=0;
+    Object.values(by).forEach(info=>{const r=stepOf(info,keys);if(r&&r[C.pct]<100&&r[C.fEF]-r[C.bEF]>=1){n++;slip+=r[C.fEF]-r[C.bEF]}});
+    const avg=n?Math.round(slip/n):0;
+    h+=`<div class="prow"><div class="nm">${esc(nm)}</div>
+     <div class="pbar"><div class="fill" style="width:${Math.min(100,100*n/tot)}%;background:${n?"var(--warn)":"var(--good)"}"></div></div>
+     <div class="val"><b>${n}</b> <span class="dim">pkg${n===1?"":"s"} behind${n?` · avg +${avg} days`:""}</span></div></div>`});
+  return h+`<div class="hint" style="margin-top:4px">behind = forecast finish ≥1 days after baseline and step not complete</div>`;
+}
+function grpChip(rows,keys){
+  const rs=rows.filter(r=>keys.some(k=>n8(r[C.pkg]).includes(k)||n8(r[C.name]).includes(k)));
+  if(!rs.length)return chip("mut","N/A");
+  if(rs.every(r=>r[C.pct]>=100))return chip("vlc","Complete");
+  if(rs.some(r=>r[C.pct]>0))return chip("vls","Started");
+  return chip("vlnc","Not Committed");
+}
+function statOverview(rows){
+  return `<div class="twrap"><table>
+   <tr><th>STU PSS / GSS</th><th>Capacity (AC)</th><th>DC Capacity</th><th>Connectivity</th><th>CEA Charging Approval</th><th>COD Registration</th><th>SLDC Scheduling</th><th>Billing Status</th><th>Remark</th></tr>
+   <tr><td><b>NTPC Bikaner — Block 8</b></td><td>200 MWac</td><td class="dim">— (BOQ pending)</td>
+    <td>${chip("mut","Client (NTPC) scope")}</td>
+    <td>${grpChip(rows,["ceaapplicationapprovalsolar","firsttimecharging"])}</td>
+    <td>${grpChip(rows,["selfcoddeclaration","noarregistrationapproval"])}</td>
+    <td>${grpChip(rows,["qcaandscheduling"])}</td>
+    <td class="dim">— (manual)</td><td class="dim">—</td></tr></table></div>`;
+}
+function statSheet(rows){
+  let use=[...rows].sort((a,b)=>a[C.seq]-b[C.seq]);
+  let selbar="";
+  if(statSel){use=use.filter(r=>r[C.pkg]===statSel);
+    selbar=`<div style="margin-bottom:5px">${chip("blue","Filtered: "+esc(statSel.slice(0,60)))} <a href="#" onclick="statSel='';render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear filter</a></div>`}
+  let h=selbar+`<div class="twrap" style="max-height:420px;overflow:auto"><table><tr><th>Sr</th><th>Document / Activity</th><th>Group</th><th class="num">Timeline (d)</th><th>Scope / Owner</th><th>Target date</th><th>Revised target</th><th>Status</th></tr>`;
+  use.forEach((r,i)=>{const late=r[C.pct]<100&&r[C.fEF]>r[C.bEF];
+    h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||r[C.ownship]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${rowChip(r)}</td></tr>`});
+  return h+"</table></div>";
+}
+function engOverview(rows){
+  const spi=planPct(rows,SW)>0?actPctAt(rows,SW)/planPct(rows,SW):1;
+  const sup=L.filter(r=>r[C.dept]==="supply"||r[C.dept]==="services");
+  const by=pkgMap(sup);
+  const pct=(keys)=>{let have=0,done=0;Object.values(by).forEach(info=>{const r=stepOf(info,keys);if(r){have++;if(r[C.pct]>=100)done++}});return have?Math.round(100*done/have)+"%":"—"};
+  const crit=rows.filter(r=>r[C.pct]<100).sort((a,b)=>a[C.tf]-b[C.tf])[0];
+  return card("span12","Engineering Overview — Exec View","single-line status per ED format · queries need manual feed",
+   `<div class="twrap"><table>
+    <tr><th>Client</th><th>Location</th><th>Capacity</th><th>Type</th><th>Engineering stage</th><th>Design status</th><th class="num">% Engg complete</th><th class="num">% RFP shared</th><th class="num">TBER</th><th class="num">Material approval (client)</th><th>Tech queries (open/closed)</th><th>Critical activity / constraint</th><th>Status</th></tr>
+    <tr><td><b>NTPC (KPI Green Energy)</b></td><td>Bikaner, Rajasthan</td><td>200 MWac</td><td>Solar · Tracker</td>
+     <td>Detailed Engineering</td><td>${chip("vls","Started")}</td>
+     <td class="num"><b>${fmt1(actPctAt(rows,SW))}%</b></td>
+     <td class="num">${pct(["floatingofrfp"])}</td>
+     <td class="num">${pct(["technicalbidevaluation"])}</td>
+     <td class="num">${pct(["designdocumentapprovalfromendclient"])}</td>
+     <td class="dim">— / — (manual)</td>
+     <td>${crit?esc(String(crit[C.name]).slice(0,44))+` <span class="dim">(float ${crit[C.tf]} days)</span>`:"—"}</td>
+     <td>${spi>=0.95?chip("good","On track"):chip("warn","Delayed")}</td></tr></table></div>`);
+}
+function pageDept(key){
+  const rows=filtered(key);
+  let h=`<div class="grid">`;
+  h+=gaugeCard(rows);
+  h+=`<div class="card span8"><h2>S-curve — ${esc(DNAME[key])}</h2><div class="hint">cumulative plan vs actual</div>${scurve(rows,"scd",false)}</div>`;
+  h+=kpiCards(rows,false);
+  if(key==="engineering"){
+    h+=engOverview(rows);
+    h+=card("span12","Engineering package pipeline","document stages per package · click a row for activities",pipeTable(rows,"pe",true));
+  }else if(key==="supply"||key==="services"){
+    h+=card("span12","Key Procurement Dates — Exec View","forecast dates per package · green ✓ complete · purple ▶ started · red = overdue vs baseline · rest Not Committed until VisiLean status feed",procDateMatrix(rows));
+    h+=card("span8","PO Tracker — expected vs actual","per ED format: value-wise baseline vs forecast PO with delay",poTracker(rows));
+    h+=committedCard(rows);
+    h+=card("span12","Delay Analysis — procurement heads","per ED format: a–e heads, packages currently behind baseline",delayHeads(rows));
+    h+=card("span12",`${esc(DNAME[key])} — pipeline`,"schedule stages per package · click a row for activities",pipeTable(rows,"pd",false));
+  }else if(key==="regulatory"||key==="liaisoning"){
+    h+=card("span12","Critical approvals tracker","schedule order · sort by any column · click a row to filter the Updates Sheet below",regTable(rows,true,"rc"));
+    h+=card("span12","All approval groups","",regTable(rows,false,"ra"));
+    h+=card("span12","Statutory Updates Sheet — Exec View","document-wise · target vs revised date · click an approval above to focus, or scroll for all",statSheet(rows));
+  }else if(key==="execution"||key==="tnc"){
+    h+=card("span12","Block / Feeder scorecard","click a tile to filter · Actual % (red = behind baseline plan)",feederTiles(rows));
+    h+=card("span12","Stage progress","by work type · Actual % vs Baseline Plan %",stageBars(rows));
+  }else{
+    h+=card("span12","Sections","progress by section · Actual % vs Baseline Plan %",stageSecs(rows));
+  }
+  h+=reasonsCard(key,"span12");
+  h+="</div>";
+  setTimeout(()=>{bindPipe("pe");bindPipe("pd");bindKpi(rows,key)},0);
+  return h;
+}
+function stageSecs(rows){
+  const g={};rows.forEach(r=>{(g[r[C.sec]]=g[r[C.sec]]||[]).push(r)});
+  let h="";
+  Object.entries(g).forEach(([s,rr])=>{h+=`<div class="prow"><div class="nm">${esc(s.slice(0,30))} <span class="dim">(${rr.length})</span></div>
+   <div class="pbar"><div class="fill" style="width:${Math.min(100,actPctAt(rr,SW))}%"></div><div class="tick" style="left:${Math.min(100,planPct(rr,SW))}%"></div></div>
+   <div class="val"><b>${fmt1(actPctAt(rr,SW))}%</b> <span class="dim">/ ${fmt1(planPct(rr,SW))}%</span></div></div>`});
+  return h;
+}
+// ---------- shell ----------
+function navHtml(){
+  const top=[["summary","📊 Project Summary"],["layout","🗺 Plant Layout"],["pipeline","🔀 Package Pipeline"],["mom","📋 MOM & Actions"]];
+  document.getElementById("nav-top").innerHTML=top.map(([k,n])=>`<a href="#" data-p="${k}" class="${state.page===k?"on":""}">${n}</a>`).join("");
+  document.getElementById("nav-dept").innerHTML=DEPTS.map(d=>
+    `<a href="#" data-p="d:${d.key}" class="${state.page==="d:"+d.key?"on":""}">${esc(d.name)}</a>`).join("");
+  document.querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();state.page=a.dataset.p;render()}));
+}
+function fillSelect(id,vals,cur){
+  const el=document.getElementById(id);const first=el.querySelector("option").outerHTML;
+  el.innerHTML=first+vals.map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v.length>34?v.slice(0,33)+"…":v)}</option>`).join("");
+}
+function syncFilterUI(){
+  const f=state.f;
+  const dsel=document.getElementById("f-dept");
+  dsel.innerHTML=`<option value="">All departments</option>`+DEPTS.map(d=>`<option value="${d.key}" ${f.dept===d.key?"selected":""}>${esc(d.name)}</option>`).join("");
+  const base=L.filter(r=>!f.dept||r[C.dept]===f.dept);
+  fillSelect("f-type",[...new Set(base.map(r=>r[C.type]).filter(Boolean))].sort(),f.type);
+  fillSelect("f-area",[...new Set(base.map(r=>r[C.area]))].sort((a,b)=>{const na=a.match(/^Block[ -]?(\d+)/i),nb=b.match(/^Block[ -]?(\d+)/i);if(na&&nb)return +na[1]-+nb[1];if(na)return -1;if(nb)return 1;return a.localeCompare(b)}),f.area);
+  fillSelect("f-pkg",[...new Set(base.filter(r=>(!f.area||r[C.area]===f.area)).map(r=>r[C.pkg]))].sort().slice(0,400),f.pkg);
+  fillSelect("f-owner",[...new Set(base.map(r=>r[C.owner]).filter(Boolean))].sort(),f.owner);
+  fillSelect("f-ownship",[...new Set(base.flatMap(r=>String(r[C.ownship]||"").split(/\s*,\s*/).filter(Boolean)))].sort(),f.ownship);
+  document.getElementById("f-crit").classList.toggle("on",f.crit);
+  document.getElementById("f-del").classList.toggle("on2",f.del);
+  document.getElementById("f-count").textContent=filtered().length.toLocaleString()+" activities";
+  const ds=document.getElementById("f-date");
+  ds.min=20;ds.max=M.forecastFinishWd;ds.value=state.at;
+  document.getElementById("f-datev").textContent=wdate(state.at,1)+(state.at===SW?" (today)":"");
+}
+let lastPage=null;
+function bindKpi(rows,deptKey){
+  document.querySelectorAll("[data-kpi]").forEach(el=>{
+    const go=()=>kpiDrill(el.dataset.kpi,rows,deptKey);
+    el.addEventListener("click",go);
+    el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
+  });
+}
+function render(){
+  const _keep=lastPage===state.page;const _sy=window.scrollY;
+  navHtml();syncFilterUI();
+  const pg=document.getElementById("page");
+  if(state.page==="summary")pg.innerHTML=pageSummary();
+  else if(state.page==="layout")pg.innerHTML=pageLayout();
+  else if(state.page==="pipeline")pg.innerHTML=pagePipeline();
+  else if(state.page==="mom")pg.innerHTML=pageMom();
+  else if(state.page.startsWith("d:"))pg.innerHTML=pageDept(state.page.slice(2));
+  const rows=filtered();
+  const cht=document.getElementById("sc-chart"),tbl=document.getElementById("sc-table");
+  if(cht){
+    cht.onclick=()=>{document.getElementById("sc-box").innerHTML=`<div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">Monthly</div>${scurveMulti(rows,"sc2",true)}`;cht.classList.add("on");tbl.classList.remove("on")};
+    tbl.onclick=()=>{document.getElementById("sc-box").innerHTML=scurveTableMulti(rows);tbl.classList.add("on");cht.classList.remove("on")};
+    document.querySelectorAll("#sc-series button").forEach(b=>{b.onclick=()=>{const k=b.dataset.s;
+      if(scSel.includes(k)){if(scSel.length>1)scSel=scSel.filter(x=>x!==k)}else scSel.push(k);render()}});}
+  const up=document.getElementById("u-pct"),um=document.getElementById("u-mw");
+  if(up){up.onclick=()=>{state.unit="%";render()}}
+  if(um){um.onclick=()=>{state.unit="MW";render()}}
+  document.querySelectorAll(".ftile").forEach(el=>{el.addEventListener("click",()=>{
+    state.f.area=state.f.area===el.dataset.area?"":el.dataset.area;render();})});
+  document.querySelectorAll("tr.regrow").forEach(el=>{el.addEventListener("click",()=>{
+    const p=el.dataset.pkg;statSel=statSel===p?"":p;render();})});
+  if(_keep)window.scrollTo(0,_sy);else window.scrollTo(0,0);lastPage=state.page;
+}
+["f-dept","f-type","f-area","f-pkg","f-owner","f-ownship"].forEach(id=>{
+  document.getElementById(id).addEventListener("change",e=>{
+    const f=state.f;
+    if(id==="f-dept"){f.dept=e.target.value;f.pkg="";f.type=""}
+    if(id==="f-type")f.type=e.target.value;
+    if(id==="f-area")f.area=e.target.value;
+    if(id==="f-pkg")f.pkg=e.target.value;
+    if(id==="f-owner")f.owner=e.target.value;
+    if(id==="f-ownship")f.ownship=e.target.value;
+    render();});
+});
+function wdOfIso(v){if(!v)return null;const t=new Date(v+"T00:00:00");let i=WD.findIndex(d=>d>=t);if(i<0)i=WD.length-1;return i+1}
+document.getElementById("f-d1").addEventListener("change",e=>{state.f.w1=wdOfIso(e.target.value);render()});
+document.getElementById("f-d2").addEventListener("change",e=>{state.f.w2=wdOfIso(e.target.value);render()});
+document.getElementById("f-crit").addEventListener("click",()=>{state.f.crit=!state.f.crit;render()});
+document.getElementById("f-del").addEventListener("click",()=>{state.f.del=!state.f.del;render()});
+document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false};state.at=SW;pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];render()});
+document.getElementById("f-date").addEventListener("input",e=>{state.at=+e.target.value;render()});
+function applyTheme(t){
+  document.querySelectorAll("#thm button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  if(t==="auto"){const dk=matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.dataset.theme=dk?"dark":"light"}
+  else document.documentElement.dataset.theme=t;
+}
+document.querySelectorAll("#thm button").forEach(b=>b.addEventListener("click",()=>{lsSet("kp-thm",b.dataset.t);applyTheme(b.dataset.t)}));
+applyTheme(lsGet("kp-thm")||"auto");
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>applyTheme(lsGet("kp-thm")||"auto"));
+const _rbtn=document.getElementById("btn-refresh");
+if(_rbtn)_rbtn.addEventListener("click",async()=>{
+  _rbtn.textContent="⟳ checking…";_rbtn.disabled=true;
+  try{
+    const r=await fetch("meta.json?t="+Date.now(),{cache:"no-store"});
+    const m2=await r.json();
+    if(m2.generatedAt&&m2.generatedAt!==M.generatedAt){
+      _rbtn.textContent="⟳ new data — reloading…";
+      saveUI();
+      setTimeout(()=>location.replace(location.pathname+"?r="+Date.now()),400);
+    }else{
+      _rbtn.textContent="✓ latest ("+(M.generatedAt||M.statusDate)+")";
+      setTimeout(()=>{_rbtn.textContent="⟳ Refresh";_rbtn.disabled=false},4000);
+    }
+  }catch(e){
+    _rbtn.textContent="⟳ Refresh";_rbtn.disabled=false;
+    showTip({clientX:innerWidth-260,clientY:60},"Could not check for updates — this page shows the latest published build; the VisiLean sync runs every 5 minutes.");
+    setTimeout(hideTip,4000);
+  }
+});
+// keep the reader's place across a reload
+function saveUI(){
+  try{sessionStorage.setItem("kp-ui",JSON.stringify({
+    page:state.page,unit:state.unit,at:state.at,f:state.f,
+    scSel,pipeSearch,pipeDelOnly,pipeL1,pipeL2,statSel,regQ,regStatus,
+    rsnCat,rsnSel,consTab,y:window.scrollY}))}catch(e){}
+}
+function restoreUI(){
+  let s=null;try{s=JSON.parse(sessionStorage.getItem("kp-ui")||"null")}catch(e){}
+  if(!s)return null;
+  try{
+    if(s.page)state.page=s.page;
+    if(s.unit)state.unit=s.unit;
+    if(typeof s.at==="number")state.at=s.at;
+    if(s.f)state.f=Object.assign(state.f,s.f);
+    if(Array.isArray(s.scSel)&&s.scSel.length)scSel=s.scSel;
+    pipeSearch=s.pipeSearch||"";pipeDelOnly=!!s.pipeDelOnly;
+    Object.assign(pipeL1,s.pipeL1||{});Object.assign(pipeL2,s.pipeL2||{});
+    statSel=s.statSel||"";regQ=s.regQ||"";regStatus=s.regStatus||"";
+    rsnCat=s.rsnCat||"";rsnSel=null;consTab=s.consTab||consTab;
+  }catch(e){}
+  return s;
+}
+{const m=document.getElementById("rsnmodal");
+ if(m){document.getElementById("rsnmodal-x").addEventListener("click",closeRsn);
+   document.getElementById("rsnmodal-back").addEventListener("click",()=>openRsnList(rsnDept));
+   m.addEventListener("click",e=>{if(e.target===m)closeRsn()});
+   addEventListener("keydown",e=>{if(e.key==="Escape"&&m.classList.contains("on"))closeRsn()});}}
+const _restored=restoreUI();
+addEventListener("beforeunload",saveUI);
+document.getElementById("h-date").textContent=M.statusDate;
+// ---------- data freshness ----------
+// generatedAt looks like "24-Aug-2026 08:05 UTC"; parse it so the page can show how
+// old the data actually is rather than just when it was built.
+function genMs(s){
+  const m=/^(\d{1,2})-([A-Za-z]{3})-(\d{4})\s+(\d{1,2}):(\d{2})/.exec(s||"");
+  if(!m)return null;
+  const mo=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(m[2]);
+  if(mo<0)return null;
+  return Date.UTC(+m[3],mo,+m[1],+m[4],+m[5]);
+}
+// generatedAtEpoch is the authoritative instant (the printed stamp is IST, so it
+// must not be parsed as UTC); genMs stays as a fallback for older builds.
+const _genMs=(M.generatedAtEpoch?M.generatedAtEpoch*1000:genMs(M.generatedAt));
+function paintAge(){
+  const el=document.getElementById("h-age");if(!el||!_genMs)return;
+  const mins=Math.max(0,Math.round((Date.now()-_genMs)/60000));
+  el.textContent=mins<1?"live":(mins<60?mins+" min old":Math.floor(mins/60)+"h "+(mins%60)+"m old");
+  el.className=mins<=10?"fresh":(mins<=30?"aging":"stale");
+  el.title="VisiLean data age. The sync runs every 5 minutes; this page also checks for new data every minute.";
+}
+if(M.generatedAt){document.getElementById("h-gen").textContent="refreshed "+M.generatedAt;paintAge();setInterval(paintAge,30000);}
+// background poll: pick up a new build without anyone pressing Refresh
+let _pollBusy=false,_pending=null;
+// Never reload while somebody is reading. A new build only lights up a button; the
+// reader decides when to take it. (This used to call location.replace(), which threw
+// you back to Project Summary in the middle of a review.)
+function showUpdatePill(){
+  const el=document.getElementById("h-new");if(!el)return;
+  el.style.display="";
+  el.onclick=()=>{saveUI();location.replace(location.pathname+"?r="+Date.now())};
+}
+setInterval(async()=>{
+  if(_pollBusy||document.hidden||_pending)return;_pollBusy=true;
+  try{
+    const r=await fetch("meta.json?t="+Date.now(),{cache:"no-store"});
+    const m2=await r.json();
+    if(m2.generatedAt&&m2.generatedAt!==M.generatedAt){_pending=m2.generatedAt;showUpdatePill()}
+  }catch(e){}
+  _pollBusy=false;
+},60000);
+{const d2=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
+ document.getElementById("h-cod").innerHTML=`${d2} days <span style="font-size:8.5px;color:${M.delayDays>0?"var(--crit-text)":"var(--good-text)"}">(${M.delayDays>=0?"+":""}${M.delayDays}d)</span>`;}
+render();
+if(_restored&&_restored.y)setTimeout(()=>window.scrollTo(0,_restored.y),60);
+</script>
+</body>
+</html>
