@@ -63,6 +63,26 @@ h1{font-size:14px;font-weight:700}
 .dsl input{accent-color:var(--blue);width:110px}
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:7px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:9px 11px;grid-column:span 12;min-width:0}
+.card.clickable{cursor:pointer;transition:box-shadow .18s ease}
+.card.clickable:hover{box-shadow:0 6px 20px -10px rgba(16,20,23,.35)}
+.card.clickable:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.seg{display:inline-flex;gap:4px;flex-wrap:wrap}
+.segbtn{border:0;border-radius:999px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;background:var(--line2);color:var(--mut)}
+.segbtn.on{background:var(--blue);color:#fff}
+.tile{margin-top:9px;display:flex;gap:7px;border-radius:8px;background:var(--page);padding:8px 11px;font-size:10.5px;line-height:1.45;color:var(--mut)}
+.tile b{color:var(--ink)}
+.tile .ico{color:var(--blue);font-weight:700}
+#rsnmodal-bd .dsec{margin-top:14px}
+#rsnmodal-bd .dsec>.eyebrow{margin-bottom:5px}
+.eyebrow{text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-size:9.5px;font-weight:700}
+#rsnmodal-bd .dbox{border:1px solid var(--line);border-radius:8px;overflow:auto}
+#rsnmodal-bd .dbox th{cursor:pointer;user-select:none}
+#rsnmodal-bd .dbox th:hover{color:var(--blue)}
+.dfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:10.5px;color:var(--mut)}
+.dfoot button{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);border-radius:7px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer}
+.dfoot button:disabled{opacity:.4;cursor:default}
+.dfilt{width:100%;border:1px solid var(--line2);border-radius:6px;padding:2px 5px;font:inherit;font-size:9.5px;background:var(--surface);color:var(--ink)}
+#rsnmodal-box{max-width:1024px}
 .card h2{font-size:11px;font-weight:700;margin-bottom:1px}
 .card .hint{color:var(--mut);font-size:9px;margin-bottom:6px}
 .hdrrow{display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap}
@@ -78,6 +98,11 @@ h1{font-size:14px;font-weight:700}
 .chip.blue{background:var(--blue-wash);color:var(--blue)}
 .chip.mut{background:var(--grid);color:var(--ink2)}
 table{width:100%;border-collapse:collapse;font-size:10px}
+/* header rows stay put while the body scrolls - both for tables that scroll
+   inside their own box and for tables that scroll with the page */
+.twrap{overflow:auto;position:relative}
+table thead th, table tr:first-child th{position:sticky;top:0;z-index:3}
+th{background:var(--surface);box-shadow:inset 0 -1px 0 var(--line2)}
 th{font-size:8.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);text-align:left;padding:4px 5px;border-bottom:1px solid var(--line2);white-space:nowrap}
 th.sortable{cursor:pointer;user-select:none}
 th.sortable:hover{color:var(--blue)}
@@ -322,6 +347,7 @@ function moveTip(e){const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+1
 function hideTip(){tip.style.display="none"}
 document.addEventListener("scroll",hideTip,true);
 function chip(cls,txt){return `<span class="chip ${cls}">${txt}</span>`}
+function pill(kind,txt){const m={good:"vlc",crit:"vlnr",warn:"vlw",info:"blue"};return chip(m[kind]||"mut",txt)}
 function stChip(st){return st==="done"?chip("vlc","Complete"):st==="inprog"?chip("vls","Started"):chip("vlnc","Not Committed")}
 const VLMAP={"complete":["vlc","Complete"],"started":["vls","Started"],"notcommitted":["vlnc","Not Committed"],
  "ready":["vlr","Ready"],"forcedready":["vlfr","Forced Ready"],"notready":["vlnr","Not Ready"],
@@ -456,6 +482,98 @@ function rsnDetail(r){
   </div>`;
 }
 let rsnDept="";
+// ---------- generic drill-through ----------
+// A spec describes any metric: how it reads, how it reconciles, how it breaks down
+// and the rows behind it. Every drill-through on the dashboard renders through this,
+// so they all behave the same way.
+let _dspec=null,_dsub="",_dsort={k:null,dir:1},_dpage=0,_dfilt={};
+const DPAGE=25;
+function drillOpen(spec){
+  _dspec=spec;_dsub=(spec.subsets&&spec.subsets[0]&&spec.subsets[0].k)||"";
+  _dsort={k:null,dir:1};_dpage=0;_dfilt={};
+  drillRender();
+}
+function drillRows(){
+  const s=_dspec;if(!s)return[];
+  let rows=s.rows||[];
+  const sub=(s.subsets||[]).find(x=>x.k===_dsub);
+  if(sub&&sub.f)rows=rows.filter(sub.f);
+  Object.keys(_dfilt).forEach(k=>{
+    const q=(_dfilt[k]||"").toLowerCase();if(!q)return;
+    const col=s.cols.find(c=>c.k===k);if(!col)return;
+    rows=rows.filter(r=>String(col.txt?col.txt(r):col.get(r)??"").toLowerCase().includes(q));
+  });
+  if(_dsort.k){
+    const col=s.cols.find(c=>c.k===_dsort.k);
+    if(col)rows=rows.slice().sort((a,b)=>{
+      const x=col.get(a),y=col.get(b);
+      const n=(typeof x==="number"&&typeof y==="number")?x-y:String(x??"").localeCompare(String(y??""));
+      return n*_dsort.dir;});
+  }
+  return rows;
+}
+function drillRender(){
+  const s=_dspec;if(!s)return;
+  const rows=drillRows(),total=rows.length;
+  const pages=Math.max(1,Math.ceil(total/DPAGE));
+  if(_dpage>=pages)_dpage=pages-1;
+  const page=rows.slice(_dpage*DPAGE,(_dpage+1)*DPAGE);
+  let h="";
+  if(s.formula)h+=`<div class="tile" style="margin-top:0"><span class="ico">=</span><div>${s.formula}</div></div>`;
+  if(s.reconcile)h+=`<div style="margin-top:8px">${s.reconcile}</div>`;
+  if(s.breakdown&&s.breakdown.length){
+    h+=`<div class="dsec"><div class="eyebrow">Breakdown — ${esc(s.breakdownBy||"by dimension")}</div>
+      <div class="dbox" style="max-height:190px"><table><tr><th>Scope</th><th class="num">Count</th><th class="num">Share</th></tr>`;
+    const bt=s.breakdown.reduce((a,x)=>a+x.n,0)||1;
+    s.breakdown.forEach(x=>{h+=`<tr><td>${esc(x.label)}</td><td class="num">${x.n}</td>
+      <td class="num">${fmt1(100*x.n/bt)}%</td></tr>`});
+    h+=`</table></div></div>`;
+  }
+  h+=`<div class="dsec"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+    <div class="eyebrow">Rows</div><div class="seg">`;
+  (s.subsets||[]).forEach(x=>{
+    const n=(x.f?(s.rows||[]).filter(x.f):(s.rows||[])).length;
+    h+=`<button class="segbtn ${_dsub===x.k?"on":""}" data-sub="${esc(x.k)}">${esc(x.label)} ${n}</button>`});
+  h+=`</div><span style="margin-left:auto;font-size:10px;color:var(--mut)">click a header to sort · filter under any column</span></div>`;
+  h+=`<div class="dbox" style="max-height:44vh;margin-top:6px"><table><tr>`;
+  s.cols.forEach(c=>{const ar=_dsort.k===c.k?(_dsort.dir>0?" ▲":" ▼"):"";
+    h+=`<th data-sk="${esc(c.k)}" class="${c.num?"num":""}">${esc(c.label)}${ar}</th>`});
+  h+=`</tr><tr>`;
+  s.cols.forEach(c=>{h+=`<th style="padding-top:0"><input class="dfilt" data-fk="${esc(c.k)}" value="${esc(_dfilt[c.k]||"")}" placeholder="filter"></th>`});
+  h+=`</tr>`;
+  page.forEach(r=>{
+    h+=`<tr${s.onRow?' class="drow" style="cursor:pointer"':""} data-rid="${esc(s.rowId?s.rowId(r):"")}">`;
+    s.cols.forEach(c=>{h+=`<td class="${c.num?"num":""}">${c.html?c.html(r):esc(String(c.get(r)??"—"))}</td>`});
+    h+=`</tr>`});
+  if(!page.length)h+=`<tr><td colspan="${s.cols.length}" style="color:var(--mut);padding:14px">No rows for this selection.</td></tr>`;
+  h+=`</table></div>`;
+  const from=total?_dpage*DPAGE+1:0,to=Math.min(total,(_dpage+1)*DPAGE);
+  h+=`<div class="dfoot"><span>${from}–${to} of ${total}</span>
+    <span><button id="d-copy">Copy</button>
+      <button id="d-prev" ${_dpage<=0?"disabled":""}>Prev</button>
+      <button id="d-next" ${_dpage>=pages-1?"disabled":""}>Next</button></span></div>`;
+  showRsnPanel(`<div class="eyebrow">${esc(s.eyebrow||"")}</div>${esc(s.title)} ${s.status||""}`,h,!!s.back);
+  setTimeout(()=>{
+    const bd=document.getElementById("rsnmodal-bd");if(!bd)return;
+    bd.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{_dsub=b.dataset.sub;_dpage=0;drillRender()}));
+    bd.querySelectorAll("th[data-sk]").forEach(th=>th.addEventListener("click",()=>{
+      const k=th.dataset.sk;_dsort=(_dsort.k===k)?{k,dir:-_dsort.dir}:{k,dir:1};drillRender()}));
+    bd.querySelectorAll(".dfilt").forEach(inp=>{
+      inp.addEventListener("input",()=>{_dfilt[inp.dataset.fk]=inp.value;_dpage=0;drillRender();
+        setTimeout(()=>{const n=document.querySelector(`.dfilt[data-fk="${inp.dataset.fk}"]`);
+          if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},0)});});
+    const p=document.getElementById("d-prev"),n=document.getElementById("d-next"),c=document.getElementById("d-copy");
+    if(p)p.addEventListener("click",()=>{if(_dpage>0){_dpage--;drillRender()}});
+    if(n)n.addEventListener("click",()=>{_dpage++;drillRender()});
+    if(c)c.addEventListener("click",()=>{
+      const s2=_dspec,rs=drillRows();
+      const txt=[s2.cols.map(x=>x.label).join("\t")].concat(
+        rs.map(r=>s2.cols.map(x=>String(x.txt?x.txt(r):x.get(r)??"")).join("\t"))).join("\n");
+      navigator.clipboard.writeText(txt).then(()=>{c.textContent="Copied";setTimeout(()=>c.textContent="Copy",1400)})
+        .catch(()=>{c.textContent="Copy failed";setTimeout(()=>c.textContent="Copy",1400)});});
+    if(_dspec.onRow)bd.querySelectorAll(".drow").forEach(tr=>tr.addEventListener("click",()=>_dspec.onRow(tr.dataset.rid)));
+  },0);
+}
 function rsnListHtml(deptKey){
   const all=reasonsFor(deptKey);
   const list=(rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all)
@@ -542,20 +660,52 @@ function reasonsCard(deptKey,span){
     `<button id="rsn-drill" class="rsndrill" title="Drill down to the activity list">&#9783; ${list.length} ${list.length===1?"activity":"activities"}</button>`);
 }
 // ---------- KPI cards ----------
+// every KPI drills into the rows it counts
+function kpiDrill(kind,rows,deptKey){
+  const S={all:{t:"All activities",f:null},
+           done:{t:"Completed activities",f:isDone},
+           dly:{t:"Delayed activities",f:isDelayed}}[kind];
+  if(!S)return;
+  const base=rows,sel=S.f?rows.filter(S.f):rows;
+  const by={};sel.forEach(r=>{const k=DNAME[r[C.dept]]||"—";by[k]=(by[k]||0)+1});
+  drillOpen({
+    eyebrow:(deptKey?DNAME[deptKey]:"Project")+" · KPI",
+    title:S.t,
+    status:pill(kind==="dly"?"crit":(kind==="done"?"good":"info"),sel.length.toLocaleString()),
+    formula:`<b>${sel.length.toLocaleString()}</b> of <b>${base.length.toLocaleString()}</b> activities in scope = <b>${fmt1(base.length?100*sel.length/base.length:0)}%</b>`,
+    reconcile:`<span class="pill good">✓ counted live from VisiLean · ${base.length.toLocaleString()} activities in the current filter</span>`,
+    breakdownBy:"department",
+    breakdown:Object.entries(by).map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n),
+    rows:sel,
+    subsets:[{k:"all",label:"All"},{k:"crit",label:"Critical",f:r=>isCrit(r)},
+             {k:"nb",label:"Not baselined",f:r=>!!r[C.nd]}],
+    cols:[
+      {k:"name",label:"Activity",get:r=>r[C.name],
+       html:r=>`<b>${esc(String(r[C.name]).slice(0,54))}</b><div class="small dim">${esc(String(r[C.pkg]).slice(0,52))}</div>`},
+      {k:"dept",label:"Department",get:r=>DNAME[r[C.dept]]||"—"},
+      {k:"type",label:"Activity type",get:r=>r[C.type]||"—"},
+      {k:"own",label:"Owner",get:r=>r[C.owner]||r[C.ownship]||"—"},
+      {k:"st",label:"Status",get:r=>r[C.vls],html:r=>rowChip(r)},
+      {k:"pct",label:"%",num:true,get:r=>r[C.pct]},
+      {k:"bef",label:"Baseline finish",get:r=>r[C.bEF],html:r=>wdate(r[C.bEF],1),txt:r=>wdate(r[C.bEF],1)},
+      {k:"fef",label:"Forecast finish",get:r=>r[C.fEF],html:r=>wdate(r[C.fEF],1),txt:r=>wdate(r[C.fEF],1)},
+    ],
+  });
+}
 function kpiCards(rows,projectLevel){
   const total=rows.length,done=rows.filter(isDone).length,dl=rows.filter(isDelayed).length,
         ls=rows.filter(isLateStart).length,cr=rows.filter(isCrit).length;
   const bfin=rows.length?Math.max(...rows.map(r=>r[C.bEF])):0,ffin=rows.length?Math.max(...rows.map(r=>r[C.fEF])):0;
   const d2cod=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
-  const c=(t,big,cmp,ch)=>`<div class="card span2 kpi"><h2>${t}</h2><div class="big">${big}</div><div class="cmp">${cmp||""}</div>${ch?`<div style="margin-top:4px">${ch}</div>`:""}</div>`;
+  const c=(t,big,cmp,ch,dk)=>`<div class="card span2 kpi${dk?" clickable":""}"${dk?` data-kpi="${dk}" tabindex="0" title="Drill through to the activities"`:""}><h2>${t}</h2><div class="big">${big}</div><div class="cmp">${cmp||""}</div>${ch?`<div style="margin-top:4px">${ch}</div>`:""}</div>`;
   // Milestones live outside the activity rows, so they only belong in the headline
   // count when nothing is filtered - otherwise a filtered view (e.g. Activity Type =
   // Construction) would read 9 too high against VisiLean.
   const unfiltered=rows.length===L.length;
   const totalAll=(projectLevel&&unfiltered)? total + DATA.milestones.length : total;
-  return c("Total activities",totalAll.toLocaleString(),(projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones`:"in scope")
-   + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count")
-   + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"))
+  return c("Total activities",totalAll.toLocaleString(),(projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones`:"in scope",null,"all")
+   + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count",null,"done")
+   + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"),"dly")
    + c("Baseline vs Forecast",`<span style="font-size:12px">${wdate(bfin,1)}</span>`,`forecast ${wdate(ffin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):chip("vlc","on plan"))
    + c("Days to COD",d2cod+" days","forecast "+M.forecastFinish);
 }
@@ -1112,6 +1262,7 @@ function pageSummary(){
   h+=card("span5","Stage progress","Actual % vs Baseline Plan %",stageBars(rows));
   h+=critPoints(rows);
   h+=reasonsCard("","span12");
+  setTimeout(()=>bindKpi(rows,""),0);
   h+=card("span6","Open Constraints / Awaiting to Start","live VisiLean constraints log · awaiting-start from schedule",constraints(rows),
     `<div class="toggle2"><button class="${consTab==="await"?"on":""}" onclick="consTab='await';render()">Awaiting Start</button><button class="${consTab==="vl"?"on":""}" onclick="consTab='vl';render()">VisiLean Constraints</button></div>`);
   h+="</div>";
@@ -1279,7 +1430,7 @@ function pageDept(key){
   }
   h+=reasonsCard(key,"span12");
   h+="</div>";
-  setTimeout(()=>{bindPipe("pe");bindPipe("pd")},0);
+  setTimeout(()=>{bindPipe("pe");bindPipe("pd");bindKpi(rows,key)},0);
   return h;
 }
 function stageSecs(rows){
@@ -1320,6 +1471,13 @@ function syncFilterUI(){
   document.getElementById("f-datev").textContent=wdate(state.at,1)+(state.at===SW?" (today)":"");
 }
 let lastPage=null;
+function bindKpi(rows,deptKey){
+  document.querySelectorAll("[data-kpi]").forEach(el=>{
+    const go=()=>kpiDrill(el.dataset.kpi,rows,deptKey);
+    el.addEventListener("click",go);
+    el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
+  });
+}
 function render(){
   const _keep=lastPage===state.page;const _sy=window.scrollY;
   navHtml();syncFilterUI();
@@ -1393,13 +1551,26 @@ if(_rbtn)_rbtn.addEventListener("click",async()=>{
 });
 // keep the reader's place across a reload
 function saveUI(){
-  try{sessionStorage.setItem("kp-ui",JSON.stringify({
+  try{_uiWrite(JSON.stringify({
     page:state.page,unit:state.unit,at:state.at,f:state.f,
     scSel,pipeSearch,pipeDelOnly,pipeL1,pipeL2,statSel,regQ,regStatus,
-    rsnCat,rsnSel,consTab,y:window.scrollY}))}catch(e){}
+    rsnCat,rsnSel,consTab,y:window.scrollY,t:Date.now()}))}catch(e){}
+}
+// Written to both stores: sessionStorage is per-tab, localStorage survives a reload
+// driven by whatever is hosting the page. Whichever is readable wins on the way back.
+function _uiWrite(s){
+  try{sessionStorage.setItem("kp-ui",s)}catch(e){}
+  try{localStorage.setItem("kp-ui",s)}catch(e){}
+}
+function _uiRead(){
+  let a=null,b=null;
+  try{a=JSON.parse(sessionStorage.getItem("kp-ui")||"null")}catch(e){}
+  try{b=JSON.parse(localStorage.getItem("kp-ui")||"null")}catch(e){}
+  if(a&&b)return (b.t||0)>(a.t||0)?b:a;
+  return a||b;
 }
 function restoreUI(){
-  let s=null;try{s=JSON.parse(sessionStorage.getItem("kp-ui")||"null")}catch(e){}
+  const s=_uiRead();
   if(!s)return null;
   try{
     if(s.page)state.page=s.page;
@@ -1421,6 +1592,9 @@ function restoreUI(){
    addEventListener("keydown",e=>{if(e.key==="Escape"&&m.classList.contains("on"))closeRsn()});}}
 const _restored=restoreUI();
 addEventListener("beforeunload",saveUI);
+addEventListener("pagehide",saveUI);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)saveUI()});
+setInterval(saveUI,4000);   // the host can reload us without notice
 document.getElementById("h-date").textContent=M.statusDate;
 // ---------- data freshness ----------
 // generatedAt looks like "24-Aug-2026 08:05 UTC"; parse it so the page can show how

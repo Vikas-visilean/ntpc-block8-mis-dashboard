@@ -92,6 +92,7 @@ def money(s):
 
 recs = {}
 milestones_raw = []
+NA_SKIPPED = []
 GUID = {t.get("guid"): t for t in TASKS if t.get("guid")}
 _synth = [0]
 for t in TASKS:
@@ -146,10 +147,17 @@ for t in TASKS:
     if (L[0] or "").startswith("Key Milestones") or re.match(r"^MS-\d", r["name"]):
         if not r["parent"]: milestones_raw.append(r)
         continue
+    # KP rule 26-Aug: an activity whose trade is "Not Applicable" is out of scope for
+    # this project. Dropping it here removes it from every count, every progress and
+    # weightage calculation, and every table - not just from the views.
+    if norm(t.get("trade")) in ("notapplicable", "na"):
+        NA_SKIPPED.append(r["name"])
+        continue
     recs[uid] = r
 
 leafs = {u: r for u, r in recs.items() if not r["parent"]}
-print("usable leaves:", len(leafs), "| milestones:", len(milestones_raw))
+print("usable leaves:", len(leafs), "| milestones:", len(milestones_raw),
+      "| excluded (trade = Not Applicable):", len(NA_SKIPPED))
 
 # ---------- forecast = VisiLean PLANNED dates, verbatim (KP rule 17-Aug-2026) ----------
 # No dashboard-side re-forecasting: VisiLean owns scheduling. Planned start/end
@@ -362,6 +370,7 @@ meta = {"statusDate": TODAY.strftime("%d-%b-%Y"), "statusWd": STATUS_WD, "startD
         "inprog": sum(1 for x in rows if x[16] == "inprog" and not x[23]),
         "late": sum(1 for x in rows if x[16] == "late" and not x[23]),
         "delayed": sum(1 for x in rows if x[24]), "logicCoverage": LOGIC_COV,
+        "naExcluded": len(NA_SKIPPED),
         "total": len(rows), "totalTasks": len(rows) + len(ms),
         "undated": sum(1 for x in rows if x[23]),
         "source": "VisiLean live API",
