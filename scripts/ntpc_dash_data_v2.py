@@ -344,7 +344,9 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  (r["assignee"] or "")[:30], sub, round(r["cost"]), len(rows), vs,
                  (r["owner"] or "")[:40], r["nd"], dly, str(item)[:80], round(r["wt"], 6),
                  1 if str(r.get("crit") or "").strip().lower().startswith("y") else 0,
-                 strip_html(r["desc"])[:120], strip_html(r["note"])[:220]])
+                 strip_html(r["desc"])[:120], strip_html(r["note"])[:220],
+                 # actual finish, so completed work counts from when it finished
+                 (wd_f(r["aF"]) if r["aF"] else None)])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
 ms = []
@@ -368,8 +370,15 @@ plan_pct = sum(min(1.0, max(0.0, (STATUS_WD - x[7]) / max(0.5, x[12]))) * W(x) f
 # Same formula the dashboard uses for the gauge, so the published figure and the
 # gauge cannot disagree: progress is capped by how much of the activity has actually
 # elapsed, which is what stops work reported before its scheduled start from counting.
-act_pct = sum(min(x[11] / 100.0, max(0.0, (STATUS_WD - x[9]) / max(0.5, x[12]))) * W(x)
-              for x in rows) / WT
+AEF_I = 30   # "aef" column (asserted against the contract below)
+def _prog(x):   # not baselined -> contributes no progress, as in Completed/Delayed
+    return 0.0 if x[23] else x[11] / 100.0
+def _elapsed(x):
+    if _prog(x) >= 1.0:   # finished: counts from the date it actually finished
+        fin = x[AEF_I] if x[AEF_I] is not None else x[10]
+        return 1.0 if STATUS_WD >= fin else 0.0
+    return max(0.0, (STATUS_WD - x[9]) / max(0.5, x[12]))
+act_pct = sum(min(_prog(x), _elapsed(x)) * W(x) for x in rows) / WT
 bfin = max(x[8] for x in rows); ffin = max(x[10] for x in rows)
 NOW_UTC = datetime.datetime.now(datetime.timezone.utc)
 IST_NOW = NOW_UTC.astimezone(datetime.timezone(datetime.timedelta(hours=5, minutes=30)))
@@ -590,9 +599,10 @@ DATA = {"meta": meta, "months": months, "reasons": reasons, "depts": [{"key": k,
         "milestones": ms, "constraints": cons, "supplyDeliv": SUPPLY_DELIV,
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
-                 "ownship", "nd", "dly", "item", "wt", "vcrit", "desc", "note"],
+                 "ownship", "nd", "dly", "item", "wt", "vcrit", "desc", "note", "aef"],
         "leaves": rows}
 assert DATA["cols"][WT_I] == "wt", f"WT_I points at {DATA['cols'][WT_I]!r}, not 'wt'"
+assert DATA["cols"][AEF_I] == "aef", f"AEF_I points at {DATA['cols'][AEF_I]!r}, not 'aef'"
 out = os.path.join(SCR, "ntpc_dashboard_data_v2.json")
 json.dump(DATA, open(out, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 print(f"meta: plan={meta['plan']}% act={meta['act']}% finish {meta['forecastFinish']} (+{meta['delayDays']}d) crit={n_crit}")

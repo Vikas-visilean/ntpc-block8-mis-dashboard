@@ -12,7 +12,12 @@ name: Refresh v2 dashboard from VisiLean
 
 on:
   schedule:
-    - cron: "7 */2 * * *"      # start a worker every 2 hours (offset off the hour: less contended)
+    # GitHub fires scheduled runs on a best-effort basis and drops most of them:
+    # asking every 2 hours produced actual triggers ~11 hours apart (26-Aug 23:26,
+    # 27-Aug 09:35, 27-Aug 20:21), leaving ~5h dead once a worker's window ended.
+    # Asking every 30 minutes gets far more of them through; concurrency means a new
+    # worker simply replaces the running one, so extra triggers cost nothing.
+    - cron: "7,37 * * * *"
   workflow_dispatch:
     inputs:
       once:

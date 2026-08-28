@@ -375,13 +375,33 @@ function filtered(forceDept){
     &&(!f.crit||isCrit(r))&&(!f.del||isBehind(r)));
 }
 // Progress weight is VisiLean's Weightage custom field - the same basis the adapter
-// publishes, so the gauge and the headline figure cannot drift apart. Duration is a
-// fallback only for a subset that carries no weightage at all.
-function wgt(rows){const c=rows.reduce((a,r)=>a+(r[C.wt]>0?r[C.wt]:0),0);return c>0?(r=>(r[C.wt]>0?r[C.wt]:0)):(r=>r[C.dur]);}
+// publishes, so the gauge and the headline figure cannot drift apart.
+//
+// Department and section views are the exception. The approved weightage is assigned
+// to a subset of each department's activities, so weighting there reports the
+// progress of that subset rather than of the department: Project Initiation read
+// 99.8% with 50 of 98 activities complete, Quality 79.5% with 47 of 1,389. On those
+// views every activity counts equally, which is the completion basis KP asked for.
+// The project summary keeps the weightage model.
+function perActivityBasis(){return String(state.page||"").indexOf("d:")===0}
+function wgt(rows){
+  if(perActivityBasis())return (r=>1);
+  const c=rows.reduce((a,r)=>a+(r[C.wt]>0?r[C.wt]:0),0);
+  return c>0?(r=>(r[C.wt]>0?r[C.wt]:0)):(r=>r[C.dur]);
+}
 function wsum(rows){const w=wgt(rows);return rows.reduce((a,r)=>a+w(r),0)||1}
 function planPct(rows,at){at=at||state.at;const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>a+Math.min(1,Math.max(0,(at-r[C.bES])/Math.max(.5,r[C.dur])))*w(r),0)/W}
 function fcPct(rows,at){at=at||state.at;const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>a+Math.min(1,Math.max(0,(at-r[C.fES])/Math.max(.5,r[C.dur])))*w(r),0)/W}
-function actPctAt(rows,at){const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>{const el=Math.max(0,(at-r[C.fES])/Math.max(.5,r[C.dur]));return a+Math.min(r[C.pct]/100,el)*w(r)},0)/W}
+// An activity not baselined in VisiLean is left out of Completed and Delayed, so it
+// must not contribute progress either. A finished activity counts in full from the
+// date it actually finished - otherwise work completed ahead of schedule is
+// suppressed by the elapsed cap and the gauge reads below the completion count.
+function pctOf(r){return r[C.nd]?0:r[C.pct]}
+function elapsedOf(r,at){
+  if(pctOf(r)>=100){const fin=(C.aef!==undefined&&r[C.aef]!=null)?r[C.aef]:r[C.fEF];return at>=fin?1:0}
+  return Math.max(0,(at-r[C.fES])/Math.max(.5,r[C.dur]));
+}
+function actPctAt(rows,at){const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>a+Math.min(pctOf(r)/100,elapsedOf(r,at))*w(r),0)/W}
 function actPct(rows){return state.at<=SW ? actPctAt(rows,state.at) : fcPct(rows,state.at)}
 const unitVal=(pct,mw)=>state.unit==="MW"?fmt1(pct/100*(mw||300))+" MW":fmt1(pct)+"%";
 // ---------- tooltip ----------
@@ -426,8 +446,11 @@ function gaugeCard(rows){
   // activities with no weightage assigned contribute nothing - worth showing plainly
   const wc=rows.length?100*rows.filter(r=>r[C.wt]>0).length/rows.length:0;
   const wsum=rows.reduce((x,r)=>x+(r[C.wt]||0),0);
+  const basis=perActivityBasis()
+    ? `per activity · ${rows.length.toLocaleString()} activities in view · carries ${fmt1(wsum)}% of project weight`
+    : `weightage-based (VisiLean Weightage field) · ${fmt1(wsum)}% of project weight · covers ${fmt1(wc)}% of activities in view`;
   return `<div class="card span4"><h2>Overall progress</h2>
-   <div class="hint">weightage-based (VisiLean Weightage field) · ${fmt1(wsum)}% of project weight · covers ${fmt1(wc)}% of activities in view</div>
+   <div class="hint">${basis}</div>
    <div class="gwrap">${gauge(a,p)}
     <div class="gstats">
      <span class="k">SPI — Schedule Performance Index<br><span style="font-weight:400">(= Actual % ÷ Planned %)</span></span><span class="v">${spi?spi.toFixed(2):"—"}</span>
