@@ -326,13 +326,14 @@ const state = {page:"summary", unit:"%", at:SW, f:{dept:"",type:"",area:"",pkg:"
 // this dashboard is counted off this field so it ties back to VisiLean 1:1.
 const AT={ENG:"Engineering",SUP:"Procurement - Supply",SVC:"Procurement - Services",CON:"Construction"};
 const isEng=r=>r[C.type]===AT.ENG, isProc=r=>r[C.type]===AT.SUP||r[C.type]===AT.SVC, isCon=r=>r[C.type]===AT.CON;
-// Not baselined in VisiLean -> counted in Total, left out of Completed / Delayed,
-// exactly as VisiLean's own counters do.
-const isDone = r=>r[C.state]==="done" && !r[C.nd];
+// VisiLean counts an activity whether or not it has been baselined, so these match
+// its dashboard 1:1. The only deliberate difference is that activities whose trade is
+// "Not Applicable" are excluded here, at KP's instruction.
+const isDone = r=>r[C.state]==="done";
 const isLateStart = r=>r[C.state]==="late";
 const isDelayed = r=>!!r[C.dly];
-const isWip = r=>!r[C.nd] && (r[C.vls]==="Started" || (r[C.pct]>0 && r[C.pct]<100));
-const isStopped = r=>!r[C.nd] && r[C.vls]==="Stopped";
+const isWip = r=>r[C.vls]==="Started" || (r[C.pct]>0 && r[C.pct]<100);
+const isStopped = r=>r[C.vls]==="Stopped";
 const isBehind = r=>(r[C.fEF]-r[C.bEF])>=4 && r[C.state]!=="done";
 const isCrit = r=>r[C.tf]<=5 && r[C.state]!=="done";
 function filtered(forceDept){
@@ -360,11 +361,10 @@ function wgt(rows){
 function wsum(rows){const w=wgt(rows);return rows.reduce((a,r)=>a+w(r),0)||1}
 function planPct(rows,at){at=at||state.at;const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>a+Math.min(1,Math.max(0,(at-r[C.bES])/Math.max(.5,r[C.dur])))*w(r),0)/W}
 function fcPct(rows,at){at=at||state.at;const w=wgt(rows),W=wsum(rows);return 100*rows.reduce((a,r)=>a+Math.min(1,Math.max(0,(at-r[C.fES])/Math.max(.5,r[C.dur])))*w(r),0)/W}
-// An activity not baselined in VisiLean is left out of Completed and Delayed, so it
-// must not contribute progress either. A finished activity counts in full from the
-// date it actually finished - otherwise work completed ahead of schedule is
-// suppressed by the elapsed cap and the gauge reads below the completion count.
-function pctOf(r){return r[C.nd]?0:r[C.pct]}
+// A finished activity counts in full from the date it actually finished - otherwise
+// work completed ahead of schedule is suppressed by the elapsed cap and the gauge
+// reads below the completion count.
+function pctOf(r){return r[C.pct]}
 function elapsedOf(r,at){
   if(pctOf(r)>=100){const fin=(C.aef!==undefined&&r[C.aef]!=null)?r[C.aef]:r[C.fEF];return at>=fin?1:0}
   return Math.max(0,(at-r[C.fES])/Math.max(.5,r[C.dur]));
@@ -749,7 +749,8 @@ function kpiCards(rows,projectLevel){
   // Construction) would read 9 too high against VisiLean.
   const unfiltered=rows.length===L.length;
   const totalAll=(projectLevel&&unfiltered)? total + DATA.milestones.length : total;
-  return c("Total activities",totalAll.toLocaleString(),(projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones`:"in scope",null,"all")
+  return c("Total activities",totalAll.toLocaleString(),
+       (projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones${M.naExcluded?` · ${M.naExcluded} Not Applicable excluded`:""}`:"in scope",null,"all")
    + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count",null,"done")
    + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"),"dly")
    + c("In progress",inprog.toLocaleString(),`started, not yet complete`,null,"wip")

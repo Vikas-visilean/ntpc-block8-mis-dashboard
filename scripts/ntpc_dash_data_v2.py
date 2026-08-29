@@ -331,7 +331,8 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     # (forecast finish >= 4 days past baseline) always read 0, because VisiLean's
     # planned dates equal the baseline until the schedule is actually rescheduled.
     dly = 0
-    if not r["nd"] and r["pct"] < 100:
+    # VisiLean counts an activity whether or not it is baselined, so we do too.
+    if r["pct"] < 100:
         if r["ped"] < TODAY or (r["psd"] < TODAY and r["pct"] == 0): dly = 1
     if r["pct"] >= 100 or vs == "Complete": state = "done"
     elif r["pct"] > 0 or vs in ("Started", "Warning", "Stopped"): state = "inprog"
@@ -371,8 +372,8 @@ plan_pct = sum(min(1.0, max(0.0, (STATUS_WD - x[7]) / max(0.5, x[12]))) * W(x) f
 # gauge cannot disagree: progress is capped by how much of the activity has actually
 # elapsed, which is what stops work reported before its scheduled start from counting.
 AEF_I = 30   # "aef" column (asserted against the contract below)
-def _prog(x):   # not baselined -> contributes no progress, as in Completed/Delayed
-    return 0.0 if x[23] else x[11] / 100.0
+def _prog(x):
+    return x[11] / 100.0
 def _elapsed(x):
     if _prog(x) >= 1.0:   # finished: counts from the date it actually finished
         fin = x[AEF_I] if x[AEF_I] is not None else x[10]
@@ -395,9 +396,9 @@ meta = {"statusDate": TODAY.strftime("%d-%b-%Y"), "statusWd": STATUS_WD, "startD
         "svPts": round(100 * (act_pct - plan_pct), 1),
         "svPct": round(100 * (act_pct - plan_pct) / plan_pct, 1) if plan_pct > 0.0005 else 0,
         "delayDays": ffin - bfin, "critical": n_crit,
-        "done": sum(1 for x in rows if x[16] == "done" and not x[23]),
-        "inprog": sum(1 for x in rows if x[16] == "inprog" and not x[23]),
-        "late": sum(1 for x in rows if x[16] == "late" and not x[23]),
+        "done": sum(1 for x in rows if x[16] == "done"),
+        "inprog": sum(1 for x in rows if x[16] == "inprog"),
+        "late": sum(1 for x in rows if x[16] == "late"),
         "delayed": sum(1 for x in rows if x[24]), "logicCoverage": LOGIC_COV,
         "wtSum": round(sum(w_of(x) for x in rows), 3),
         "wtCoverage": round(100.0 * sum(1 for x in rows if w_of(x) > 0) / max(1, len(rows)), 1),
