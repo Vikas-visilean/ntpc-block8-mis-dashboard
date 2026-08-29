@@ -209,6 +209,10 @@ tr:hover td{background:var(--blue-wash)}
 #rsnmodal-bd .dbox table{font-size:10.5px}
 #rsnmodal-bd .dbox th{position:sticky;top:0;background:var(--surface);cursor:pointer;user-select:none}
 #rsnmodal-bd .dbox th:hover{color:var(--blue)}
+/* give every column room; the box scrolls sideways rather than crushing text */
+#rsnmodal-bd .dbox table{min-width:1180px}
+#rsnmodal-bd .dbox th,#rsnmodal-bd .dbox td{vertical-align:top}
+#rsnmodal-bd .dbox td{overflow-wrap:anywhere}
 #rsnmodal-bd .dbox tr:hover td{background:var(--blue-wash)}
 .dfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;
  margin-top:8px;font-size:10.5px;color:var(--mut)}
@@ -567,9 +571,12 @@ function rsnByTid(){
   if(_rsnByTid)return _rsnByTid;
   _rsnByTid={};
   (DATA.reasons||[]).forEach(r=>{
-    const bits=[];
-    (r.cats||[]).forEach(c=>{if(c.cat&&c.cat!=="No reason recorded")bits.push((c.label?c.label+": ":"")+(c.party?c.party+" · ":"")+c.cat)});
-    (r.events||[]).forEach(e=>{if(e.text)bits.push(e.label+": "+e.text)});
+    const bits=[],seen={};
+    const add=v=>{const k=v.trim();if(k&&!seen[k]){seen[k]=1;bits.push(k)}};
+    // placeholders carry no information for a reader - keep the real reasons only
+    const junk=c=>!c||c==="No reason recorded"||c==="Uncategorised";
+    (r.cats||[]).forEach(c=>{if(!junk(c.cat))add((c.label?c.label+": ":"")+(c.party?c.party+" · ":"")+c.cat)});
+    (r.events||[]).forEach(e=>{if(e.text&&!junk(e.text))add(e.label+": "+e.text)});
     if(r.tid)_rsnByTid[String(r.tid)]=bits.join(" | ");
   });
   return _rsnByTid;
@@ -582,19 +589,19 @@ function noteFor(r){
 // KP's standard drill-through columns, identical everywhere in the dashboard.
 function stdCols(){
   return [
-    {k:"tid",label:"Task ID",get:r=>r[C.tid]||"—"},
-    {k:"name",label:"Activity",get:r=>r[C.name],
+    {k:"tid",label:"Task ID",get:r=>r[C.tid]||"—",w:74},
+    {k:"name",label:"Activity",w:230,get:r=>r[C.name],
      html:r=>`<b>${esc(String(r[C.name]).slice(0,54))}</b>`},
-    {k:"wbs",label:"WBS",get:r=>r[C.wbs]||"—",
+    {k:"wbs",label:"WBS",w:200,get:r=>r[C.wbs]||"—",
      html:r=>`<span title="${esc(r[C.wbs]||"")}">${esc(String(r[C.wbs]||"—").slice(0,54))}</span>`},
-    {k:"desc",label:"Description",get:r=>r[C.desc]||"—"},
-    {k:"own",label:"Owner",get:r=>r[C.owner]||r[C.ownship]||"—"},
-    {k:"org",label:"Organisation",get:r=>r[C.org]||"—"},
-    {k:"st",label:"Status",get:r=>r[C.vls],html:r=>rowChip(r)},
-    {k:"pct",label:"% complete",num:true,get:r=>r[C.pct]},
+    {k:"desc",label:"Description",w:150,get:r=>r[C.desc]||"—"},
+    {k:"own",label:"Owner",w:120,get:r=>r[C.owner]||r[C.ownship]||"—"},
+    {k:"org",label:"Organisation",w:120,get:r=>r[C.org]||"—"},
+    {k:"st",label:"Status",w:100,get:r=>r[C.vls],html:r=>rowChip(r)},
+    {k:"pct",label:"% complete",w:78,num:true,get:r=>r[C.pct]},
     {k:"bef",label:"Baseline finish",get:r=>r[C.bEF],html:r=>wdate(r[C.bEF],1),txt:r=>wdate(r[C.bEF],1)},
     {k:"fef",label:"Planned finish",get:r=>r[C.fEF],html:r=>wdate(r[C.fEF],1),txt:r=>wdate(r[C.fEF],1)},
-    {k:"note",label:"Notes / Comments",get:r=>noteFor(r),
+    {k:"note",label:"Notes / Comments",w:250,get:r=>noteFor(r),
      html:r=>{const n=noteFor(r);return n?`<span title="${esc(n)}">${esc(n.slice(0,70))}${n.length>70?"…":""}</span>`:`<span class="dim">—</span>`}},
   ];
 }
@@ -603,18 +610,21 @@ function drillOpen(spec){
   _dsort={k:null,dir:1};_dpage=0;_dfilt={};
   drillRender();
 }
+function drillSub(){const s=_dspec;return s?((s.subsets||[]).find(x=>x.k===_dsub)||null):null}
+function drillCols(){const s=_dspec,sub=drillSub();return (sub&&sub.cols)?sub.cols:(s?s.cols:[])}
 function drillRows(){
   const s=_dspec;if(!s)return[];
-  let rows=s.rows||[];
-  const sub=(s.subsets||[]).find(x=>x.k===_dsub);
+  const sub=drillSub();
+  // a subset may carry its own row set, so one drill can offer different views
+  let rows=(sub&&sub.rows)?sub.rows:(s.rows||[]);
   if(sub&&sub.f)rows=rows.filter(sub.f);
   Object.keys(_dfilt).forEach(k=>{
     const q=(_dfilt[k]||"").toLowerCase();if(!q)return;
-    const col=s.cols.find(c=>c.k===k);if(!col)return;
+    const col=drillCols().find(c=>c.k===k);if(!col)return;
     rows=rows.filter(r=>String(col.txt?col.txt(r):col.get(r)??"").toLowerCase().includes(q));
   });
   if(_dsort.k){
-    const col=s.cols.find(c=>c.k===_dsort.k);
+    const col=drillCols().find(c=>c.k===_dsort.k);
     if(col)rows=rows.slice().sort((a,b)=>{
       const x=col.get(a),y=col.get(b);
       const n=(typeof x==="number"&&typeof y==="number")?x-y:String(x??"").localeCompare(String(y??""));
@@ -624,6 +634,7 @@ function drillRows(){
 }
 function drillRender(){
   const s=_dspec;if(!s)return;
+  const cols=drillCols();
   const rows=drillRows(),total=rows.length;
   const pages=Math.max(1,Math.ceil(total/DPAGE));
   if(_dpage>=pages)_dpage=pages-1;
@@ -642,20 +653,21 @@ function drillRender(){
   h+=`<div class="dsec"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
     <div class="eyebrow">Rows</div><div class="seg">`;
   (s.subsets||[]).forEach(x=>{
-    const n=(x.f?(s.rows||[]).filter(x.f):(s.rows||[])).length;
+    const src=x.rows||s.rows||[];
+    const n=(x.f?src.filter(x.f):src).length;
     h+=`<button class="segbtn ${_dsub===x.k?"on":""}" data-sub="${esc(x.k)}">${esc(x.label)} ${n}</button>`});
   h+=`</div><span style="margin-left:auto;font-size:10px;color:var(--mut)">click a header to sort · filter under any column</span></div>`;
   h+=`<div class="dbox" style="max-height:44vh;margin-top:6px"><table><tr>`;
-  s.cols.forEach(c=>{const ar=_dsort.k===c.k?(_dsort.dir>0?" ▲":" ▼"):"";
-    h+=`<th data-sk="${esc(c.k)}" class="${c.num?"num":""}">${esc(c.label)}${ar}</th>`});
+  cols.forEach(c=>{const ar=_dsort.k===c.k?(_dsort.dir>0?" ▲":" ▼"):"";
+    h+=`<th data-sk="${esc(c.k)}" class="${c.num?"num":""}" style="min-width:${c.w||110}px">${esc(c.label)}${ar}</th>`});
   h+=`</tr><tr>`;
-  s.cols.forEach(c=>{h+=`<th style="padding-top:0"><input class="dfilt" data-fk="${esc(c.k)}" value="${esc(_dfilt[c.k]||"")}" placeholder="filter"></th>`});
+  cols.forEach(c=>{h+=`<th style="padding-top:0"><input class="dfilt" data-fk="${esc(c.k)}" value="${esc(_dfilt[c.k]||"")}" placeholder="filter"></th>`});
   h+=`</tr>`;
   page.forEach(r=>{
     h+=`<tr${s.onRow?' class="drow" style="cursor:pointer"':""} data-rid="${esc(s.rowId?s.rowId(r):"")}">`;
-    s.cols.forEach(c=>{h+=`<td class="${c.num?"num":""}">${c.html?c.html(r):esc(String(c.get(r)??"—"))}</td>`});
+    cols.forEach(c=>{h+=`<td class="${c.num?"num":""}">${c.html?c.html(r):esc(String(c.get(r)??"—"))}</td>`});
     h+=`</tr>`});
-  if(!page.length)h+=`<tr><td colspan="${s.cols.length}" style="color:var(--mut);padding:14px">No rows for this selection.</td></tr>`;
+  if(!page.length)h+=`<tr><td colspan="${cols.length}" style="color:var(--mut);padding:14px">No rows for this selection.</td></tr>`;
   h+=`</table></div>`;
   const from=total?_dpage*DPAGE+1:0,to=Math.min(total,(_dpage+1)*DPAGE);
   h+=`<div class="dfoot"><span>${from}–${to} of ${total} · Copy and CSV export every filtered row, not just this page</span>
@@ -665,7 +677,7 @@ function drillRender(){
   showRsnPanel(`<div class="eyebrow">${esc(s.eyebrow||"")}</div>${esc(s.title)} ${s.status||""}`,h,!!s.back);
   setTimeout(()=>{
     const bd=document.getElementById("rsnmodal-bd");if(!bd)return;
-    bd.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{_dsub=b.dataset.sub;_dpage=0;drillRender()}));
+    bd.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{_dsub=b.dataset.sub;_dpage=0;_dfilt={};_dsort={k:null,dir:1};drillRender()}));
     bd.querySelectorAll("th[data-sk]").forEach(th=>th.addEventListener("click",()=>{
       const k=th.dataset.sk;_dsort=(_dsort.k===k)?{k,dir:-_dsort.dir}:{k,dir:1};drillRender()}));
     bd.querySelectorAll(".dfilt").forEach(inp=>{
@@ -677,18 +689,17 @@ function drillRender(){
     if(n)n.addEventListener("click",()=>{_dpage++;drillRender()});
     const cell=(x,r)=>String(x.txt?x.txt(r):(x.get(r)??"")).replace(/\s+/g," ").trim();
     if(c)c.addEventListener("click",()=>{
-      const s2=_dspec,rs=drillRows();
-      const txt=[s2.cols.map(x=>x.label).join("\t")].concat(
-        rs.map(r=>s2.cols.map(x=>cell(x,r)).join("\t"))).join("\n");
+      const cs=drillCols(),rs=drillRows();
+      const txt=[cs.map(x=>x.label).join("\t")].concat(
+        rs.map(r=>cs.map(x=>cell(x,r)).join("\t"))).join("\n");
       navigator.clipboard.writeText(txt).then(()=>{c.textContent="Copied "+rs.length+" rows";setTimeout(()=>c.textContent="Copy",1600)})
         .catch(()=>{c.textContent="Copy failed";setTimeout(()=>c.textContent="Copy",1600)});});
     const xb=document.getElementById("d-csv");
     if(xb)xb.addEventListener("click",()=>{
-      const s2=_dspec,rs=drillRows();
-      const q=v=>{const t=cell({get:()=>v},null)||"";return t;};
+      const s2=_dspec,cs=drillCols(),rs=drillRows();
       const esq=v=>`"${String(v).replace(/"/g,'""')}"`;
-      const lines=[s2.cols.map(x=>esq(x.label)).join(",")].concat(
-        rs.map(r=>s2.cols.map(x=>esq(cell(x,r))).join(",")));
+      const lines=[cs.map(x=>esq(x.label)).join(",")].concat(
+        rs.map(r=>cs.map(x=>esq(cell(x,r))).join(",")));
       // BOM so Excel opens UTF-8 cleanly
       const blob=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/csv;charset=utf-8;"});
       const nm=(String(s2.title||"drill").replace(/[^A-Za-z0-9]+/g,"-")+"-"+M.statusDate+".csv").replace(/^-+/,"");
@@ -1453,10 +1464,13 @@ function openLongLead(){
                {label:"On baseline",n:items.filter(x=>!x.d).length},
                {label:"Behind baseline",n:late}],
     rows:items,
-    subsets:[{k:"all",label:"All"},{k:"late",label:"Behind",f:x=>x.d>0},
-             {k:"ahead",label:"Ahead",f:x=>x.d<0},{k:"open",label:"Not delivered",f:x=>x.pc<100}],
+    subsets:[{k:"all",label:"Packages"},
+             {k:"act",label:"Activities",rows:L.filter(r=>r[C.type]===AT.SUP),cols:stdCols()},
+             {k:"late",label:"Behind",f:x=>x.d>0},
+             {k:"ahead",label:"Ahead",f:x=>x.d<0},
+             {k:"open",label:"Not delivered",f:x=>x.pc<100}],
     cols:[
-      {k:"p",label:"Long-lead item (supply package)",get:x=>x.p,html:x=>`<b>${esc(x.p)}</b>`},
+      {k:"p",label:"Long-lead item (supply package)",w:260,get:x=>x.p,html:x=>`<b>${esc(x.p)}</b>`},
       {k:"wp",label:"Wt %",num:true,get:x=>x.wp,html:x=>fmt1(x.wp),txt:x=>fmt1(x.wp)},
       {k:"b",label:"Baseline delivery",get:x=>x.b,html:x=>wdate(x.b,1),txt:x=>wdate(x.b,1)},
       {k:"f",label:"Forecast delivery",get:x=>x.f,html:x=>wdate(x.f,1),txt:x=>wdate(x.f,1)},

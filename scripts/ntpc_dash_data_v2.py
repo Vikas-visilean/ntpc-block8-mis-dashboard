@@ -466,6 +466,7 @@ EVENTS = [
     (r"started late",            "latestart",  "Started late"),
     (r"completed late",          "latefinish", "Completed late"),
     (r"(?:Start|End) Date changed", "resched", "Rescheduled"),
+    (r"\bstopped\b",             "stopped",    "Stopped"),
     (r"set to 'Not Ready'",      "notready",   "Set to Not Ready"),
     (r"started early",           "startearly", "Started early"),
     (r"completed early",         "finishearly","Completed early"),
@@ -475,7 +476,7 @@ EVENTS = [
     (r"was forced ready",        "forcedready","Forced ready"),
     (r"Constraint '",            "constraint", "Constraint raised"),
 ]
-VARIANCE_KINDS = {"latestart", "latefinish", "resched", "notready"}
+VARIANCE_KINDS = {"latestart", "latefinish", "resched", "notready", "stopped"}
 
 # VisiLean wraps the text the user typed with the note type; strip it before the
 # category is read, or "Late completion note" is mistaken for a party.
@@ -525,14 +526,17 @@ def split_events(hist):
         out.append({"kind": kind, "label": label, "note": note, "by": who})
     return out
 
-# history rows are snapshots; keep the richest trail seen per activity
-hist_by_uid = {}
+# Each history row carries one event, so keeping only the longest row loses the
+# others - the stop on task 44699 sat behind a longer "started early" row. Merge
+# every distinct trail an activity has.
+_hist_seen = defaultdict(list)
 for h in HIST:
     try: hu = int(h.get("externalId"))
     except Exception: continue
     a = strip_html(str(h.get("activityHistory") or ""))
     if not a: continue
-    if len(a) > len(hist_by_uid.get(hu, "")): hist_by_uid[hu] = a
+    if a not in _hist_seen[hu]: _hist_seen[hu].append(a)
+hist_by_uid = {u: " ".join(v) for u, v in _hist_seen.items()}
 
 reasons = []
 cat_tally = Counter()
