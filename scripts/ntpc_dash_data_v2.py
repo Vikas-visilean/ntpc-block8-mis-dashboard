@@ -127,6 +127,7 @@ for t in TASKS:
          "L": L, "atype": cf.get("Activity Type", ""), "pkgcf": cf.get("Package", ""),
          "deptcf": cf.get("Department", ""),
          "owner": cf.get("Owner.", "") or cf.get("Owner", ""),
+         "tid": str(t.get("taskId") or ""), "org": str(t.get("organisation") or "").strip(),
          "assignee": t.get("owner") or "", "loc": t.get("location") or "Off-site / Office",
          "bES": wd_s(bs), "bEF": wd_f(bf),
          "pES": (wd_s(pdate(t.get("plannedStartDate"))) if pdate(t.get("plannedStartDate")) else None),
@@ -347,7 +348,9 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  1 if str(r.get("crit") or "").strip().lower().startswith("y") else 0,
                  strip_html(r["desc"])[:120], strip_html(r["note"])[:220],
                  # actual finish, so completed work counts from when it finished
-                 (wd_f(r["aF"]) if r["aF"] else None)])
+                 (wd_f(r["aF"]) if r["aF"] else None),
+                 r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
+                 ("" if r["org"].lower() == "none" else r["org"])[:60]])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
 ms = []
@@ -576,7 +579,7 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     for c in cats: cat_tally[c["cat"]] += 1
     wbs = " > ".join([x for x in r["L"][:5] if x])
     reasons.append({
-        "uid": u, "name": r["name"][:110], "dept": dept_of(r),
+        "uid": u, "tid": r["tid"], "org": r["org"], "name": r["name"][:110], "dept": dept_of(r),
         "type": r["atype"], "pkg": str(r["pkgcf"] or "")[:70],
         "wbs": wbs[:170], "area": r["loc"],
         "owner": (r["assignee"] or "")[:40], "ownship": (r["owner"] or "")[:60],
@@ -596,11 +599,33 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     })
 print("variance reasons:", len(reasons), "activities | categories:", dict(cat_tally))
 
-DATA = {"meta": meta, "months": months, "reasons": reasons, "depts": [{"key": k, "name": n} for k, n in DEPTS],
+# Milestones shaped like activity rows, purely so the All-activities drill can list
+# them beside the tasks. They stay out of `rows`, so no count or progress changes.
+ms_rows = []
+for r in sorted(milestones_raw, key=lambda x: x["uid"]):
+    u = r["uid"]
+    ms_rows.append([
+        dept_of(r), r["atype"], r["loc"], str(r["pkgcf"] or "")[:70],
+        str(r["L"][1] or r["L"][0])[:60], "Milestone", r["name"][:70],
+        int(r["bES"]), int(r["bEF"]),
+        int(r["pES"] if r["pES"] is not None else r["bES"]),
+        int(r["pEF"] if r["pEF"] is not None else r["bEF"]),
+        round(r["pct"]), round(r["dur"], 1), r["qty"], r["uom"][:14], 0,
+        ("done" if r["pct"] >= 100 else "future"),
+        (r["assignee"] or "")[:30], "", round(r["cost"]), len(ms_rows), r["vls"],
+        (r["owner"] or "")[:40], r["nd"], 0, r["name"][:80], round(r["wt"], 6),
+        1 if str(r.get("crit") or "").strip().lower().startswith("y") else 0,
+        strip_html(r["desc"])[:120], strip_html(r["note"])[:220],
+        (wd_f(r["aF"]) if r["aF"] else None),
+        r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
+        ("" if r["org"].lower() == "none" else r["org"])[:60]])
+
+DATA = {"meta": meta, "months": months, "reasons": reasons, "msLeaves": ms_rows, "depts": [{"key": k, "name": n} for k, n in DEPTS],
         "milestones": ms, "constraints": cons, "supplyDeliv": SUPPLY_DELIV,
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
-                 "ownship", "nd", "dly", "item", "wt", "vcrit", "desc", "note", "aef"],
+                 "ownship", "nd", "dly", "item", "wt", "vcrit", "desc", "note", "aef",
+                 "tid", "wbs", "org"],
         "leaves": rows}
 assert DATA["cols"][WT_I] == "wt", f"WT_I points at {DATA['cols'][WT_I]!r}, not 'wt'"
 assert DATA["cols"][AEF_I] == "aef", f"AEF_I points at {DATA['cols'][AEF_I]!r}, not 'aef'"

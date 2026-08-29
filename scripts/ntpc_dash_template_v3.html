@@ -378,15 +378,13 @@ function filtered(forceDept){
 // Progress weight is VisiLean's Weightage custom field - the same basis the adapter
 // publishes, so the gauge and the headline figure cannot drift apart.
 //
-// Department and section views are the exception. The approved weightage is assigned
-// to a subset of each department's activities, so weighting there reports the
-// progress of that subset rather than of the department: Project Initiation read
-// 99.8% with 50 of 98 activities complete, Quality 79.5% with 47 of 1,389. On those
-// views every activity counts equally, which is the completion basis KP asked for.
-// The project summary keeps the weightage model.
-function perActivityBasis(){return String(state.page||"").indexOf("d:")===0}
+// KP's rule, and it applies on every page and under every filter: sum the weightage
+// of the activities in view, multiply each activity's % complete by its weightage to
+// get earned units, sum those, divide by the total. Re-normalising to whatever is in
+// view is exactly what wsum() does, so switching to Construction or Procurement
+// re-bases the denominator on that subset.
+function perActivityBasis(){return false}
 function wgt(rows){
-  if(perActivityBasis())return (r=>1);
   const c=rows.reduce((a,r)=>a+(r[C.wt]>0?r[C.wt]:0),0);
   return c>0?(r=>(r[C.wt]>0?r[C.wt]:0)):(r=>r[C.dur]);
 }
@@ -446,9 +444,8 @@ function gaugeCard(rows){
   // activities with no weightage assigned contribute nothing - worth showing plainly
   const wc=rows.length?100*rows.filter(r=>r[C.wt]>0).length/rows.length:0;
   const wsum=rows.reduce((x,r)=>x+(r[C.wt]||0),0);
-  const basis=perActivityBasis()
-    ? `per activity · ${rows.length.toLocaleString()} activities in view · carries ${fmt1(wsum)}% of project weight`
-    : `weightage-based (VisiLean Weightage field) · ${fmt1(wsum)}% of project weight · covers ${fmt1(wc)}% of activities in view`;
+  const basis=`weightage-based · earned units ÷ total units over the ${rows.length.toLocaleString()} activities in view`
+    +` · they carry ${fmt1(wsum)}% of project weight · ${fmt1(wc)}% of them have a weightage set`;
   return `<div class="card span4"><h2>Overall progress</h2>
    <div class="hint">${basis}</div>
    <div class="gwrap">${gauge(a,p)}
@@ -562,6 +559,45 @@ let rsnDept="";
 // so they all behave the same way.
 let _dspec=null,_dsub="",_dsort={k:null,dir:1},_dpage=0,_dfilt={};
 const DPAGE=25;
+// Notes shown in a drill include whatever reason was recorded against the activity -
+// late start / late completion / stopped / warning - so the column is one place to
+// read why something moved.
+let _rsnByTid=null;
+function rsnByTid(){
+  if(_rsnByTid)return _rsnByTid;
+  _rsnByTid={};
+  (DATA.reasons||[]).forEach(r=>{
+    const bits=[];
+    (r.cats||[]).forEach(c=>{if(c.cat&&c.cat!=="No reason recorded")bits.push((c.label?c.label+": ":"")+(c.party?c.party+" · ":"")+c.cat)});
+    (r.events||[]).forEach(e=>{if(e.text)bits.push(e.label+": "+e.text)});
+    if(r.tid)_rsnByTid[String(r.tid)]=bits.join(" | ");
+  });
+  return _rsnByTid;
+}
+function noteFor(r){
+  const own=String(r[C.note]||"").trim();
+  const rsn=(C.tid!==undefined)?(rsnByTid()[String(r[C.tid])]||""):"";
+  return [own,rsn].filter(Boolean).join(" | ");
+}
+// KP's standard drill-through columns, identical everywhere in the dashboard.
+function stdCols(){
+  return [
+    {k:"tid",label:"Task ID",get:r=>r[C.tid]||"—"},
+    {k:"name",label:"Activity",get:r=>r[C.name],
+     html:r=>`<b>${esc(String(r[C.name]).slice(0,54))}</b>`},
+    {k:"wbs",label:"WBS",get:r=>r[C.wbs]||"—",
+     html:r=>`<span title="${esc(r[C.wbs]||"")}">${esc(String(r[C.wbs]||"—").slice(0,54))}</span>`},
+    {k:"desc",label:"Description",get:r=>r[C.desc]||"—"},
+    {k:"own",label:"Owner",get:r=>r[C.owner]||r[C.ownship]||"—"},
+    {k:"org",label:"Organisation",get:r=>r[C.org]||"—"},
+    {k:"st",label:"Status",get:r=>r[C.vls],html:r=>rowChip(r)},
+    {k:"pct",label:"% complete",num:true,get:r=>r[C.pct]},
+    {k:"bef",label:"Baseline finish",get:r=>r[C.bEF],html:r=>wdate(r[C.bEF],1),txt:r=>wdate(r[C.bEF],1)},
+    {k:"fef",label:"Planned finish",get:r=>r[C.fEF],html:r=>wdate(r[C.fEF],1),txt:r=>wdate(r[C.fEF],1)},
+    {k:"note",label:"Notes / Comments",get:r=>noteFor(r),
+     html:r=>{const n=noteFor(r);return n?`<span title="${esc(n)}">${esc(n.slice(0,70))}${n.length>70?"…":""}</span>`:`<span class="dim">—</span>`}},
+  ];
+}
 function drillOpen(spec){
   _dspec=spec;_dsub=(spec.subsets&&spec.subsets[0]&&spec.subsets[0].k)||"";
   _dsort={k:null,dir:1};_dpage=0;_dfilt={};
@@ -622,8 +658,8 @@ function drillRender(){
   if(!page.length)h+=`<tr><td colspan="${s.cols.length}" style="color:var(--mut);padding:14px">No rows for this selection.</td></tr>`;
   h+=`</table></div>`;
   const from=total?_dpage*DPAGE+1:0,to=Math.min(total,(_dpage+1)*DPAGE);
-  h+=`<div class="dfoot"><span>${from}–${to} of ${total}</span>
-    <span><button id="d-copy">Copy</button>
+  h+=`<div class="dfoot"><span>${from}–${to} of ${total} · Copy and CSV export every filtered row, not just this page</span>
+    <span><button id="d-copy">Copy</button><button id="d-csv">Export CSV</button>
       <button id="d-prev" ${_dpage<=0?"disabled":""}>Prev</button>
       <button id="d-next" ${_dpage>=pages-1?"disabled":""}>Next</button></span></div>`;
   showRsnPanel(`<div class="eyebrow">${esc(s.eyebrow||"")}</div>${esc(s.title)} ${s.status||""}`,h,!!s.back);
@@ -639,12 +675,34 @@ function drillRender(){
     const p=document.getElementById("d-prev"),n=document.getElementById("d-next"),c=document.getElementById("d-copy");
     if(p)p.addEventListener("click",()=>{if(_dpage>0){_dpage--;drillRender()}});
     if(n)n.addEventListener("click",()=>{_dpage++;drillRender()});
+    const cell=(x,r)=>String(x.txt?x.txt(r):(x.get(r)??"")).replace(/\s+/g," ").trim();
     if(c)c.addEventListener("click",()=>{
       const s2=_dspec,rs=drillRows();
       const txt=[s2.cols.map(x=>x.label).join("\t")].concat(
-        rs.map(r=>s2.cols.map(x=>String(x.txt?x.txt(r):x.get(r)??"")).join("\t"))).join("\n");
-      navigator.clipboard.writeText(txt).then(()=>{c.textContent="Copied";setTimeout(()=>c.textContent="Copy",1400)})
-        .catch(()=>{c.textContent="Copy failed";setTimeout(()=>c.textContent="Copy",1400)});});
+        rs.map(r=>s2.cols.map(x=>cell(x,r)).join("\t"))).join("\n");
+      navigator.clipboard.writeText(txt).then(()=>{c.textContent="Copied "+rs.length+" rows";setTimeout(()=>c.textContent="Copy",1600)})
+        .catch(()=>{c.textContent="Copy failed";setTimeout(()=>c.textContent="Copy",1600)});});
+    const xb=document.getElementById("d-csv");
+    if(xb)xb.addEventListener("click",()=>{
+      const s2=_dspec,rs=drillRows();
+      const q=v=>{const t=cell({get:()=>v},null)||"";return t;};
+      const esq=v=>`"${String(v).replace(/"/g,'""')}"`;
+      const lines=[s2.cols.map(x=>esq(x.label)).join(",")].concat(
+        rs.map(r=>s2.cols.map(x=>esq(cell(x,r))).join(",")));
+      // BOM so Excel opens UTF-8 cleanly
+      const blob=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/csv;charset=utf-8;"});
+      const nm=(String(s2.title||"drill").replace(/[^A-Za-z0-9]+/g,"-")+"-"+M.statusDate+".csv").replace(/^-+/,"");
+      try{
+        const a=document.createElement("a"),u=URL.createObjectURL(blob);
+        a.href=u;a.download=nm;document.body.appendChild(a);a.click();
+        setTimeout(()=>{URL.revokeObjectURL(u);a.remove()},0);
+        xb.textContent="Downloaded";setTimeout(()=>xb.textContent="Export CSV",1600);
+      }catch(e){
+        // embedded in an iframe that blocks downloads: fall back to the clipboard
+        navigator.clipboard.writeText(lines.join("\r\n"))
+          .then(()=>{xb.textContent="Copied as CSV";setTimeout(()=>xb.textContent="Export CSV",1800)})
+          .catch(()=>{xb.textContent="Blocked here";setTimeout(()=>xb.textContent="Export CSV",1800)});
+      }});
     if(_dspec.onRow)bd.querySelectorAll(".drow").forEach(tr=>tr.addEventListener("click",()=>_dspec.onRow(tr.dataset.rid)));
   },0);
 }
@@ -675,49 +733,37 @@ function showRsnPanel(title,body,back){
   document.body.style.overflow="hidden";
 }
 function openRsnList(deptKey){
+  // routed through the same drill engine as everything else, so it carries the
+  // standard columns, sorting, per-column filters, paging, Copy and CSV export
   rsnDept=deptKey||"";
   const all=reasonsFor(rsnDept);
   const scoped=rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all;
-  const lateN=filtered(rsnDept).filter(r=>r[C.dly]).length;
-  const catN={};all.forEach(r=>r.cats.forEach(c=>{catN[c.cat]=(catN[c.cat]||0)+1}));
-  const partyN={};all.forEach(r=>r.cats.forEach(c=>{if(c.party)partyN[c.party]=(partyN[c.party]||0)+1}));
-  const brk=(rsnCat?Object.entries(partyN).map(([k,n])=>({label:"party: "+k,n}))
-                   :Object.entries(catN).map(([k,n])=>({label:"reason: "+k,n})))
-            .sort((a,b)=>b.n-a.n);
-  const cat=(r)=>(rsnCat?r.cats.filter(c=>c.cat===rsnCat):r.cats);
-  const nCat=scoped.length,nAll=all.length;
+  const by={};scoped.forEach(x=>{if(x.tid)by[String(x.tid)]=x});
+  const rows=L.filter(r=>by[String(r[C.tid])]);
+  const catsOf=r=>{const m=by[String(r[C.tid])];if(!m)return [];
+    return rsnCat?m.cats.filter(x=>x.cat===rsnCat):m.cats};
+  const cols=stdCols();
+  cols.splice(cols.length-1,0,{k:"reason",label:"Reason",
+    get:r=>catsOf(r).map(x=>x.party?x.party+": "+x.cat:x.cat).join(", "),
+    html:r=>{const cs=catsOf(r);return cs.length?cs.map(x=>
+      `<span class="chip" style="background:${rsnColor(x.cat,0)};color:#fff">${esc(x.party?x.party+" · "+x.cat:x.cat)}</span>`).join(" "):`<span class="dim">—</span>`}});
   drillOpen({
     eyebrow:(rsnDept?DNAME[rsnDept]:"Project")+" · Reasons for Variance",
     title:rsnCat||"All reason categories",
-    status:pill(rsnCat==="No reason recorded"?"crit":"info",`${nCat} ${nCat===1?"activity":"activities"}`),
-    formula:`<b>${nCat}</b> of <b>${nAll}</b> logged variances = <b>${fmt1(nAll?100*nCat/nAll:0)}%</b>`+
-            (rsnCat?` in <b>${esc(rsnCat)}</b>`:``)+
-            ` · <b>${lateN}</b> activities are currently delayed`,
-    reconcile:`<span class="pill ${nAll?"good":"warn"}">${nAll?"✓":"!"} reasons come from the VisiLean activity history · logged ${nAll} · shown ${nCat}</span>`,
-    breakdownBy:rsnCat?"this category by responsible party":"all categories",
-    breakdown:brk,
-    rows:scoped,
-    rowId:r=>String(r.uid),
-    onRow:id=>openRsn(+id,true),
+    status:pill(rsnCat==="No reason recorded"?"crit":"info",rows.length+(rows.length===1?" activity":" activities")),
+    formula:`<b>${scoped.length}</b> of <b>${all.length}</b> logged variances`+(rsnCat?` in <b>${esc(rsnCat)}</b>`:``)
+            +` · <b>${filtered(rsnDept).filter(r=>r[C.dly]).length}</b> activities currently delayed`,
+    reconcile:`<span class="pill good">✓ reasons read from the VisiLean activity history · ${rows.length} matched to activities</span>`,
+    breakdownBy:"reason",
+    breakdown:(function(){const c={};scoped.forEach(x=>x.cats.forEach(y=>{c[y.cat]=(c[y.cat]||0)+1}));
+      return Object.keys(c).map(k=>({label:k,n:c[k]})).sort((a,b)=>b.n-a.n)})(),
+    rows, cols,
+    rowId:r=>String(r[C.tid]),
+    onRow:id=>{const m=by[String(id)];if(m)openRsn(m.uid,true)},
     back:false,
     subsets:[{k:"all",label:"All"},
-             {k:"crit",label:"Critical",f:r=>r.crit},
-             {k:"late",label:"Finished late",f:r=>r.fSlip>0},
-             {k:"none",label:"No reason",f:r=>r.cats.some(c=>c.cat==="No reason recorded")}],
-    cols:[
-      {k:"name",label:"Activity",get:r=>r.name,
-       html:r=>`<b>${esc(r.name.slice(0,52))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,62))}</div>`},
-      {k:"cat",label:"Reason",get:r=>cat(r).map(c=>c.cat).join(", "),
-       html:r=>cat(r).map(c=>`<span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>`).join(" ")},
-      {k:"ev",label:"Event",get:r=>[...new Set(cat(r).map(c=>c.label))].join(", "),
-       html:r=>[...new Set(cat(r).map(c=>c.label))].map(l=>chip(EV_COL[(cat(r).find(c=>c.label===l)||{}).kind]||"mut",l)).join(" ")},
-      {k:"own",label:"Owner",get:r=>r.owner||r.ownship||"—"},
-      {k:"st",label:"Status",get:r=>r.vls,html:r=>vlChip(r.vls)},
-      {k:"ss",label:"Start var.",num:true,get:r=>r.sSlip,
-       html:r=>r.sSlip>0?`<span style="color:var(--crit-text);font-weight:700">+${r.sSlip}</span>`:(r.sSlip<0?`<span style="color:var(--good-text)">${r.sSlip}</span>`:`<span class="dim">0</span>`)},
-      {k:"fs",label:"Finish var.",num:true,get:r=>r.fSlip,
-       html:r=>r.fSlip>0?`<span style="color:var(--crit-text);font-weight:700">+${r.fSlip}</span>`:(r.fSlip<0?`<span style="color:var(--good-text)">${r.fSlip}</span>`:`<span class="dim">0</span>`)},
-    ],
+             {k:"crit",label:"Critical (VisiLean)",f:r=>!!r[C.vcrit]},
+             {k:"open",label:"Not complete",f:r=>r[C.pct]<100}],
   });
 }
 function openRsn(uid,fromList){
@@ -778,7 +824,9 @@ function kpiDrill(kind,rows,deptKey){
            wip:{t:"Activities in progress",f:isWip},
            stp:{t:"Stopped activities",f:isStopped}}[kind];
   if(!S)return;
-  const base=rows,sel=S.f?rows.filter(S.f):rows;
+  // the Total card counts milestones too, so the drill behind it lists them as well
+  const withMs=(kind==="all"&&!deptKey&&(DATA.msLeaves||[]).length)?rows.concat(DATA.msLeaves):rows;
+  const base=withMs,sel=S.f?withMs.filter(S.f):withMs;
   const by={};sel.forEach(r=>{const k=DNAME[r[C.dept]]||"—";by[k]=(by[k]||0)+1});
   drillOpen({
     eyebrow:(deptKey?DNAME[deptKey]:"Project")+" · KPI",
@@ -789,25 +837,12 @@ function kpiDrill(kind,rows,deptKey){
     breakdownBy:"department",
     breakdown:Object.entries(by).map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n),
     rows:sel,
-    subsets:[{k:"all",label:"All"},{k:"crit",label:"Critical",f:r=>isCrit(r)},
-             {k:"nb",label:"Not baselined",f:r=>!!r[C.nd]}],
-    cols:[
-      {k:"name",label:"Activity",get:r=>r[C.name],
-       html:r=>`<b>${esc(String(r[C.name]).slice(0,54))}</b><div class="small dim">${esc(String(r[C.pkg]).slice(0,52))}</div>`},
-      // VisiLean's description, which KP maps to the overall department
-      {k:"desc",label:"Description",get:r=>r[C.desc]||"—"},
-      {k:"type",label:"Activity type",get:r=>r[C.type]||"—"},
-      {k:"own",label:"Owner",get:r=>r[C.owner]||r[C.ownship]||"—"},
-      {k:"st",label:"Status",get:r=>r[C.vls],html:r=>rowChip(r)},
-      // VisiLean's own Critical Activity flag, not a float-derived guess
-      {k:"crit",label:"Critical",get:r=>r[C.vcrit]?"Yes":"No",
-       html:r=>r[C.vcrit]?chip("vlnr","Yes"):`<span class="dim">No</span>`},
-      {k:"pct",label:"%",num:true,get:r=>r[C.pct]},
-      {k:"bef",label:"Baseline finish",get:r=>r[C.bEF],html:r=>wdate(r[C.bEF],1),txt:r=>wdate(r[C.bEF],1)},
-      {k:"fef",label:"Forecast finish",get:r=>r[C.fEF],html:r=>wdate(r[C.fEF],1),txt:r=>wdate(r[C.fEF],1)},
-      {k:"note",label:"Notes",get:r=>r[C.note]||"",
-       html:r=>r[C.note]?`<span title="${esc(r[C.note])}">${esc(String(r[C.note]).slice(0,60))}${String(r[C.note]).length>60?"…":""}</span>`:`<span class="dim">—</span>`},
-    ],
+    subsets:[{k:"all",label:"All"},
+             {k:"task",label:"Tasks",f:r=>r[C.stage]!=="Milestone"},
+             {k:"ms",label:"Milestones",f:r=>r[C.stage]==="Milestone"},
+             {k:"crit",label:"Critical (VisiLean)",f:r=>!!r[C.vcrit]},
+             {k:"nb",label:"No baseline",f:r=>!!r[C.nd]}],
+    cols:stdCols(),
   });
 }
 function kpiCards(rows,projectLevel){
