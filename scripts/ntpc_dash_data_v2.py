@@ -352,7 +352,7 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  # actual finish, so completed work counts from when it finished
                  (wd_f(r["aF"]) if r["aF"] else None),
                  r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
-                 ("" if r["org"].lower() == "none" else r["org"])[:60]])
+                 ("" if r["org"].lower() == "none" else r["org"])[:60], u])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
 ms = []
@@ -525,6 +525,9 @@ def split_events(hist):
             re.search(r"Note:\s*(.*)$", ch, re.I) or \
             re.search(r"by [^:]+:\s*(.*)$", ch, re.I)
         note = NOTE_PREFIX_RE.sub("", (m.group(1).strip() if m else "")).strip()
+        # history rows are joined with " | ", so anything past the first bar belongs
+        # to the next row, not to this event's note
+        note = note.split(" | ")[0].strip(" |").strip()
         who = ""
         w = re.search(r"\bby ([A-Za-z][\w.\- ]{1,30}?)(?=[.:,]|$)", ch)
         if w: who = w.group(1).strip()
@@ -541,7 +544,10 @@ for h in HIST:
     a = strip_html(str(h.get("activityHistory") or ""))
     if not a: continue
     if a not in _hist_seen[hu]: _hist_seen[hu].append(a)
-hist_by_uid = {u: " ".join(v) for u, v in _hist_seen.items()}
+# Join with a bar, not a space: some history rows are a bare word ("Construction",
+# "Engineering"), and a space let the last row's trailing category run into the next
+# row's first word - "KP: Manpower" + "Construction" read as one category.
+hist_by_uid = {u: " | ".join(v) for u, v in _hist_seen.items()}
 
 # Late events on Not Applicable activities: counted, not shown. This is the whole of
 # the difference between this card and VisiLean's own variance export.
@@ -634,14 +640,52 @@ for r in sorted(milestones_raw, key=lambda x: x["uid"]):
         strip_html(r["desc"])[:120], strip_html(r["note"])[:220],
         (wd_f(r["aF"]) if r["aF"] else None),
         r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
-        ("" if r["org"].lower() == "none" else r["org"])[:60]])
+        ("" if r["org"].lower() == "none" else r["org"])[:60], u])
 
-DATA = {"meta": meta, "months": months, "reasons": reasons, "msLeaves": ms_rows, "depts": [{"key": k, "name": n} for k, n in DEPTS],
+# ---------- predecessor network for the activity panel ----------
+# Shown, not calculated with: float still comes from the same links above. Only links
+# whose successor is on the dashboard are kept, and a predecessor that is not itself a
+# dashboard row gets an entry in predMeta so it can still be named.
+on_board = set(leafs) | {m["uid"] for m in milestones_raw}
+preds, succs = defaultdict(list), defaultdict(list)
+_pseen = set()
+for pu, su, code, lag in RELS:
+    if su not in on_board or pu == su: continue
+    if (pu, su) in _pseen: continue
+    _pseen.add((pu, su))
+    preds[su].append([pu, code, round(float(lag or 0), 1)])
+    succs[pu].append(su)
+
+TASK_BY_UID = {}
+for _t in TASKS:
+    try: TASK_BY_UID[int(_t.get("externalId"))] = _t
+    except Exception: pass
+
+pred_meta = {}
+for pu in {p[0] for v in preds.values() for p in v}:
+    if pu in on_board: continue
+    t = TASK_BY_UID.get(pu)
+    if not t: continue
+    pc = float(t.get("percentComplete") or 0)
+    pe = pdate(t.get("plannedEndDate")) or pdate(t.get("baselineEndDate"))
+    ps = pdate(t.get("plannedStartDate")) or pdate(t.get("baselineStartDate"))
+    dl = 1 if (pc < 100 and ((pe and pe < TODAY) or (ps and ps < TODAY and pc == 0))) else 0
+    pred_meta[pu] = [str(t.get("taskName") or "")[:70], round(pc),
+                     str(t.get("status") or ""),
+                     (wd_f(pdate(t.get("baselineEndDate"))) if pdate(t.get("baselineEndDate")) else None),
+                     (wd_f(pe) if pe else None), dl]
+print("logic network: %d activities have a predecessor | %d predecessors are off-dashboard"
+      % (len(preds), len(pred_meta)))
+
+DATA = {"meta": meta, "months": months, "reasons": reasons, "msLeaves": ms_rows,
+        "preds": {str(k): v for k, v in preds.items()},
+        "succs": {str(k): v for k, v in succs.items()},
+        "predMeta": {str(k): v for k, v in pred_meta.items()}, "depts": [{"key": k, "name": n} for k, n in DEPTS],
         "milestones": ms, "constraints": cons, "supplyDeliv": SUPPLY_DELIV,
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
                  "ownship", "nd", "dly", "item", "wt", "vcrit", "desc", "note", "aef",
-                 "tid", "wbs", "org"],
+                 "tid", "wbs", "org", "uid"],
         "leaves": rows}
 assert DATA["cols"][WT_I] == "wt", f"WT_I points at {DATA['cols'][WT_I]!r}, not 'wt'"
 assert DATA["cols"][AEF_I] == "aef", f"AEF_I points at {DATA['cols'][AEF_I]!r}, not 'aef'"
