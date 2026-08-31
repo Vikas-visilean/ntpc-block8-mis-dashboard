@@ -93,6 +93,7 @@ def money(s):
 recs = {}
 milestones_raw = []
 NA_SKIPPED = []
+NA_UIDS = set()
 GUID = {t.get("guid"): t for t in TASKS if t.get("guid")}
 _synth = [0]
 for t in TASKS:
@@ -157,6 +158,7 @@ for t in TASKS:
     # weightage calculation, and every table - not just from the views.
     if norm(t.get("trade")) in ("notapplicable", "na"):
         NA_SKIPPED.append(r["name"])
+        NA_UIDS.add(uid)
         continue
     recs[uid] = r
 
@@ -406,7 +408,7 @@ meta = {"statusDate": TODAY.strftime("%d-%b-%Y"), "statusWd": STATUS_WD, "startD
         "wtSum": round(sum(w_of(x) for x in rows), 3),
         "wtCoverage": round(100.0 * sum(1 for x in rows if w_of(x) > 0) / max(1, len(rows)), 1),
         "wtMissing": sum(1 for x in rows if not w_of(x)),
-        "naExcluded": len(NA_SKIPPED),
+        "naExcluded": len(NA_SKIPPED), "naReasonRecords": 0,
         "total": len(rows), "totalTasks": len(rows) + len(ms),
         "undated": sum(1 for x in rows if x[23]),
         "source": "VisiLean live API",
@@ -476,7 +478,10 @@ EVENTS = [
     (r"was forced ready",        "forcedready","Forced ready"),
     (r"Constraint '",            "constraint", "Constraint raised"),
 ]
+# What keeps an activity in the reasons feed at all (so its notes stay readable).
 VARIANCE_KINDS = {"latestart", "latefinish", "resched", "notready", "stopped"}
+# What VisiLean counts as a variance record, and the Reason Category it files it under.
+REASON_CATEGORY = {"latestart": "Late Started", "latefinish": "Late Completed"}
 
 # VisiLean wraps the text the user typed with the note type; strip it before the
 # category is read, or "Late completion note" is mistaken for a party.
@@ -538,6 +543,15 @@ for h in HIST:
     if a not in _hist_seen[hu]: _hist_seen[hu].append(a)
 hist_by_uid = {u: " ".join(v) for u, v in _hist_seen.items()}
 
+# Late events on Not Applicable activities: counted, not shown. This is the whole of
+# the difference between this card and VisiLean's own variance export.
+na_reason_records = 0
+for _u in NA_UIDS:
+    for _e in split_events(hist_by_uid.get(_u, "")):
+        if _e["kind"] in REASON_CATEGORY and _e["note"]:
+            na_reason_records += len(PARTY_RE.findall(_e["note"])) or \
+                                 (1 if STANDALONE_RE.match(_e["note"]) else 0)
+
 reasons = []
 cat_tally = Counter()
 for r in sorted(leafs.values(), key=lambda x: x["uid"]):
@@ -547,6 +561,9 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     cats, seen = [], set()
     for e in evs:
         if not e["note"]: continue
+        # one record per (event, reason) pair, as in VisiLean's export: an activity
+        # that started late and finished late for the same reason counts twice
+        rc = REASON_CATEGORY.get(e["kind"], "")
         hits = PARTY_RE.findall(e["note"])
         solo = STANDALONE_RE.match(e["note"])
         if hits:
@@ -557,30 +574,20 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                 # the reason is the whole "<party>: <category>" string, exactly as it
                 # reads in VisiLean's Custom Reasons list - one consolidated label
                 full = pty + ": " + cc
-                if full in seen: continue
-                seen.add(full)
-                cats.append({"party": pty, "cat": full, "kind": e["kind"],
+                if (e["kind"], full) in seen: continue
+                seen.add((e["kind"], full))
+                cats.append({"party": pty, "cat": full, "kind": e["kind"], "rc": rc,
                              "label": e["label"], "text": e["note"][:300]})
         elif solo:
             full = solo.group(1).title()
-            if full not in seen:
-                seen.add(full)
-                cats.append({"party": "", "cat": full, "kind": e["kind"],
-                             "label": e["label"], "text": e["note"][:300]})
-        elif e["kind"] in VARIANCE_KINDS:
-            if "Uncategorised" not in seen:
-                seen.add("Uncategorised")
-                cats.append({"party": "", "cat": "Uncategorised", "kind": e["kind"],
+            if (e["kind"], full) not in seen:
+                seen.add((e["kind"], full))
+                cats.append({"party": "", "cat": full, "kind": e["kind"], "rc": rc,
                              "label": e["label"], "text": e["note"][:300]})
     var = [e for e in evs if e["kind"] in VARIANCE_KINDS]
     if not cats and not var: continue          # nothing variance-related to report
-    if not cats:
-        # A real variance the team has not explained yet. Worth its own slice - the
-        # unexplained share is the actionable part of the chart.
-        e0 = var[0]
-        cats = [{"party": "", "cat": "No reason recorded", "kind": e0["kind"],
-                 "label": e0["label"], "text": ""}]
-    for c in cats: cat_tally[c["cat"]] += 1
+    for c in cats:
+        if c["rc"]: cat_tally[c["rc"] + " / " + c["cat"]] += 1
     wbs = " > ".join([x for x in r["L"][:5] if x])
     reasons.append({
         "uid": u, "tid": r["tid"], "org": r["org"], "name": r["name"][:110], "dept": dept_of(r),
@@ -601,7 +608,12 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                    for e in evs if e["kind"] in VARIANCE_KINDS or e["note"]][:8],
         "desc": strip_html(r["desc"])[:400],
     })
-print("variance reasons:", len(reasons), "activities | categories:", dict(cat_tally))
+print("variance reasons:", sum(cat_tally.values()), "records on", len(reasons),
+      "activities | Late Started:", sum(v for k, v in cat_tally.items() if k.startswith("Late Started")),
+      "| Late Completed:", sum(v for k, v in cat_tally.items() if k.startswith("Late Completed")))
+print("  categories:", dict(cat_tally))
+meta["naReasonRecords"] = na_reason_records   # meta is built before this point
+print("  excluded from the card (trade = Not Applicable):", na_reason_records, "records")
 
 # Milestones shaped like activity rows, purely so the All-activities drill can list
 # them beside the tasks. They stay out of `rows`, so no count or progress changes.

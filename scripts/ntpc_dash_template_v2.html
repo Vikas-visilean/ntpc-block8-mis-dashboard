@@ -123,6 +123,16 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 tr:hover td{background:var(--blue-wash)}
 .dim{color:var(--mut)}
 .stickycol th:first-child,.stickycol td:first-child{position:sticky;left:0;background:var(--surface);z-index:2;min-width:150px;box-shadow:1px 0 0 var(--line2)}
+/* A package's activity list sits in a cell of the stage grid, which for Supply runs
+   ~30 columns wide. Pin the panel to the left edge of the scroll viewport and size it
+   to that viewport, so every column is on screen instead of off to the right. */
+.detrow>td{padding:0!important;background:var(--surface)}
+.detpin{position:sticky;left:0;padding:6px 8px 9px}
+.detpin .dethd{display:flex;align-items:center;gap:9px;margin-bottom:5px;font-size:10.5px}
+.detpin .dethd b{font-size:11px}
+.detpin .dethd .dim{flex:1}
+.detpin .detscroll{overflow:auto;max-height:340px}
+.detpin .detscroll table{min-width:820px}
 .stickycol tr:hover td:first-child{background:var(--blue-wash)}
 .pcell{min-width:86px}
 .pcell .d{font-size:8.5px;color:var(--mut);margin-top:1px}
@@ -200,8 +210,18 @@ tr:hover td{background:var(--blue-wash)}
  border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto}
 #rsnmodal-x:hover{background:var(--blue-wash);color:var(--blue)}
 #rsnmodal-bd{padding:10px 14px 14px}
-#tip{position:fixed;z-index:99;background:var(--tip-bg);color:var(--tip-fg);border-radius:6px;padding:6px 9px;font-size:10px;pointer-events:none;box-shadow:var(--shadow-popover);display:none;max-width:290px;line-height:1.45}
+#tip{position:fixed;z-index:400;background:var(--tip-bg);color:var(--tip-fg);border-radius:6px;padding:6px 9px;font-size:10px;pointer-events:none;box-shadow:var(--shadow-popover);display:none;max-width:290px;line-height:1.45}
 #tip .t2{color:var(--tip-fg2)}
+/* sentinel the tooltip clamp measures the visible band with - see visibleBox() */
+#vport{position:fixed;inset:0;pointer-events:none;visibility:hidden;z-index:-1}
+#copyfall{display:none;position:fixed;z-index:500;right:16px;bottom:16px;width:min(520px,88vw);
+ background:var(--surface);border:1px solid var(--line2);border-radius:9px;box-shadow:var(--shadow-popover);padding:9px 11px}
+#copyfall .cfhd{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px}
+#copyfall .cfhd b{flex:1}
+#copyfall .cfhd button{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);
+ border-radius:6px;width:22px;height:22px;cursor:pointer;line-height:1}
+#copyfall textarea{width:100%;height:120px;font:10px/1.4 ui-monospace,Consolas,monospace;
+ border:1px solid var(--line2);border-radius:6px;padding:6px;background:var(--page);color:var(--ink)}
 .toggle2{display:flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden;font-size:9.5px}
 .toggle2 button{padding:2.5px 7px;color:var(--ink2)}
 .toggle2 button.on{background:var(--blue);color:#fff}
@@ -302,6 +322,12 @@ html{zoom:1.3}
   </main>
 </div>
 <div id="tip"></div>
+<div id="vport" aria-hidden="true"></div>
+<div id="copyfall">
+  <div class="cfhd"><b>This frame blocks the clipboard — press Ctrl+C to copy</b>
+    <button type="button" id="copyfall-x" title="Close">&times;</button></div>
+  <textarea readonly></textarea>
+</div>
 <div id="rsnmodal" role="dialog" aria-modal="true" aria-labelledby="rsnmodal-t">
   <div id="rsnmodal-box">
     <div id="rsnmodal-hd"><button id="rsnmodal-back" title="Back to the activity list" aria-label="Back">&#8592;</button><div id="rsnmodal-t"></div>
@@ -376,10 +402,43 @@ function actPct(rows){return state.at<=SW ? actPctAt(rows,state.at) : fcPct(rows
 const unitVal=(pct,mw)=>state.unit==="MW"?fmt1(pct/100*(mw||300))+" MW":fmt1(pct)+"%";
 // ---------- tooltip ----------
 const tip=document.getElementById("tip");
+// The dashboard is embedded in VisiLean's Custom Analytics as an iframe sized to its
+// content, so innerHeight is the whole scrollable page, not the band on screen -
+// clamping to it let tooltips land below the fold, clipped. An IntersectionObserver
+// on a viewport-sized sentinel reports the visible band in this page's own client
+// coordinates (in a cross-origin iframe the implicit root is the TOP-level viewport),
+// which is exactly what the tooltip has to stay inside.
+let VIS=null;
+(function(){
+  const el=document.getElementById("vport");if(!el||!window.IntersectionObserver)return;
+  try{
+    new IntersectionObserver(function(es){
+      const r=es[es.length-1].intersectionRect;
+      VIS=(r&&r.width>40&&r.height>40)?{l:r.left,t:r.top,r:r.right,b:r.bottom}:null;
+    },{threshold:Array.from({length:21},(_,i)=>i/20)}).observe(el);
+  }catch(e){}
+})();
+function visibleBox(){
+  const v=VIS;
+  if(!v)return {l:0,t:0,r:innerWidth,b:innerHeight};
+  return {l:Math.max(0,v.l),t:Math.max(0,v.t),
+          r:Math.min(innerWidth,v.r),b:Math.min(innerHeight,v.b)};
+}
 function showTip(e,html){tip.innerHTML=html;tip.style.display="block";moveTip(e)}
-function moveTip(e){const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+12,y=e.clientY+10;if(x+w>innerWidth-8)x=e.clientX-w-8;if(y+h>innerHeight-8)y=e.clientY-h-8;tip.style.left=x+"px";tip.style.top=y+"px"}
+function moveTip(e){
+  const w=tip.offsetWidth,h=tip.offsetHeight,v=visibleBox(),PAD=8;
+  let x=e.clientX+12,y=e.clientY+12;
+  if(x+w>v.r-PAD)x=e.clientX-w-12;              // flip to the left of the cursor
+  if(y+h>v.b-PAD)y=e.clientY-h-12;              // flip above the cursor
+  // a tooltip taller than the space on either side of the cursor still has to fit
+  x=Math.min(Math.max(x,v.l+PAD),Math.max(v.l+PAD,v.r-w-PAD));
+  y=Math.min(Math.max(y,v.t+PAD),Math.max(v.t+PAD,v.b-h-PAD));
+  tip.style.left=x+"px";tip.style.top=y+"px";
+}
 function hideTip(){tip.style.display="none"}
 document.addEventListener("scroll",hideTip,true);
+document.getElementById("copyfall-x").addEventListener("click",()=>{
+  document.getElementById("copyfall").style.display="none"});
 function chip(cls,txt){return `<span class="chip ${cls}">${txt}</span>`}
 function pill(kind,txt){const m={good:"vlc",crit:"vlnr",warn:"vlw",info:"blue"};return chip(m[kind]||"mut",txt)}
 function stChip(st){return st==="done"?chip("vlc","Complete"):st==="inprog"?chip("vls","Started"):chip("vlnc","Not Committed")}
@@ -457,7 +516,7 @@ function costCard(){
 // an activity as "<Responsible party>: <Category>" (Client: Approval, KP: Manpower,
 // Vendor: Material ...). Activities with a real variance and no note recorded get
 // their own slice, so the unexplained share is visible rather than hidden.
-let rsnCat="", rsnSel=null;
+let rsnCat="", rsnSel=null, rsnRC="";   // rsnRC: "" | "Late Started" | "Late Completed"
 const RSN_COL={"Approval":"#5B8FF9","Manpower":"#61DDAA","Material":"#F6BD16",
                "Machine":"#7262FD","Design":"#78D3F8","External":"#9661BC",
                "Weather":"#F6903D","Payment":"#008685","Statutory":"#F08BB4",
@@ -527,6 +586,36 @@ let rsnDept="";
 // A spec describes any metric: how it reads, how it reconciles, how it breaks down
 // and the rows behind it. Every drill-through on the dashboard renders through this,
 // so they all behave the same way.
+// Copy, from inside an iframe. VisiLean's Custom Analytics does not delegate
+// clipboard-write to this frame, so navigator.clipboard.writeText() rejects and the
+// button used to stop at "Copy failed". execCommand("copy") off a real click still
+// works there; if even that is blocked the text is handed over in a selected box.
+function copyFallback(txt){
+  const ta=document.createElement("textarea");
+  ta.value=txt;
+  ta.setAttribute("readonly","");
+  ta.style.cssText="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;padding:0;border:0";
+  document.body.appendChild(ta);
+  const sel=document.getSelection(),prev=(sel&&sel.rangeCount)?sel.getRangeAt(0):null;
+  ta.select();try{ta.setSelectionRange(0,txt.length)}catch(e){}
+  let ok=false;
+  try{ok=document.execCommand("copy")}catch(e){ok=false}
+  ta.remove();
+  if(prev&&sel){sel.removeAllRanges();sel.addRange(prev)}
+  return ok;
+}
+function copyManual(txt){
+  const w=document.getElementById("copyfall");if(!w)return;
+  w.style.display="block";                 // the stylesheet hides it, so be explicit
+  const ta=w.querySelector("textarea");ta.value=txt;ta.focus();ta.select();
+}
+function copyOut(txt,btn,okMsg,restore){
+  const done=()=>{btn.textContent=okMsg;setTimeout(()=>{btn.textContent=restore},1800)};
+  const hard=()=>{copyManual(txt);btn.textContent="Press Ctrl+C";setTimeout(()=>{btn.textContent=restore},2600)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(()=>{copyFallback(txt)?done():hard()});
+  }else{copyFallback(txt)?done():hard()}
+}
 let _dspec=null,_dsub="",_dsort={k:null,dir:1},_dpage=0,_dfilt={};
 const DPAGE=25;
 // Notes shown in a drill include whatever reason was recorded against the activity -
@@ -541,7 +630,8 @@ function rsnByTid(){
     const add=v=>{const k=v.trim();if(k&&!seen[k]){seen[k]=1;bits.push(k)}};
     // placeholders carry no information for a reader - keep the real reasons only
     const junk=c=>!c||c==="No reason recorded"||c==="Uncategorised";
-    (r.cats||[]).forEach(c=>{if(!junk(c.cat))add((c.label?c.label+": ":"")+(c.party?c.party+" · ":"")+c.cat)});
+    // c.cat already reads "<party>: <category>", so the party is not repeated
+    (r.cats||[]).forEach(c=>{if(!junk(c.cat))add((c.label?c.label+": ":"")+c.cat)});
     (r.events||[]).forEach(e=>{if(e.text&&!junk(e.text))add(e.label+": "+e.text)});
     if(r.tid)_rsnByTid[String(r.tid)]=bits.join(" | ");
   });
@@ -658,8 +748,7 @@ function drillRender(){
       const cs=drillCols(),rs=drillRows();
       const txt=[cs.map(x=>x.label).join("\t")].concat(
         rs.map(r=>cs.map(x=>cell(x,r)).join("\t"))).join("\n");
-      navigator.clipboard.writeText(txt).then(()=>{c.textContent="Copied "+rs.length+" rows";setTimeout(()=>c.textContent="Copy",1600)})
-        .catch(()=>{c.textContent="Copy failed";setTimeout(()=>c.textContent="Copy",1600)});});
+      copyOut(txt,c,"Copied "+rs.length+" rows","Copy");});
     const xb=document.getElementById("d-csv");
     if(xb)xb.addEventListener("click",()=>{
       const s2=_dspec,cs=drillCols(),rs=drillRows();
@@ -676,16 +765,14 @@ function drillRender(){
         xb.textContent="Downloaded";setTimeout(()=>xb.textContent="Export CSV",1600);
       }catch(e){
         // embedded in an iframe that blocks downloads: fall back to the clipboard
-        navigator.clipboard.writeText(lines.join("\r\n"))
-          .then(()=>{xb.textContent="Copied as CSV";setTimeout(()=>xb.textContent="Export CSV",1800)})
-          .catch(()=>{xb.textContent="Blocked here";setTimeout(()=>xb.textContent="Export CSV",1800)});
+        copyOut(lines.join("\r\n"),xb,"Copied as CSV","Export CSV");
       }});
     if(_dspec.onRow)bd.querySelectorAll(".drow").forEach(tr=>tr.addEventListener("click",()=>_dspec.onRow(tr.dataset.rid)));
   },0);
 }
 function rsnListHtml(deptKey){
-  const all=reasonsFor(deptKey);
-  const list=(rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all)
+  const keep=new Set(rsnRecords(deptKey).filter(x=>!rsnCat||x.c.cat===rsnCat).map(x=>x.r.uid));
+  const list=reasonsFor(deptKey).filter(r=>keep.has(r.uid))
     .slice().sort((a,b)=>Math.abs(b.fSlip)-Math.abs(a.fSlip));
   let h=rsnCat?`<div style="margin-bottom:7px">${chip("blue","Reason: "+esc(rsnCat))}</div>`:"";
   h+=`<div class="twrap" style="max-height:60vh;overflow:auto"><table>
@@ -714,25 +801,33 @@ function openRsnList(deptKey){
   // standard columns, sorting, per-column filters, paging, Copy and CSV export
   rsnDept=deptKey||"";
   const all=reasonsFor(rsnDept);
-  const scoped=rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all;
-  const by={};scoped.forEach(x=>{if(x.tid)by[String(x.tid)]=x});
+  const recs=rsnRecords(rsnDept).filter(x=>!rsnCat||x.c.cat===rsnCat);
+  const by={},catsBy={};
+  recs.forEach(x=>{if(!x.r.tid)return;const k=String(x.r.tid);
+    by[k]=x.r;(catsBy[k]=catsBy[k]||[]).push(x.c)});
   const rows=L.filter(r=>by[String(r[C.tid])]);
-  const catsOf=r=>{const m=by[String(r[C.tid])];if(!m)return [];
-    return rsnCat?m.cats.filter(x=>x.cat===rsnCat):m.cats};
+  const catsOf=r=>catsBy[String(r[C.tid])]||[];
+  const scoped=Object.keys(by).length;
   const cols=stdCols();
-  cols.splice(cols.length-1,0,{k:"reason",label:"Reason",
-    get:r=>catsOf(r).map(x=>x.party?x.party+": "+x.cat:x.cat).join(", "),
-    html:r=>{const cs=catsOf(r);return cs.length?cs.map(x=>
-      `<span class="chip" style="background:${rsnColor(x.cat,0)};color:#fff">${esc(x.party?x.party+" · "+x.cat:x.cat)}</span>`).join(" "):`<span class="dim">—</span>`}});
+  cols.splice(cols.length-1,0,
+    {k:"rc",label:"Reason category",w:112,
+     get:r=>[...new Set(catsOf(r).map(x=>x.rc))].join(", ")||"—",
+     html:r=>[...new Set(catsOf(r).map(x=>x.rc))].map(v=>
+       chip(v==="Late Started"?"vlnr":"vlst",v)).join(" ")||`<span class="dim">—</span>`},
+    {k:"reason",label:"Reason",w:150,
+     get:r=>[...new Set(catsOf(r).map(x=>x.cat))].join(", "),
+     html:r=>{const cs=[...new Set(catsOf(r).map(x=>x.cat))];return cs.length?cs.map(x=>
+      `<span class="chip" style="background:${rsnColor(x,0)};color:#fff">${esc(x)}</span>`).join(" "):`<span class="dim">—</span>`}});
   drillOpen({
     eyebrow:(rsnDept?DNAME[rsnDept]:"Project")+" · Reasons for Variance",
-    title:rsnCat||"All reason categories",
-    status:pill(rsnCat==="No reason recorded"?"crit":"info",rows.length+(rows.length===1?" activity":" activities")),
-    formula:`<b>${scoped.length}</b> of <b>${all.length}</b> logged variances`+(rsnCat?` in <b>${esc(rsnCat)}</b>`:``)
-            +` · <b>${filtered(rsnDept).filter(r=>r[C.dly]).length}</b> activities currently delayed`,
-    reconcile:`<span class="pill good">✓ reasons read from the VisiLean activity history · ${rows.length} matched to activities</span>`,
+    title:(rsnCat||"All reason categories")+(rsnRC?" · "+rsnRC:""),
+    status:pill("info",rows.length+(rows.length===1?" activity":" activities")),
+    formula:`<b>${recs.length}</b> variance ${recs.length===1?"record":"records"}`
+            +(rsnCat?` in <b>${esc(rsnCat)}</b>`:``)+(rsnRC?` · <b>${esc(rsnRC)}</b> only`:``)
+            +` on <b>${scoped}</b> activities · <b>${filtered(rsnDept).filter(r=>r[C.dly]).length}</b> activities currently delayed`,
+    reconcile:`<span class="pill good">✓ one record per late start / late completion, as in the VisiLean variance export</span>`,
     breakdownBy:"reason",
-    breakdown:(function(){const c={};scoped.forEach(x=>x.cats.forEach(y=>{c[y.cat]=(c[y.cat]||0)+1}));
+    breakdown:(function(){const c={};recs.forEach(x=>{c[x.c.cat]=(c[x.c.cat]||0)+1});
       return Object.keys(c).map(k=>({label:k,n:c[k]})).sort((a,b)=>b.n-a.n)})(),
     rows, cols,
     rowId:r=>String(r[C.tid]),
@@ -752,23 +847,42 @@ function closeRsn(){
   document.getElementById("rsnmodal").classList.remove("on");
   document.body.style.overflow="";rsnSel=null;
 }
+// One record per late event, exactly as VisiLean files them: an activity that both
+// started late and finished late is two records, and each carries the Reason Category
+// the team picked. Reschedules and Not Ready flips are not variances to VisiLean, so
+// they are not counted here - which is what used to fill half the ring with
+// "No reason recorded". Their notes still reach the Notes / Comments column.
+function rsnRecords(deptKey){
+  const out=[];
+  reasonsFor(deptKey).forEach(r=>(r.cats||[]).forEach(c=>{
+    if(!c.rc)return;                                     // late start / late completion only
+    if(rsnRC&&c.rc!==rsnRC)return;
+    out.push({r,c});
+  }));
+  return out;
+}
 function reasonsCard(deptKey,span){
   const all=reasonsFor(deptKey);
-  const catN={},partyN={};
-  all.forEach(r=>r.cats.forEach(c=>{catN[c.cat]=(catN[c.cat]||0)+1;
-    if(c.party)partyN[c.party]=(partyN[c.party]||0)+1}));
+  const recs=rsnRecords(deptKey);
+  const catN={};
+  recs.forEach(x=>{catN[x.c.cat]=(catN[x.c.cat]||0)+1});
   const items=Object.keys(catN).map(k=>({k,n:catN[k]})).sort((a,b)=>b.n-a.n);
   const total=items.reduce((a,x)=>a+x.n,0);
   const late=filtered(deptKey).filter(r=>r[C.dly]).length;
-  if(!all.length)
+  // counts for the switch are taken before it is applied, so both sides stay visible
+  const nAll={"":0,"Late Started":0,"Late Completed":0};
+  all.forEach(r=>(r.cats||[]).forEach(c=>{if(c.rc){nAll[c.rc]++;nAll[""]++}}));
+  const RCS=[["","All"],["Late Started","Late Started"],["Late Completed","Late Completed"]];
+  const sw=`<div class="toggle2" id="rsn-rc">`+RCS.map(x=>
+    `<button data-rc="${esc(x[0])}" class="${rsnRC===x[0]?"on":""}">${esc(x[1])} ${nAll[x[0]]}</button>`).join("")+`</div>`;
+  if(!nAll[""])
     return card(span||"span12","Reasons for Variance",
-      "categories the team records against activities in VisiLean",
-      `<div class="fnote" style="padding:10px 0">No variance reasons recorded yet for this selection. They appear as soon as the team records a late start, late completion or reschedule note in VisiLean.</div>`);
-  const list=(rsnCat?all.filter(r=>r.cats.some(c=>c.cat===rsnCat)):all)
-    .slice().sort((a,b)=>Math.abs(b.fSlip)-Math.abs(a.fSlip));
+      "reason recorded against every late start and late completion, as in VisiLean",
+      `<div class="fnote" style="padding:10px 0">No variance reasons recorded yet for this selection. They appear as soon as the team records a reason against a late start or a late completion in VisiLean.</div>`);
+  const acts=new Set(recs.filter(x=>!rsnCat||x.c.cat===rsnCat).map(x=>x.r.uid));
   let h=`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
     <div style="display:flex;gap:12px;align-items:center">${donut(items,total,rsnCat)}
-      <div style="min-width:190px">`;
+      <div style="min-width:200px">`;
   items.forEach((x,i)=>{
     const pc=total?(100*x.n/total):0;
     h+=`<div class="rsnleg" data-cat="${esc(x.k)}" style="display:flex;align-items:center;gap:6px;padding:2px 4px;border-radius:5px;cursor:pointer;${rsnCat===x.k?"background:var(--blue-wash);font-weight:800":""}">
@@ -777,20 +891,28 @@ function reasonsCard(deptKey,span){
       <span style="font-size:10.5px;font-weight:700">${x.n}</span>
       <span class="dim" style="font-size:9.5px;width:34px;text-align:right">${fmt1(pc)}%</span></div>`});
   h+=`</div></div>`;
-  // KP 26-Aug: one consolidated list of VisiLean's own reasons, not a split by party
-  h+=`<div style="min-width:150px"><div class="small dim">${late} activities delayed · ${all.length} with a variance logged</div></div>`;
+  const nActs=new Set();
+  all.forEach(r=>(r.cats||[]).forEach(c=>{if(c.rc)nActs.add(r.uid)}));
+  h+=`<div style="min-width:180px;display:flex;flex-direction:column;gap:6px">${sw}
+    <div class="small dim">${nAll["Late Started"]} late starts · ${nAll["Late Completed"]} late completions
+      across ${nActs.size} ${nActs.size===1?"activity":"activities"}<br>${late} activities currently delayed`
+   +(M.naReasonRecords?`<br><span title="KP rule: activities with trade = Not Applicable are out of scope for this dashboard">VisiLean's export also lists ${M.naReasonRecords} on Not Applicable activities, excluded here</span>`:``)
+   +`</div></div>`;
   h+=`</div>`;
   if(rsnCat)h+=`<div style="margin:7px 0 3px">${chip("blue","Filtered: "+esc(rsnCat))}
     <a href="#" onclick="rsnCat='';rsnSel=null;render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear</a></div>`;
   setTimeout(()=>{
     document.querySelectorAll(".rsnslice,.rsnleg").forEach(el=>{
       el.addEventListener("click",()=>{const c=el.dataset.cat;rsnCat=(rsnCat===c?"":c);rsnSel=null;render()})});
+    const rc=document.getElementById("rsn-rc");
+    if(rc)rc.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+      rsnRC=b.dataset.rc;rsnSel=null;render()}));
     const d=document.getElementById("rsn-drill");
     if(d)d.addEventListener("click",()=>openRsnList(deptKey||""));
   },0);
   return card(span||"span12","Reasons for Variance",
-    "reasons recorded by the team in VisiLean · click a slice to filter, then drill down for the activities",h,
-    `<button id="rsn-drill" class="rsndrill" title="Drill down to the activity list">&#9783; ${list.length} ${list.length===1?"activity":"activities"}</button>`);
+    "one record per late start and late completion, as VisiLean files them · click a slice to filter, then drill down for the activities",h,
+    `<button id="rsn-drill" class="rsndrill" title="Drill down to the activity list">&#9783; ${total} ${total===1?"reason":"reasons"} · ${acts.size} ${acts.size===1?"activity":"activities"}</button>`);
 }
 // ---------- KPI cards ----------
 // every KPI drills into the rows it counts
@@ -1003,6 +1125,14 @@ function stageBars(rows){
   return h;
 }
 // ---------- pipeline table: schedule-step columns ----------
+function sizeDetPins(){
+  document.querySelectorAll(".twrap").forEach(w=>{
+    const px=Math.max(320,w.clientWidth-2)+"px";
+    w.querySelectorAll(".detpin").forEach(p=>{p.style.width=px});
+  });
+}
+addEventListener("resize",sizeDetPins);
+
 const MQAP_SUBS=new Set(["draftingconceptualdiscussion","internalcheckingofmqap","internalapproval","submissiontocustomer","finalacceptanceofmqap"]);
 const nrm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,"");
 function colKey(r){
@@ -1078,7 +1208,7 @@ function pipeTable(rows,idp,engMode){
         <div class="d ${overdue?"red":""}">${st==="done"?"done "+wdate(due,1):(bdue<SW?"was due ":"due ")+wdate(st==="done"?due:bdue,1)}</div></td>`;
     });
     h+=`<td class="num"><b>${fmt1(x.a)}</b></td></tr>`;
-    h+=`<tr class="detrow" id="det-${idp}-${gi}" style="display:none"><td colspan="${cols.length+2}"></td></tr>`;
+    h+=`<tr class="detrow" id="det-${idp}-${gi}" style="display:none"><td colspan="${cols.length+2}"><div class="detpin"></div></td></tr>`;
   });
   h+="</table></div>";
   setTimeout(()=>{document.querySelectorAll(".prowclick").forEach(el=>{
@@ -1086,16 +1216,36 @@ function pipeTable(rows,idp,engMode){
     el.addEventListener("click",()=>{
       const id=el.dataset.g,box=document.getElementById("det-"+id);
       const vis=box.style.display!=="none";box.style.display=vis?"none":"";
-      if(!vis&&!box.firstElementChild.innerHTML){
+      const pin=box.querySelector(".detpin");
+      if(!vis&&!pin.innerHTML){
         const gi=+id.split("-").pop();const x=groups[gi];
-        let t=`<table><tr><th>Activity</th><th>Status</th><th class="num">%</th><th class="num">Qty</th><th>Owner</th><th>Baseline end</th><th>Forecast end</th><th class="num">Var</th></tr>`;
-        x.rr.slice().sort((a2,b2)=>a2[C.fES]-b2[C.fES]).forEach(r=>{const v=r[C.fEF]-r[C.bEF];
+        const rr=x.rr.slice().sort((a2,b2)=>a2[C.fES]-b2[C.fES]);
+        let t=`<div class="dethd"><b>${esc(x.pkg)}</b>
+          <span class="dim">${rr.length} ${rr.length===1?"activity":"activities"}</span>
+          <button type="button" class="rsndrill detmore" data-g="${idp}-${gi}">&#9783; Full list · standard columns</button></div>`;
+        t+=`<div class="detscroll"><table><tr><th>Activity</th><th>Status</th><th class="num">%</th><th class="num">Qty</th><th>Owner</th><th>Baseline end</th><th>Forecast end</th><th class="num">Var</th></tr>`;
+        rr.forEach(r=>{const v=r[C.fEF]-r[C.bEF];
           t+=`<tr><td>${esc(r[C.name])}</td><td>${rowChip(r)}</td><td class="num">${r[C.pct]}</td>
            <td class="num">${r[C.qty]?fq(r[C.qty])+" "+esc(r[C.uom]):"—"}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")}</td>
            <td>${wdate(r[C.bEF],1)}</td><td>${wdate(r[C.fEF],1)}</td>
            <td class="num" ${v>=4?'style="color:var(--crit-text);font-weight:700"':""}>${v>0?"+":""}${v}</td></tr>`});
-        box.firstElementChild.innerHTML=t+"</table>";
-      }});});},0);
+        pin.innerHTML=t+"</table></div>";
+        pin.querySelector(".detmore").addEventListener("click",ev=>{
+          ev.stopPropagation();
+          drillOpen({eyebrow:"Package pipeline",title:x.pkg,
+            status:pill("info",rr.length+(rr.length===1?" activity":" activities")),
+            formula:`every activity in <b>${esc(x.pkg)}</b> · ${fmt1(x.a)}% complete`,
+            rows:rr,cols:stdCols(),rowId:r=>String(r[C.tid]),
+            subsets:[{k:"all",label:"All"},
+                     {k:"open",label:"Not complete",f:r=>r[C.pct]<100},
+                     {k:"late",label:"Behind baseline",f:r=>r[C.fEF]>r[C.bEF]}]});
+        });
+      }
+      // the panel is pinned to the left of the stage grid, so size it to what is
+      // on screen - a Supply package spans ~30 stage columns and thousands of pixels
+      if(!vis)sizeDetPins();
+      });});
+    sizeDetPins();},0);
   const colpop=`<details class="colsel" id="${idp}-cs" ${pipeColOpen[idp]?"open":""}><summary>Stages ${cols.length}/${allCols.length} ▾</summary>
     <div class="colpop"><div class="cact"><button data-ca="all" data-p="${idp}">Select all</button><button data-ca="none" data-p="${idp}">Clear</button></div>
     ${allCols.map(cn=>{const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
