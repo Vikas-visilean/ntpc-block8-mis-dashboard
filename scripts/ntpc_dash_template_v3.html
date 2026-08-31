@@ -202,21 +202,23 @@ tr:hover td{background:var(--blue-wash)}
 .colpop input{accent-color:var(--blue)}
 .colpop .cact{display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:5px}
 .colpop .cact button{color:var(--blue);font-size:10px;font-weight:600}
+:root{--vph:calc(100vh - 52px)}
 #rsnmodal{position:fixed;inset:0;z-index:120;display:none;align-items:flex-start;justify-content:center;
  background:rgba(0,45,98,.42);backdrop-filter:blur(1px);padding:26px 14px;overflow:auto}
 #rsnmodal.on{display:flex;animation:dfade .16s ease}
 @keyframes dfade{from{opacity:0}to{opacity:1}}
 /* list on the left, activity panel on the right: the wrapper widens when the panel
    opens, so the list keeps its place instead of being replaced by the detail */
-#rsnwrap{display:flex;align-items:flex-start;gap:12px;width:100%;max-width:1024px;
+#rsnwrap{display:flex;align-items:flex-start;gap:12px;width:100%;max-width:1620px;
  transition:max-width .2s ease}
-#rsnwrap.withpanel{max-width:1420px}
+#rsnwrap.withpanel{max-width:2040px}
 #rsnmodal-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);
- flex:1 1 auto;min-width:0;max-width:100%;box-shadow:var(--shadow-popover);overflow:hidden;animation:drise .18s ease}
+ flex:1 1 auto;min-width:0;max-width:100%;box-shadow:var(--shadow-popover);overflow:hidden;
+ animation:drise .18s ease;display:flex;flex-direction:column;max-height:var(--vph)}
 #actpanel{flex:0 0 404px;width:404px;background:var(--surface);border:1px solid var(--line);
  border-radius:var(--r-card);box-shadow:var(--shadow-popover);overflow:hidden;display:none;
- position:sticky;top:0}
-#rsnwrap.withpanel #actpanel{display:block;animation:panelin .2s ease}
+ position:sticky;top:0;flex-direction:column;max-height:var(--vph)}
+#rsnwrap.withpanel #actpanel{display:flex;animation:panelin .2s ease}
 @keyframes panelin{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
 #actpanel-hd{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;
  border-bottom:1px solid var(--line);background:var(--surface)}
@@ -225,7 +227,7 @@ tr:hover td{background:var(--blue-wash)}
  border-radius:8px;width:24px;height:24px;cursor:pointer;flex:0 0 auto;line-height:1;font-size:14px}
 #actpanel-hd button:hover{background:var(--blue-wash);color:var(--blue)}
 #actpanel-back{display:none}
-#actpanel-bd{padding:9px 12px 13px;max-height:calc(100vh - 150px);overflow:auto}
+#actpanel-bd{padding:9px 12px 13px;overflow:auto;flex:1 1 auto;min-height:0}
 /* grouped property rows - KP asked for the flat stat list to be readable */
 .pgrp{margin-top:10px}
 .pgrp:first-child{margin-top:0}
@@ -248,7 +250,7 @@ tr:hover td{background:var(--blue-wash)}
 @media(max-width:1000px){
   /* stacked: stretch, or the drill table's min-width sizes the box past the wrapper */
   #rsnwrap{flex-direction:column;align-items:stretch}
-  #rsnwrap.withpanel{max-width:1024px}
+  #rsnwrap.withpanel{max-width:1620px}
   #actpanel{flex:1 1 auto;width:auto;position:static}
 }
 @keyframes drise{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
@@ -284,7 +286,7 @@ tr:hover td{background:var(--blue-wash)}
 #rsnmodal-x{border:1px solid var(--line2);background:var(--surface);color:var(--dim);font-size:16px;line-height:1;
  border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto}
 #rsnmodal-x:hover{background:var(--blue-wash);color:var(--blue)}
-#rsnmodal-bd{padding:10px 14px 14px}
+#rsnmodal-bd{padding:10px 14px 14px;overflow:auto;flex:1 1 auto;min-height:0}
 #tip{position:fixed;z-index:400;background:var(--tip-bg);color:var(--tip-fg);border-radius:6px;padding:6px 9px;font-size:10px;pointer-events:none;box-shadow:var(--shadow-popover);display:none;max-width:290px;line-height:1.45}
 #tip .t2{color:var(--tip-fg2)}
 /* sentinel the tooltip clamp measures the visible band with - see visibleBox() */
@@ -507,12 +509,48 @@ let VIS=null;
 (function(){
   const el=document.getElementById("vport");if(!el||!window.IntersectionObserver)return;
   try{
-    new IntersectionObserver(function(es){
+    const io=new IntersectionObserver(function(es){
       const r=es[es.length-1].intersectionRect;
       VIS=(r&&r.width>40&&r.height>40)?{l:r.left,t:r.top,r:r.right,b:r.bottom}:null;
-    },{threshold:Array.from({length:21},(_,i)=>i/20)}).observe(el);
+      applyViewport();
+    },{threshold:Array.from({length:21},(_,i)=>i/20)});
+    io.observe(el);
+    // The HOST page scrolls this iframe. That fires no scroll event in here, and the
+    // intersection ratio does not change either - only the rect moves - so the
+    // callback would never run again and the band would go stale. Re-observing forces
+    // a fresh report, which is how the overlay keeps tracking what is on screen.
+    setInterval(function(){
+      if(document.visibilityState!=="visible")return;
+      // nothing to track unless the frame is clipped and something is on screen
+      const m=document.getElementById("rsnmodal");
+      const busy=(m&&m.classList.contains("on"))||tip.style.display==="block";
+      if(!busy&&VIS&&!frameIsClipped())return;
+      io.unobserve(el);io.observe(el);
+    },250);
   }catch(e){}
 })();
+// Put the overlay on the band the reader can see, and publish that band's height as
+// --vph so the panels size to the screen instead of to the whole scrollable page.
+//
+// This only takes over when the frame is genuinely clipped - VisiLean sizing the
+// iframe to its content, so 100vh is the whole page. When the frame's viewport IS
+// what the reader sees, CSS handles it (inset:0, 100vh) with no polling and no lag.
+function frameIsClipped(){
+  const v=VIS;
+  return !!v && (v.b-v.t) < innerHeight-40;
+}
+function applyViewport(){
+  const m=document.getElementById("rsnmodal"),root=document.documentElement;
+  if(!frameIsClipped()){
+    if(m){m.style.top="";m.style.height="";m.style.bottom=""}
+    root.style.removeProperty("--vph");
+    return;
+  }
+  const v=VIS,h=Math.max(200,v.b-v.t);
+  if(m){m.style.top=Math.max(0,v.t)+"px";m.style.height=h+"px";m.style.bottom="auto"}
+  const pad=m?2*(parseFloat(getComputedStyle(m).paddingTop)||0):64;
+  root.style.setProperty("--vph",Math.max(180,h-pad)+"px");
+}
 function visibleBox(){
   const v=VIS;
   if(!v)return {l:0,t:0,r:innerWidth,b:innerHeight};
@@ -813,18 +851,18 @@ function noteFor(r){
 function stdCols(){
   return [
     {k:"tid",label:"Task ID",get:r=>r[C.tid]||"—",w:74},
-    {k:"name",label:"Activity",w:230,get:r=>r[C.name],
+    {k:"name",label:"Activity",w:215,get:r=>r[C.name],
      html:r=>`<b>${esc(String(r[C.name]).slice(0,54))}</b>`},
-    {k:"wbs",label:"WBS",w:200,get:r=>r[C.wbs]||"—",
+    {k:"wbs",label:"WBS",w:180,get:r=>r[C.wbs]||"—",
      html:r=>`<span title="${esc(r[C.wbs]||"")}">${esc(String(r[C.wbs]||"—").slice(0,54))}</span>`},
-    {k:"desc",label:"Description",w:150,get:r=>r[C.desc]||"—"},
-    {k:"own",label:"Owner",w:120,get:r=>r[C.owner]||r[C.ownship]||"—"},
-    {k:"org",label:"Organisation",w:120,get:r=>r[C.org]||"—"},
+    {k:"desc",label:"Description",w:130,get:r=>r[C.desc]||"—"},
+    {k:"own",label:"Owner",w:110,get:r=>r[C.owner]||r[C.ownship]||"—"},
+    {k:"org",label:"Organisation",w:110,get:r=>r[C.org]||"—"},
     {k:"st",label:"Status",w:100,get:r=>r[C.vls],html:r=>rowChip(r)},
     {k:"pct",label:"% complete",w:78,num:true,get:r=>r[C.pct]},
     {k:"bef",label:"Baseline finish",get:r=>r[C.bEF],html:r=>wdate(r[C.bEF],1),txt:r=>wdate(r[C.bEF],1)},
     {k:"fef",label:"Planned finish",get:r=>r[C.fEF],html:r=>wdate(r[C.fEF],1),txt:r=>wdate(r[C.fEF],1)},
-    {k:"note",label:"Notes / Comments",w:250,get:r=>noteFor(r),
+    {k:"note",label:"Notes / Comments",w:215,get:r=>noteFor(r),
      html:r=>{const n=noteFor(r);return n?`<span title="${esc(n)}">${esc(n.slice(0,70))}${n.length>70?"…":""}</span>`:`<span class="dim">—</span>`}},
   ];
 }
@@ -881,7 +919,7 @@ function drillRender(){
     const n=(x.f?src.filter(x.f):src).length;
     h+=`<button class="segbtn ${_dsub===x.k?"on":""}" data-sub="${esc(x.k)}">${esc(x.label)} ${n}</button>`});
   h+=`</div><span style="margin-left:auto;font-size:10px;color:var(--mut)">click a header to sort · filter under any column</span></div>`;
-  h+=`<div class="dbox" style="max-height:44vh;margin-top:6px"><table><tr>`;
+  h+=`<div class="dbox" style="max-height:calc(var(--vph) * .52);margin-top:6px"><table><tr>`;
   cols.forEach(c=>{const ar=_dsort.k===c.k?(_dsort.dir>0?" ▲":" ▼"):"";
     h+=`<th data-sk="${esc(c.k)}" class="${c.num?"num":""}" style="min-width:${c.w||110}px">${esc(c.label)}${ar}</th>`});
   h+=`</tr><tr>`;
@@ -1076,6 +1114,7 @@ function openAct(uid,keepTrail){
   bindLinks(()=>openAct(uid,true));
 }
 function showRsnPanel(title,body,back){
+  applyViewport();
   document.getElementById("rsnmodal-t").innerHTML=title;
   document.getElementById("rsnmodal-bd").innerHTML=body;
   document.getElementById("rsnmodal-back").style.display=back?"":"none";
@@ -1415,6 +1454,7 @@ function sizeDetPins(){
   });
 }
 addEventListener("resize",sizeDetPins);
+addEventListener("resize",applyViewport);
 
 const MQAP_SUBS=new Set(["draftingconceptualdiscussion","internalcheckingofmqap","internalapproval","submissiontocustomer","finalacceptanceofmqap"]);
 const nrm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,"");
