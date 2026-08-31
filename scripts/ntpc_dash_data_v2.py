@@ -95,6 +95,31 @@ milestones_raw = []
 NA_SKIPPED = []
 NA_UIDS = set()
 GUID = {t.get("guid"): t for t in TASKS if t.get("guid")}
+
+# Rows created directly in VisiLean - the drawing revisions R0/R1/R2 - carry no custom
+# fields, so they have no Levels, no Department and no Package, and every classifier
+# below would fall through. They belong wherever their parent sits, so borrow the
+# nearest classified ancestor's fields. Classification only: dates, %, status and
+# weightage stay the row's own, and Weightage/Cost are never inherited because a
+# parent's weight repeated across its revisions would be counted several times.
+def _has_levels(cf):
+    return any((cf or {}).get("Level %d" % i) for i in range(1, 8))
+
+def classify_cf(t, depth=0):
+    cf = t.get("customField") or {}
+    if _has_levels(cf) or depth >= 6:
+        return cf, ""
+    p = GUID.get(t.get("parentGUID"))
+    if p is None:
+        return cf, ""
+    up, _ = classify_cf(p, depth + 1)
+    if not _has_levels(up):
+        return cf, ""
+    out = {k: v for k, v in up.items() if k not in ("Weightage", "Cost")}
+    out.update({k: v for k, v in cf.items() if v not in (None, "")})
+    return out, str(p.get("taskName") or "")
+
+INHERITED = []
 _synth = [0]
 for t in TASKS:
     try: uid = int(t.get("externalId"))
@@ -103,7 +128,9 @@ for t in TASKS:
         # R0/R1/R2 etc). VisiLean counts these in "All Tasks" -> so do we.
         _synth[0] += 1
         uid = -_synth[0]
-    cf = t.get("customField") or {}
+    cf, inherited_from = classify_cf(t)
+    if inherited_from and not t.get("parent"):
+        INHERITED.append((str(t.get("taskId") or ""), str(t.get("taskName") or ""), inherited_from))
     L = [cf.get(f"Level {i}", "") or "" for i in range(1, 8)]
     bs, bf = pdate(t.get("baselineStartDate")), pdate(t.get("baselineEndDate"))
     # "not baselined": VisiLean counts these in All Tasks but leaves them out of
@@ -144,6 +171,8 @@ for t in TASKS:
          "wt": money(cf.get("Weightage")), "nd": nodate,
          "note": t.get("notes") or "", "desc": t.get("description") or "",
          "crit": (cf.get("Critical Activity") or ""),
+         # a revision row is named "R1"; its schedule stage is its parent's
+         "stagename": inherited_from,
          "psd": (pdate(t.get("plannedStartDate")) or bs),
          "ped": (pdate(t.get("plannedEndDate")) or bf), }
     try: r["dur"] = max(0.0, float(t.get("baselineDuration") or t.get("plannedDuration") or 0))
@@ -165,6 +194,10 @@ for t in TASKS:
 leafs = {u: r for u, r in recs.items() if not r["parent"]}
 print("usable leaves:", len(leafs), "| milestones:", len(milestones_raw),
       "| excluded (trade = Not Applicable):", len(NA_SKIPPED))
+if INHERITED:
+    print("classification inherited from the parent for %d rows with no custom fields:"
+          % len(INHERITED), ", ".join("%s %s<-%s" % x for x in INHERITED[:4]),
+          "..." if len(INHERITED) > 4 else "")
 
 # ---------- forecast = VisiLean PLANNED dates, verbatim (KP rule 17-Aug-2026) ----------
 # No dashboard-side re-forecasting: VisiLean owns scheduling. Planned start/end
@@ -209,6 +242,7 @@ DEPTS = [("initiation", "Project Initiation"), ("engineering", "Design & Enginee
          ("services", "Procurement - Services"),
          ("regulatory", "Regulatory & Statutory"), ("execution", "Execution & Construction"),
          ("tnc", "Testing & Commissioning"), ("hoto", "HOTO (Handover)")]
+UNCLASSIFIED = []
 def dept_of(r):
     dcf = norm(re.sub(r"^\s*\d+\s*", "", r.get("deptcf") or ""))
     l1 = dcf if dcf else norm(r["L"][0])
@@ -222,6 +256,9 @@ def dept_of(r):
     if l1.startswith("hoto"): return "hoto"
     if l1.startswith("execution"):
         return "tnc" if (r["L"][2] or "").startswith("Testing & Commissioning") else "execution"
+    # Nothing matched. Report it rather than quietly filing the row under Project
+    # Initiation, which is how R0/R1 revisions ended up in the wrong department.
+    UNCLASSIFIED.append((r.get("tid", ""), r["name"]))
     return "initiation"
 
 ENG_STAGE = [("asbuilt", "As-Built"), ("gfcissuance", "GFC"), ("finalacceptance", "Acceptance"),
@@ -312,6 +349,9 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     # where Level 4 is blank this falls back to the Package field unchanged.
     item = L[3] if (L[3] and len(L4_SPAN.get(L[3], ())) == 1) else pkg
     stage = ""
+    # "R1" matches no stage; the revision belongs to the stage of the activity it
+    # revises, so match on the parent's name where one was inherited
+    ln = norm(r.get("stagename") or "") or ln
     if dept == "engineering":
         stage = next((v for kk, v in ENG_STAGE if kk in ln), "Drafting" if "drafting" in ln else "")
     elif dept in ("supply", "services"):
@@ -450,6 +490,9 @@ for t in TASKS:
     # key must match the row's pkg column, which is truncated the same way
     SUPPLY_DELIV[str(pkg)[:70]] = {"b": wd_f(be or pe), "f": wd_f(pe or be)}
 print("supply package delivery dates from VisiLean summaries:", len(SUPPLY_DELIV))
+if UNCLASSIFIED:
+    print("WARNING: %d rows matched no department rule and defaulted to Project Initiation:"
+          % len(UNCLASSIFIED), ", ".join("%s %s" % x for x in UNCLASSIFIED[:5]))
 
 cons = []
 for c in CONS:
