@@ -574,8 +574,10 @@ function gaugeCard(rows){
   // activities with no weightage assigned contribute nothing - worth showing plainly
   const wc=rows.length?100*rows.filter(r=>r[C.wt]>0).length/rows.length:0;
   const wsum=rows.reduce((x,r)=>x+(r[C.wt]||0),0);
+  const sup=(C.sup!==undefined)?rows.filter(r=>r[C.sup]).length:0;
   const basis=`weightage-based · earned units ÷ total units over the ${rows.length.toLocaleString()} activities in view`
-    +` · they carry ${fmt1(wsum)}% of project weight · ${fmt1(wc)}% of them have a weightage set`;
+    +` · they carry ${fmt1(wsum)}% of project weight · ${fmt1(wc)}% of them have a weightage set`
+    +(sup?` · ${sup} superseded revision${sup===1?"":"s"} carry no weight — the deliverable's weight sits on its current revision`:``);
   return `<div class="card span4"><h2>Overall progress</h2>
    <div class="hint">${basis}</div>
    <div class="gwrap">${gauge(a,p)}
@@ -1024,7 +1026,12 @@ function actDetail(r){
   h+=grp("Status",[
     row("VisiLean status",rowChip(r)),
     row("Progress",r[C.pct]+"%"),
-    row("Critical",r[C.vcrit]?chip("vlnr","Yes \u00b7 VisiLean"):`<span class="dim">No</span>`)]);
+    row("Critical",r[C.vcrit]?chip("vlnr","Yes \u00b7 VisiLean"):`<span class="dim">No</span>`)]
+    .concat((C.pb!==undefined&&r[C.pb])?[
+      row("Revision",r[C.sup]?chip("mut","Superseded"):chip("blue","Current revision")),
+      row("Weight",r[C.sup]
+        ?`<span class="dim">none \u2014 superseded</span>`
+        :`${(r[C.wt]||0).toFixed(6)} <span class="dim">\u2014 the deliverable's approved weight</span>`)]:[]));
   h+=grp("Responsibility",[
     row("Owner",esc(r[C.owner]||"\u2014")),
     row("Ownership",esc(r[C.ownship]||"\u2014"),true),
@@ -1126,7 +1133,8 @@ function openRsnList(deptKey){
     back:false,
     subsets:[{k:"all",label:"All"},
              {k:"crit",label:"Critical (VisiLean)",f:r=>!!r[C.vcrit]},
-             {k:"open",label:"Not complete",f:r=>r[C.pct]<100}],
+             {k:"open",label:"Not complete",f:r=>r[C.pct]<100},
+             {k:"pb",label:"Post-baseline",f:r=>!!r[C.pb]}],
   });
 }
 function openRsn(uid,fromList){ openAct(uid); return; }
@@ -1227,7 +1235,8 @@ function kpiDrill(kind,rows,deptKey){
              {k:"task",label:"Tasks",f:r=>r[C.stage]!=="Milestone"},
              {k:"ms",label:"Milestones",f:r=>r[C.stage]==="Milestone"},
              {k:"crit",label:"Critical (VisiLean)",f:r=>!!r[C.vcrit]},
-             {k:"nb",label:"No baseline",f:r=>!!r[C.nd]}],
+             {k:"nb",label:"No baseline",f:r=>!!r[C.nd]},
+             {k:"pb",label:"Post-baseline",f:r=>!!r[C.pb]}],
     cols:stdCols(),
   });
 }
@@ -1243,8 +1252,12 @@ function kpiCards(rows,projectLevel){
   // Construction) would read 9 too high against VisiLean.
   const unfiltered=rows.length===L.length;
   const totalAll=(projectLevel&&unfiltered)? total + DATA.milestones.length : total;
+  // KP 31-Aug: post-baseline revisions are counted, but stated - so the total never
+  // creeps upward without an explanation as the client raises new revision activities
+  const pbN=(C.pb!==undefined)?rows.filter(r=>r[C.pb]).length:0;
   return c("Total activities",totalAll.toLocaleString(),
-       (projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones${M.naExcluded?` · ${M.naExcluded} Not Applicable excluded`:""}`:"in scope",null,"all")
+       (projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones${M.naExcluded?` · ${M.naExcluded} Not Applicable excluded`:""}${pbN?` · ${pbN} post-baseline revisions`:""}`
+         :(pbN?`in scope · ${pbN} post-baseline`:"in scope"),null,"all")
    + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count",null,"done")
    + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"),"dly")
    + c("In progress",inprog.toLocaleString(),`started, not yet complete`,null,"wip")

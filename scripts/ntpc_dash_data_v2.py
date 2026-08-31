@@ -156,6 +156,9 @@ for t in TASKS:
          "deptcf": cf.get("Department", ""),
          "owner": cf.get("Owner.", "") or cf.get("Owner", ""),
          "tid": str(t.get("taskId") or ""), "org": str(t.get("organisation") or "").strip(),
+         "guid": t.get("guid"), "pguid": t.get("parentGUID"),
+         # no MSP externalId -> raised in VisiLean after the baseline was set
+         "pb": 0 if str(t.get("externalId") or "").strip() else 1, "sup": 0,
          "assignee": t.get("owner") or "", "loc": t.get("location") or "Off-site / Office",
          "bES": wd_s(bs), "bEF": wd_f(bf),
          "pES": (wd_s(pdate(t.get("plannedStartDate"))) if pdate(t.get("plannedStartDate")) else None),
@@ -192,6 +195,40 @@ for t in TASKS:
     recs[uid] = r
 
 leafs = {u: r for u, r in recs.items() if not r["parent"]}
+
+# ---------- post-baseline revisions: weight follows the current revision ----------
+# KP 31-Aug: a superseded revision no longer represents the deliverable, so the
+# deliverable's approved weight sits on the LATEST revision and the earlier ones carry
+# none. Order is taken from the planned finish, then creation order - never from the
+# name, which already includes "RO" and "DBR R1 Submission".
+_pb_by_parent = defaultdict(list)
+for r in leafs.values():
+    if r["pb"] and r["pguid"]:
+        _pb_by_parent[r["pguid"]].append(r)
+REV_GROUPS, REV_MIXED = [], []
+for pg, ch in _pb_by_parent.items():
+    p = GUID.get(pg)
+    if p is None: continue
+    # only when the whole set under this parent is post-baseline; a parent that still
+    # has MSP children has already distributed its weight to them
+    sibs = [t for t in TASKS if t.get("parentGUID") == pg and not t.get("parent")]
+    if any(str(t.get("externalId") or "").strip() for t in sibs):
+        REV_MIXED.append(str(p.get("taskName") or ""))
+        continue
+    ch.sort(key=lambda r: (r["ped"] or datetime.date(1900, 1, 1), int(r["tid"] or 0)))
+    pw = money((p.get("customField") or {}).get("Weightage"))
+    for r in ch:
+        r["wt"] = 0.0      # a weightage typed onto a revision row is ignored
+        r["sup"] = 1
+    ch[-1]["wt"] = pw
+    ch[-1]["sup"] = 0
+    ch[-1]["revof"] = str(p.get("taskName") or "")
+    REV_GROUPS.append((str(p.get("taskId") or ""), [r["name"] for r in ch], pw))
+if REV_GROUPS:
+    print("post-baseline revisions: %d rows under %d deliverables; the approved weight "
+          "follows the current revision" % (sum(len(x[1]) for x in REV_GROUPS), len(REV_GROUPS)))
+if REV_MIXED:
+    print("  NOTE: left alone (parent still has MSP-imported children):", ", ".join(REV_MIXED[:5]))
 print("usable leaves:", len(leafs), "| milestones:", len(milestones_raw),
       "| excluded (trade = Not Applicable):", len(NA_SKIPPED))
 if INHERITED:
@@ -392,7 +429,8 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  # actual finish, so completed work counts from when it finished
                  (wd_f(r["aF"]) if r["aF"] else None),
                  r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
-                 ("" if r["org"].lower() == "none" else r["org"])[:60], u])
+                 ("" if r["org"].lower() == "none" else r["org"])[:60], u,
+                 r["pb"], r["sup"]])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
 ms = []
@@ -449,6 +487,9 @@ meta = {"statusDate": TODAY.strftime("%d-%b-%Y"), "statusWd": STATUS_WD, "startD
         "wtCoverage": round(100.0 * sum(1 for x in rows if w_of(x) > 0) / max(1, len(rows)), 1),
         "wtMissing": sum(1 for x in rows if not w_of(x)),
         "naExcluded": len(NA_SKIPPED), "naReasonRecords": 0,
+        "postBaseline": sum(1 for x in rows if x[35]),
+        "superseded": sum(1 for x in rows if x[36]),
+        "revDeliverables": len(REV_GROUPS),
         "total": len(rows), "totalTasks": len(rows) + len(ms),
         "undated": sum(1 for x in rows if x[23]),
         "source": "VisiLean live API",
@@ -683,7 +724,7 @@ for r in sorted(milestones_raw, key=lambda x: x["uid"]):
         strip_html(r["desc"])[:120], strip_html(r["note"])[:220],
         (wd_f(r["aF"]) if r["aF"] else None),
         r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
-        ("" if r["org"].lower() == "none" else r["org"])[:60], u])
+        ("" if r["org"].lower() == "none" else r["org"])[:60], u, r["pb"], r["sup"]])
 
 # ---------- predecessor network for the activity panel ----------
 # Shown, not calculated with: float still comes from the same links above. Only links
@@ -728,7 +769,7 @@ DATA = {"meta": meta, "months": months, "reasons": reasons, "msLeaves": ms_rows,
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
                  "ownship", "nd", "dly", "item", "wt", "vcrit", "desc", "note", "aef",
-                 "tid", "wbs", "org", "uid"],
+                 "tid", "wbs", "org", "uid", "pb", "sup"],
         "leaves": rows}
 assert DATA["cols"][WT_I] == "wt", f"WT_I points at {DATA['cols'][WT_I]!r}, not 'wt'"
 assert DATA["cols"][AEF_I] == "aef", f"AEF_I points at {DATA['cols'][AEF_I]!r}, not 'aef'"
