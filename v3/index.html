@@ -99,8 +99,8 @@ h1{font-size:14px;font-weight:700}
 .card h2{font-size:13px;font-weight:700;margin-bottom:2px;color:var(--ink);letter-spacing:-.01em}
 .card .hint{color:var(--mut);font-size:10.5px;line-height:1.45;margin-bottom:8px}
 .hdrrow{display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap}
-.span2{grid-column:span 2}.span3{grid-column:span 3}.span4{grid-column:span 4}.span5{grid-column:span 5}.span6{grid-column:span 6}.span7{grid-column:span 7}.span8{grid-column:span 8}.span12{grid-column:span 12}
-@media(max-width:1150px){.span2{grid-column:span 4}.span3,.span4{grid-column:span 6}.span5,.span6,.span7,.span8{grid-column:span 12}}
+.span2{grid-column:span 2}.span3{grid-column:span 3}.span4{grid-column:span 4}.span5{grid-column:span 5}.span6{grid-column:span 6}.span7{grid-column:span 7}.span8{grid-column:span 8}.span10{grid-column:span 10}.span12{grid-column:span 12}
+@media(max-width:1150px){.span2{grid-column:span 4}.span3,.span4{grid-column:span 6}.span5,.span6,.span7,.span8,.span10{grid-column:span 12}}
 .kpi .big{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.05;color:var(--ink);font-variant-numeric:tabular-nums}
 .kpi .big .u{font-size:14px;font-weight:700;color:var(--mut);margin-left:2px}
 .kpi .cmp{color:var(--mut);font-size:10.5px;margin-top:5px;line-height:1.4}
@@ -120,6 +120,9 @@ table thead th, table tr:first-child th{position:sticky;top:0;z-index:3}
 /* a pinned header has no border once it detaches, and must be opaque */
 th{background:var(--surface);box-shadow:inset 0 -1px 0 var(--line2)}
 /* wide matrices keep their first column visible while scrolling sideways */
+/* stage headers show their full name on up to two lines; the title attribute
+   carries the complete text wherever it still has to be cut */
+.twrap table.frz th{white-space:normal;min-width:96px;line-height:1.3;vertical-align:bottom}
 .twrap table.frz td:first-child,.twrap table.frz th:first-child{position:sticky;left:0;z-index:2;background:var(--surface)}
 .twrap table.frz tr:first-child th:first-child{z-index:5}
 .twrap table.frz td:first-child{box-shadow:inset -1px 0 0 var(--line2)}
@@ -150,9 +153,12 @@ tr:hover td{background:var(--blue-wash)}
 .pbar{position:relative;height:10px;background:var(--grid);border-radius:3px;overflow:hidden;min-width:56px}
 .pbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--s-act);border-radius:3px 0 0 3px}
 .pbar .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--s-plan)}
-.prow{display:grid;grid-template-columns:160px 1fr 96px;gap:7px;align-items:center;padding:2.5px 0}
-.prow .nm{font-size:10px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.prow .val{font-size:9.5px;text-align:right;font-variant-numeric:tabular-nums}
+/* one compact row per category: label · actual% / plan% · bar — never two lines */
+.prow{display:grid;grid-template-columns:185px 96px 1fr;gap:8px;align-items:center;padding:4px 0}
+.prow.pw{grid-template-columns:minmax(140px,200px) minmax(140px,235px) minmax(70px,1fr)}
+.prow.pw .val{white-space:normal;overflow:visible}
+.prow .nm{font-size:10px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.prow .val{font-size:9.5px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
 .legend{display:flex;gap:9px;font-size:9px;color:var(--ink2);margin:2px 0 5px;flex-wrap:wrap}
 .legend .sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px;vertical-align:-1px}
 .bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:7px}
@@ -169,12 +175,16 @@ tr:hover td{background:var(--blue-wash)}
 .frow .fb i{display:block;height:100%;background:var(--s-act);border-radius:2px}
 .stgcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:5px;margin-bottom:7px}
 .stgc{border:1px solid var(--line2);border-radius:6px;padding:5px 7px}
-.stgc .n{font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);white-space:nowrap;overflow:hidden}
+.stgc .n{font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stgc .v{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums}
 .stgc .v small{font-size:8.5px;color:var(--mut);font-weight:600}
 .stgc .fb{height:3px;background:var(--grid);border-radius:2px;margin-top:3px;overflow:hidden}
 .stgc .fb i{display:block;height:100%;background:var(--blue);border-radius:2px}
 .mswrap{overflow-x:auto}
+/* critical points laid out across the card width, wrapping on smaller screens */
+.critgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:9px;margin-top:6px}
+.critpt{border:1px solid var(--line2);border-radius:var(--r-tile);padding:8px 10px;background:var(--surface);min-width:0}
+.critpt .cph{font-size:11px;line-height:1.35;margin-bottom:3px}
 /* milestone cards + mini track */
 .mstrack{position:relative;height:26px;margin:4px 6px 10px}
 .mstline{position:absolute;top:12px;left:0;right:0;height:4px;background:var(--grid);border-radius:2px}
@@ -233,10 +243,12 @@ tr:hover td{background:var(--blue-wash)}
 .pgrp:first-child{margin-top:0}
 .pgrp>.gh{font-size:8.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
  color:var(--mut);padding-bottom:3px;border-bottom:1px solid var(--line);margin-bottom:5px}
-.prow{display:grid;grid-template-columns:92px 1fr;gap:3px 10px;font-size:10.5px;padding:1.5px 0;align-items:start}
-.prow .k{color:var(--mut)}
-.prow .v{font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.prow .v.wrap{font-weight:600;line-height:1.45}
+/* property rows in the activity panel (renamed from .prow: that class is the
+   progress-bar row and the two collided, stacking every bar row onto two lines) */
+.pprow{display:grid;grid-template-columns:92px 1fr;gap:3px 10px;font-size:10.5px;padding:1.5px 0;align-items:start}
+.pprow .k{color:var(--mut)}
+.pprow .v{font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pprow .v.wrap{font-weight:600;line-height:1.45}
 /* the note was a faint label above red text and got lost - give it a card */
 .notecard{margin-top:10px;border:1px solid var(--line2);border-radius:var(--r-tile);padding:8px 10px;background:var(--page)}
 .notecard .nh{font-size:8.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
@@ -602,7 +614,7 @@ function gauge(a,p){
   g+=`<text x="${cx-R}" y="${cy+11}" font-size="7.5" text-anchor="middle">0%</text><text x="${cx+R}" y="${cy+11}" font-size="7.5" text-anchor="middle">100%</text>`;
   return g+"</svg>";
 }
-function gaugeCard(rows){
+function gaugeCard(rows,span){
   const p=planPct(rows),a=actPct(rows),spi=p>0.05?a/p:0,sv=a-p;
   // state the basis: progress is weighted by VisiLean's Weightage custom field, and
   // activities with no weightage assigned contribute nothing - worth showing plainly
@@ -612,7 +624,7 @@ function gaugeCard(rows){
   const basis=`weightage-based · earned units ÷ total units over the ${rows.length.toLocaleString()} activities in view`
     +` · they carry ${fmt1(wsum)}% of project weight · ${fmt1(wc)}% of them have a weightage set`
     +(sup?` · ${sup} superseded revision${sup===1?"":"s"} carry no weight — the deliverable's weight sits on its current revision`:``);
-  return `<div class="card span4"><h2>Overall progress</h2>
+  return `<div class="card ${span||"span4"}"><h2>Overall progress</h2>
    <div class="hint">${basis}</div>
    <div class="gwrap">${gauge(a,p)}
     <div class="gstats">
@@ -620,15 +632,15 @@ function gaugeCard(rows){
      <span class="k">Progress Variance<br><span style="font-weight:400">(= Actual − Plan)</span></span><span class="v" style="color:${sv>=0?"var(--good-text)":"var(--crit-text)"}">${sv>=0?"+":""}${fmt1(sv)}%</span>
     </div></div></div>`;
 }
-function epcCard(){
+function epcCard(span){
   const segs=[["Engineering",L.filter(isEng)],
    ["Procurement",L.filter(isProc)],
    ["Construction",L.filter(isCon)]];
-  let h=`<div class="card span4"><h2>EPC bifurcation</h2><div class="hint">counted on VisiLean's <b>Activity Type</b> · Actual % vs Baseline Plan % · Δ = progress variation (Actual − Plan)</div>`;
+  let h=`<div class="card ${span||"span4"}"><h2>EPC bifurcation</h2><div class="hint">counted on VisiLean's <b>Activity Type</b> · Actual % vs Baseline Plan % · Δ = progress variation (Actual − Plan)</div>`;
   segs.forEach(([n,rr])=>{const a=actPct(rr),p=planPct(rr),spi=p>0.05?a/p:0,dv=a-p;
-    h+=`<div class="prow"><div class="nm"><b>${n}</b> <span class="dim">${rr.length} activities</span></div>
-     <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div>
-     <div class="val"><b>${fmt1(a)}%</b> <span class="dim">/ ${fmt1(p)}%</span> <span style="color:${dv>=0?"var(--good-text)":"var(--crit-text)"};font-weight:600">Δ ${dv>=0?"+":""}${fmt1(dv)}%</span> ${spi?`<span class="chip ${spi>=0.95?"vlc":spi>=0.8?"vlw":"vlnr"}">SPI ${spi.toFixed(2)}</span>`:""}</div></div>`});
+    h+=`<div class="prow pw"><div class="nm" title="${n} — ${rr.length} activities"><b>${n}</b> <span class="dim">${rr.length} activities</span></div>
+     <div class="val"><b>${fmt1(a)}%</b> <span class="dim">/ ${fmt1(p)}%</span> <span style="color:${dv>=0?"var(--good-text)":"var(--crit-text)"};font-weight:600">Δ ${dv>=0?"+":""}${fmt1(dv)}%</span> ${spi?`<span class="chip ${spi>=0.95?"vlc":spi>=0.8?"vlw":"vlnr"}">SPI ${spi.toFixed(2)}</span>`:""}</div>
+     <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div></div>`});
   // everything that is not E / P / C, so the three rows above reconcile to the total
   const cov={[AT.ENG]:1,[AT.SUP]:1,[AT.SVC]:1,[AT.CON]:1},oth={};
   L.forEach(r=>{if(!cov[r[C.type]]){const k=r[C.type]||"Unclassified";oth[k]=(oth[k]||0)+1}});
@@ -638,15 +650,11 @@ function epcCard(){
 }
 function costCard(){
   const rows=filtered();
-  const bud=rows.reduce((a,r)=>a+(r[C.cost]||0),0), ev=rows.reduce((a,r)=>a+(r[C.cost]||0)*r[C.pct]/100,0);
+  const bud=rows.reduce((a,r)=>a+(r[C.cost]||0),0);
   const cr=x=>"₹"+(x/1e7>=100?Math.round(x/1e7).toLocaleString():fmt1(x/1e7))+" Cr";
-  return `<div class="card span4"><h2>Cost</h2>
-   <div class="gstats" style="margin-top:3px">
-    <span class="k">Budget (BAC)</span><span class="v">${cr(bud)}</span>
-    <span class="k">Earned value</span><span class="v">${cr(ev)}</span>
-    <span class="k">Actual / CPI</span><span class="v">—</span>
-    <span class="k">FAC</span><span class="v">${cr(bud)}</span>
-   </div></div>`;
+  return `<div class="card span2"><h2>Cost</h2>
+   <div class="eyebrow" style="margin-top:9px">Budget (BAC)</div>
+   <div style="font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.15;color:var(--ink);font-variant-numeric:tabular-nums">${cr(bud)}</div></div>`;
 }
 // ---------- reasons for variance ----------
 // Categories come from the task-history audit trail: the team records them against
@@ -854,7 +862,7 @@ function stdCols(){
   return [
     {k:"tid",label:"Task ID",get:r=>r[C.tid]||"—",w:74},
     {k:"name",label:"Activity",w:215,get:r=>r[C.name],
-     html:r=>`<b>${esc(String(r[C.name]).slice(0,54))}</b>`},
+     html:r=>`<b title="${esc(String(r[C.name]))}">${esc(String(r[C.name]).slice(0,54))}</b>`},
     {k:"wbs",label:"WBS",w:180,get:r=>r[C.wbs]||"—",
      html:r=>`<span title="${esc(r[C.wbs]||"")}">${esc(String(r[C.wbs]||"—").slice(0,54))}</span>`},
     {k:"desc",label:"Description",w:130,get:r=>r[C.desc]||"—"},
@@ -995,7 +1003,7 @@ function rsnListHtml(deptKey){
     const cs=rsnCat?r.cats.filter(c=>c.cat===rsnCat):r.cats;
     const v=n=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n}</span>`:(n<0?`<span style="color:var(--good-text)">${n}</span>`:`<span class="dim">0</span>`);
     h+=`<tr class="rsnrow" data-u="${r.uid}" style="cursor:pointer" title="Open activity detail">
-      <td><b>${esc(r.name.slice(0,50))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim">${esc((r.wbs||"").slice(0,62))}</div></td>
+      <td><b title="${esc(r.name)}">${esc(r.name.slice(0,50))}</b>${r.crit?" "+chip("vlnr","CRIT"):""}<div class="small dim" title="${esc(r.wbs||"")}">${esc((r.wbs||"").slice(0,62))}</div></td>
       <td>${cs.map(c=>`<span class="chip" style="background:${rsnColor(c.cat,0)};color:#fff">${esc(c.party?c.party+" · "+c.cat:c.cat)}</span>`).join(" ")}</td>
       <td>${[...new Set(cs.map(c=>c.label))].map(l=>chip(EV_COL[(cs.find(c=>c.label===l)||{}).kind]||"mut",l)).join(" ")}</td>
       <td>${esc(r.owner||r.ownship||"—")}</td><td>${vlChip(r.vls)}</td>
@@ -1010,7 +1018,7 @@ function linkBlock(uid){
   const openN=P.filter(p=>!p.done).length;
   const row=(p,showLag)=>`<div class="lnkrow${p.done?"":" open"}"${p.onBoard?` data-u="${p.uid}" title="Open this activity"`:""}>
       <span class="lnkmark">${p.done?"\u2713":"\u2717"}</span>
-      <span class="lnkname"><b>${esc(String(p.name).slice(0,58))}</b>${p.tid?`<span class="dim"> \u00b7 ${esc(p.tid)}</span>`:""}
+      <span class="lnkname"><b title="${esc(String(p.name))}">${esc(String(p.name).slice(0,58))}</b>${p.tid?`<span class="dim"> \u00b7 ${esc(p.tid)}</span>`:""}
         ${!p.onBoard?chip("mut","not on dashboard"):""}${showLag&&p.code&&p.code!=="FS"?chip("mut",LINKTYPE[p.code]||p.code):""}${showLag&&p.lag?chip("mut",(p.lag>0?"+":"")+p.lag+" d lag"):""}
         ${p.reason?`<div class="small" style="color:var(--crit-text)">${esc(p.reason.slice(0,120))}</div>`:
           (p.dly?`<div class="small dim">running late, no reason recorded</div>`:"")}</span>
@@ -1046,7 +1054,7 @@ function actDetail(r){
   const m=(uid!=null)?rsnByUid()[uid]:null;
   const v=n=>n>0?`<span style="color:var(--crit-text);font-weight:700">+${n} d late</span>`
         :(n<0?`<span style="color:var(--good-text);font-weight:700">${n} d early</span>`:`<span class="dim">on time</span>`);
-  const row=(k,val,wrap)=>`<div class="prow"><span class="k">${k}</span><span class="v${wrap?" wrap":""}">${val}</span></div>`;
+  const row=(k,val,wrap)=>`<div class="pprow"><span class="k">${k}</span><span class="v${wrap?" wrap":""}">${val}</span></div>`;
   const grp=(h,rows)=>`<div class="pgrp"><div class="gh">${h}</div>${rows.join("")}</div>`;
   const own=String(r[C.note]||"").trim();
   const rsn=(uid!=null)?reasonLine(uid,!!own)
@@ -1454,9 +1462,9 @@ function stageBars(rows){
   const order=["Initiation","Engineering","Quality","Supply","Services","Statutory & Approvals","Civil & Foundations","Piling","MMS & Module","Laying & Terminations","Earthing & LA","Equipment","PSS & Switchyard","Other Site Works","T&C","HOTO"];
   let h=`<div class="legend"><span><span class="sw" style="background:var(--s-act)"></span>Actual</span><span><span class="sw" style="background:var(--s-plan)"></span>Plan (tick)</span></div>`;
   order.forEach(s=>{if(!set[s])return;const rr=set[s];const a=actPct(rr),p=planPct(rr);
-    h+=`<div class="prow"><div class="nm">${s} <span class="dim">(${rr.length})</span></div>
-     <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div>
-     <div class="val"><b>${unitVal(a)}</b> <span class="dim">/ ${unitVal(p)}</span></div></div>`});
+    h+=`<div class="prow"><div class="nm" title="${esc(s)} — ${rr.length} activities">${s} <span class="dim">(${rr.length})</span></div>
+     <div class="val"><b>${unitVal(a)}</b> <span class="dim">/ ${unitVal(p)}</span></div>
+     <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div></div>`});
   return h;
 }
 // ---------- pipeline table: schedule-step columns ----------
@@ -1468,6 +1476,37 @@ function sizeDetPins(){
 }
 addEventListener("resize",sizeDetPins);
 addEventListener("resize",applyViewport);
+
+// Sticky table headers pin to the top of their own scroll box (.twrap). Once the
+// PAGE is scrolled past that box's top, the box top — and the header stuck to it —
+// leaves the viewport, so after "scroll down, then sideways" the header looked
+// gone. Push the header down by exactly that overshoot so it stays visible under
+// the sticky filter bar through vertical AND horizontal scrolling.
+// translateY() works in the element's own (zoomed) pixels while
+// getBoundingClientRect() reports viewport pixels, so divide by the page zoom.
+function effZoom(){
+  const el=document.documentElement;
+  if(el.currentCSSZoom!==undefined)return el.currentCSSZoom||1;
+  const z=parseFloat(getComputedStyle(el).zoom);return (isNaN(z)||!z)?1:z;
+}
+function pinTwrapHeaders(){
+  const fb=document.getElementById("fbar");if(!fb)return;
+  const fbB=fb.getBoundingClientRect().bottom, z=effZoom();
+  document.querySelectorAll("#page .twrap").forEach(w=>{
+    const tbl=w.querySelector(":scope > table");
+    if(!tbl||!tbl.rows.length)return;
+    const cells=[...tbl.rows[0].cells].filter(c=>c.tagName==="TH");
+    if(!cells.length)return;
+    const r=w.getBoundingClientRect();if(!r.height)return;
+    const hH=cells[0].getBoundingClientRect().height;
+    let over=Math.max(0,fbB-r.top);
+    over=Math.min(over,Math.max(0,r.height-hH-26));
+    const t=over>0.5?`translateY(${(over/z).toFixed(2)}px)`:"";
+    cells.forEach(c=>{if(c.style.transform!==t)c.style.transform=t});
+  });
+}
+addEventListener("scroll",pinTwrapHeaders,{passive:true});
+addEventListener("resize",pinTwrapHeaders);
 
 const MQAP_SUBS=new Set(["draftingconceptualdiscussion","internalcheckingofmqap","internalapproval","submissiontocustomer","finalacceptanceofmqap"]);
 const nrm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,"");
@@ -1526,10 +1565,12 @@ function pipeTable(rows,idp,engMode){
   sc+="</div>";
   let h=`<div class="twrap"><table class="frz"><tr><th>Package</th>`+
     cols.map(cn=>{const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
-      return `<th title="${esc(lbl)}">${esc(lbl.length>16?lbl.slice(0,15)+"…":lbl)}</th>`}).join("")+`<th class="num">%</th></tr>`;
+      // headers wrap to two lines so most stage names read in full; the title
+      // tooltip always carries the complete name for the ones still cut
+      return `<th title="${esc(lbl)}">${esc(lbl.length>34?lbl.slice(0,33)+"…":lbl)}</th>`}).join("")+`<th class="num">%</th></tr>`;
   const PL={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnc","Not Committed"],watch:["vlnc","Not Committed"],future:["vlnc","Not Committed"]};
   groups.forEach((x,gi)=>{
-    h+=`<tr class="prowclick" data-g="${idp}-${gi}"><td><b>${esc(x.pkg.slice(0,40))}</b>
+    h+=`<tr class="prowclick" data-g="${idp}-${gi}"><td title="${esc(x.pkg)}"><b>${esc(x.pkg.slice(0,40))}</b>
       ${x.cr?chip("crit","CRIT"):""}${!engMode&&LONGLEAD.test(x.pkg)?chip("blue","LL"):""}
       <div class="small dim">end ${wdate(x.end,1)}</div></td>`;
     cols.forEach(cn=>{
@@ -1585,11 +1626,11 @@ function pipeTable(rows,idp,engMode){
   const colpop=`<details class="colsel" id="${idp}-cs" ${pipeColOpen[idp]?"open":""}><summary>Stages ${cols.length}/${allCols.length} ▾</summary>
     <div class="colpop"><div class="cact"><button data-ca="all" data-p="${idp}">Select all</button><button data-ca="none" data-p="${idp}">Clear</button></div>
     ${allCols.map(cn=>{const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
-      return `<label><input type="checkbox" data-cc="${esc(cn)}" data-p="${idp}" ${(!sel||!sel.size||sel.has(cn))?"checked":""}> ${esc(lbl.length>34?lbl.slice(0,33)+"…":lbl)}</label>`}).join("")}
+      return `<label title="${esc(lbl)}"><input type="checkbox" data-cc="${esc(cn)}" data-p="${idp}" ${(!sel||!sel.size||sel.has(cn))?"checked":""}> ${esc(lbl.length>34?lbl.slice(0,33)+"…":lbl)}</label>`}).join("")}
     </div></details>`;
   return sc+`<div style="display:flex;gap:7px;align-items:center;margin-bottom:5px;flex-wrap:wrap">
-    <select onchange="pipeL1['${idp}']=this.value;pipeL2['${idp}']='';render()">${["",...new Set(rows.map(r=>r[C.sec]))].map(v=>`<option value="${esc(v)}" ${pipeL1[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"All sections"}</option>`).join("")}</select>
-    <select onchange="pipeL2['${idp}']=this.value;render()">${["",...new Set(rows.filter(r=>!pipeL1[idp]||r[C.sec]===pipeL1[idp]).map(r=>r[C.pkg]))].map(v=>`<option value="${esc(v)}" ${pipeL2[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"All packages"}</option>`).join("")}</select>
+    <select onchange="pipeL1['${idp}']=this.value;pipeL2['${idp}']='';render()">${["",...new Set(rows.map(r=>r[C.sec]))].map(v=>`<option value="${esc(v)}" title="${esc(String(v||""))}" ${pipeL1[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"All sections"}</option>`).join("")}</select>
+    <select onchange="pipeL2['${idp}']=this.value;render()">${["",...new Set(rows.filter(r=>!pipeL1[idp]||r[C.sec]===pipeL1[idp]).map(r=>r[C.pkg]))].map(v=>`<option value="${esc(v)}" title="${esc(String(v||""))}" ${pipeL2[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"All packages"}</option>`).join("")}</select>
     <input type="search" id="${idp}-q" placeholder="Search packages or drawings…" value="${esc(pipeSearch)}">
     <span class="tgl ${pipeDelOnly?"on2":""}" id="${idp}-del">Delayed only</span>
     ${colpop}
@@ -1638,7 +1679,7 @@ function scopeOrderDeliver(rows){
     const grn=rr.filter(r=>nrm(r[C.name])==="grnatsite");
     const del=grn.reduce((a,r)=>a+(r[C.qty]||0)*r[C.pct]/100,0);
     const gplan=grn.length?Math.max(...grn.map(r=>r[C.bEF])):0,gfc=grn.length?Math.max(...grn.map(r=>r[C.fEF])):0;
-    h+=`<tr><td>${esc(pkg.slice(0,38))}</td><td class="num">${fq(scope)}</td>
+    h+=`<tr><td title="${esc(pkg)}">${esc(pkg.slice(0,38))}</td><td class="num">${fq(scope)}</td>
      <td class="num">${poDone?fq(scope):po.some(r=>r[C.pct]>0)?"in tender":"0"}</td><td class="num">${fq(del)}</td>
      <td>${poDone?chip("good","ordered"):po.some(r=>r[C.pct]>0)?chip("blue","ordering"):chip("mut","pending")}</td>
      <td class="small">${wdate(gplan,1)} → ${wdate(gfc,1)}${gfc-gplan>=4?` <span style="color:var(--crit-text)">(+${gfc-gplan}d)</span>`:""}</td></tr>`;
@@ -1729,11 +1770,11 @@ function regTable(rows,critOnly,idp){
     <span class="fnote">${items.length} items · click headers to sort</span></div>`;
   h+=`<div class="twrap"><table><tr>${hd("seq","# Schedule order",1)}${hd("pkg","Approval / Permission")}${hd("st","Status")}${hd("a","%",1)}${hd("bf","Baseline finish",1)}${hd("ff","Forecast finish",1)}${hd("v","Var",1)}${hd("nxtD","Next step",0)}${hd("tf","Float",1)}</tr>`;
   items.forEach((x,i)=>{
-    h+=`<tr class="regrow ${statSel===x.pkg?"selrow":""}" data-pkg="${esc(x.pkg)}" style="cursor:pointer${statSel===x.pkg?";outline:2px solid var(--blue)":""}"><td class="num dim">${i+1}</td><td><b>${esc(x.pkg.slice(0,50))}</b>${x.crit?" "+chip("crit","CRITICAL"):""}</td>
+    h+=`<tr class="regrow ${statSel===x.pkg?"selrow":""}" data-pkg="${esc(x.pkg)}" style="cursor:pointer${statSel===x.pkg?";outline:2px solid var(--blue)":""}"><td class="num dim">${i+1}</td><td title="${esc(x.pkg)}"><b>${esc(x.pkg.slice(0,50))}</b>${x.crit?" "+chip("crit","CRITICAL"):""}</td>
      <td>${stChip(x.st==="watch"?"future":x.st)}</td>
      <td class="num">${Math.round(x.a)}</td><td class="num">${wdate(x.bf,1)}</td><td class="num">${wdate(x.ff,1)}</td>
      <td class="num" ${x.v>=4?'style="color:var(--crit-text);font-weight:700"':""}>${x.v>0?"+":""}${x.v}</td>
-     <td class="small">${x.nxt?esc(x.nxt.slice(0,38))+" · "+wdate(x.nxtD):"—"}</td><td class="num">${x.tf}</td></tr>`;
+     <td class="small" title="${esc(x.nxt||"")}">${x.nxt?esc(x.nxt.slice(0,38))+" · "+wdate(x.nxtD):"—"}</td><td class="num">${x.tf}</td></tr>`;
   });
   h+="</table></div>";
   setTimeout(()=>{
@@ -1784,8 +1825,8 @@ function watchTable(rows,cap){
   const items=rows.filter(r=>isBehind(r)||isCrit(r)).sort((a,b)=>(b[C.fEF]-b[C.bEF])-(a[C.fEF]-a[C.bEF])).slice(0,cap||30);
   let h=`<div class="twrap"><table><tr><th>Activity</th><th>Dept</th><th>Package / Area</th><th>Status</th><th>Baseline end</th><th>Forecast end</th><th class="num">Var</th><th class="num">Float</th></tr>`;
   items.forEach(r=>{const v=r[C.fEF]-r[C.bEF];
-    h+=`<tr><td>${esc(r[C.name])}${isCrit(r)?" "+chip("crit","CRIT"):""}</td><td class="dim">${esc((DNAME[r[C.dept]]||"").slice(0,16))}</td>
-     <td class="dim">${esc(r[C.pkg].slice(0,26))} · ${esc(r[C.area])}</td><td>${rowChip(r)}</td>
+    h+=`<tr><td>${esc(r[C.name])}${isCrit(r)?" "+chip("crit","CRIT"):""}</td><td class="dim" title="${esc(DNAME[r[C.dept]]||"")}">${esc((DNAME[r[C.dept]]||"").slice(0,16))}</td>
+     <td class="dim" title="${esc(r[C.pkg])} · ${esc(r[C.area])}">${esc(r[C.pkg].slice(0,26))} · ${esc(r[C.area])}</td><td>${rowChip(r)}</td>
      <td>${wdate(r[C.bEF],1)}</td><td>${wdate(r[C.fEF],1)}</td>
      <td class="num" style="color:var(--crit-text);font-weight:700">+${v}</td><td class="num">${r[C.tf]}</td></tr>`});
   return h+"</table></div>";
@@ -1811,13 +1852,13 @@ function constraints(rows){
   }
   const items=rows.filter(isLateStart).sort((a,b)=>a[C.bES]-b[C.bES]).slice(0,18);
   let h=`<div class="twrap"><table><tr><th>Activity (awaiting start)</th><th>WBS</th><th>Owner · Dept</th><th>Planned start</th><th class="num">Pending since (days)</th></tr>`;
-  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,26))} · ${esc(String(r[C.sec]).slice(0,22))}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")} <span class="dim">· ${esc((DNAME[r[C.dept]]||"").slice(0,14))}</span></td><td>${wdate(r[C.bES])}</td><td class="num">${SW-r[C.bES]}</td></tr>`});
+  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim" title="${esc(String(r[C.pkg]))} · ${esc(String(r[C.sec]))}">${esc(String(r[C.pkg]).slice(0,34))} · ${esc(String(r[C.sec]).slice(0,30))}</td><td title="${esc(r[C.owner]||r[C.ownship]||"—")} · ${esc(DNAME[r[C.dept]]||"")}">${esc(r[C.owner]||r[C.ownship]||"—")} <span class="dim">· ${esc((DNAME[r[C.dept]]||"").slice(0,20))}</span></td><td>${wdate(r[C.bES])}</td><td class="num">${SW-r[C.bES]}</td></tr>`});
   return h+"</table></div>";
 }
 function lookahead(rows){
   const items=rows.filter(r=>!isDone(r)&&r[C.fES]>=SW-2&&r[C.fES]<=SW+18).sort((a,b)=>a[C.fES]-b[C.fES]).slice(0,18);
   let h=`<div class="twrap"><table><tr><th>Activity</th><th>Package</th><th>Owner</th><th>Start</th><th>Finish</th></tr>`;
-  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim">${esc(r[C.pkg].slice(0,28))}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")}</td><td>${wdate(r[C.fES])}</td><td>${wdate(r[C.fEF],1)}</td></tr>`});
+  items.forEach(r=>{h+=`<tr><td>${esc(r[C.name])}</td><td class="dim" title="${esc(r[C.pkg])}">${esc(r[C.pkg].slice(0,28))}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")}</td><td>${wdate(r[C.fES])}</td><td>${wdate(r[C.fEF],1)}</td></tr>`});
   return h+"</table></div>";
 }
 function critPoints(rows){
@@ -1825,11 +1866,17 @@ function critPoints(rows){
   const sup=rows.filter(r=>r[C.tf]<=0&&!isDone(r)&&!EXCL.test(r[C.name]));
   const top=rows.filter(r=>isCrit(r)&&!EXCL.test(r[C.name])&&r[C.fES]<=SW+60)
     .sort((a,b)=>a[C.tf]-b[C.tf]||a[C.fES]-b[C.fES]).slice(0,5);
-  let h=`<div class="card span6"><h2>Critical points — management attention</h2><div class="hint">immediate critical activities (due within ~60 days) · buffer &amp; closeout excluded</div>`;
-  h+=`<div style="margin-bottom:5px">${chip("vlnr","Supercritical (zero float): "+sup.length)} ${chip("mut","with owner: "+sup.filter(r=>r[C.owner]||r[C.ownship]).length)}</div>`;
-  top.forEach((r,i)=>{h+=`<div style="padding:4px 0;border-bottom:1px solid var(--line)"><b>Point-${i+1}:</b> ${esc(r[C.name])} ${rowChip(r)}
-   <div class="small dim" style="margin-top:1px">WBS: ${esc(DNAME[r[C.dept]]||"")} › ${esc(String(r[C.sec]).slice(0,28))} › ${esc(String(r[C.pkg]).slice(0,32))}${r[C.area]&&r[C.area]!=="Off-site / Office"?" › "+esc(r[C.area]):""}</div>
-   <div class="small dim">float ${r[C.tf]} days · window ${wdate(r[C.fES])} → ${wdate(r[C.fEF],1)} · owner: ${esc(r[C.owner]||r[C.ownship]||"unassigned")}</div></div>`});
+  let h=`<div class="card span12"><h2>Critical points — management attention</h2><div class="hint">immediate critical activities (due within ~60 days) · buffer &amp; closeout excluded</div>`;
+  h+=`<div style="margin-bottom:2px">${chip("vlnr","Supercritical (zero float): "+sup.length)} ${chip("mut","with owner: "+sup.filter(r=>r[C.owner]||r[C.ownship]).length)}</div>`;
+  // points run across the full card width (grid, wraps on smaller screens)
+  if(top.length){
+    h+=`<div class="critgrid">`;
+    top.forEach((r,i)=>{const wbsFull=`${DNAME[r[C.dept]]||""} › ${String(r[C.sec])} › ${String(r[C.pkg])}${r[C.area]&&r[C.area]!=="Off-site / Office"?" › "+r[C.area]:""}`;
+      h+=`<div class="critpt"><div class="cph"><b>Point-${i+1}:</b> ${esc(r[C.name])} ${rowChip(r)}</div>
+     <div class="small dim" title="WBS: ${esc(wbsFull)}">WBS: ${esc(DNAME[r[C.dept]]||"")} › ${esc(String(r[C.sec]).slice(0,28))} › ${esc(String(r[C.pkg]).slice(0,32))}${r[C.area]&&r[C.area]!=="Off-site / Office"?" › "+esc(r[C.area]):""}</div>
+     <div class="small dim">float ${r[C.tf]} days · window ${wdate(r[C.fES])} → ${wdate(r[C.fEF],1)} · owner: ${esc(r[C.owner]||r[C.ownship]||"unassigned")}</div></div>`});
+    h+=`</div>`;
+  }else h+=`<div class="fnote" style="padding:6px 0">no critical activities due within the next ~60 days for this selection</div>`;
   return h+"</div>";
 }
 
@@ -1891,7 +1938,7 @@ function longLeadCard(){
     <div style="flex:2;min-width:230px">
       <div class="eyebrow">Next deliveries</div>
       ${nxt.length?nxt.map(x=>`<div style="display:flex;gap:8px;font-size:10.5px;padding:1px 0">
-         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.p)}</span>
+         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(x.p)}">${esc(x.p)}</span>
          <b>${wdate(x.f,1)}</b></div>`).join(""):`<div class="small dim">nothing outstanding</div>`}
     </div></div>`;
   setTimeout(()=>{const b=document.getElementById("ll-drill");
@@ -1955,8 +2002,13 @@ const unitToggle=()=>`<div class="toggle2"><button id="u-pct" class="${state.uni
 function pageSummary(){
   const rows=filtered();
   let h=`<div class="grid">`;
-  h+=gaugeCard(rows)+epcCard()+costCard();
+  // top row rebalanced: the Cost card carries only Budget (BAC) now, so it takes
+  // span2 and the freed width goes to the gauge and the EPC bifurcation
+  h+=gaugeCard(rows,"span5")+epcCard("span5")+costCard();
   h+=kpiCards(rows,true);
+  // Reasons for Variance sits directly beside the KPI cards (next to Days to COD),
+  // filling what used to be an empty second row
+  h+=reasonsCard("","span10");
   h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
   h+=longLeadCard();
   h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
@@ -1964,9 +2016,8 @@ function pageSummary(){
     `<div style="display:flex;gap:5px;flex-wrap:wrap"><div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
   h+=card("span5","Stage progress","Actual % vs Baseline Plan %",stageBars(rows));
   h+=critPoints(rows);
-  h+=reasonsCard("","span12");
   setTimeout(()=>bindKpi(rows,""),0);
-  h+=card("span6","Open Constraints / Awaiting to Start","live VisiLean constraints log · awaiting-start from schedule",constraints(rows),
+  h+=card("span12","Open Constraints / Awaiting to Start","live VisiLean constraints log · awaiting-start from schedule",constraints(rows),
     `<div class="toggle2"><button class="${consTab==="await"?"on":""}" onclick="consTab='await';render()">Awaiting Start</button><button class="${consTab==="vl"?"on":""}" onclick="consTab='vl';render()">VisiLean Constraints</button></div>`);
   h+="</div>";
   return h;
@@ -2055,9 +2106,9 @@ function delayHeads(rows){
     let n=0,slip=0;
     Object.values(by).forEach(info=>{const r=stepOf(info,keys);if(r&&r[C.pct]<100&&r[C.fEF]-r[C.bEF]>=1){n++;slip+=r[C.fEF]-r[C.bEF]}});
     const avg=n?Math.round(slip/n):0;
-    h+=`<div class="prow"><div class="nm">${esc(nm)}</div>
-     <div class="pbar"><div class="fill" style="width:${Math.min(100,100*n/tot)}%;background:${n?"var(--warn)":"var(--good)"}"></div></div>
-     <div class="val"><b>${n}</b> <span class="dim">pkg${n===1?"":"s"} behind${n?` · avg +${avg} days`:""}</span></div></div>`});
+    h+=`<div class="prow pw"><div class="nm" title="${esc(nm)}">${esc(nm)}</div>
+     <div class="val"><b>${n}</b> <span class="dim">pkg${n===1?"":"s"} behind${n?` · avg +${avg} days`:""}</span></div>
+     <div class="pbar"><div class="fill" style="width:${Math.min(100,100*n/tot)}%;background:${n?"var(--warn)":"var(--good)"}"></div></div></div>`});
   return h+`<div class="hint" style="margin-top:4px">behind = forecast finish ≥1 days after baseline and step not complete</div>`;
 }
 function grpChip(rows,keys){
@@ -2084,7 +2135,7 @@ function statSheet(rows){
     selbar=`<div style="margin-bottom:5px">${chip("blue","Filtered: "+esc(statSel.slice(0,60)))} <a href="#" onclick="statSel='';render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear filter</a></div>`}
   let h=selbar+`<div class="twrap" style="max-height:420px;overflow:auto"><table><tr><th>Sr</th><th>Document / Activity</th><th>Group</th><th class="num">Timeline (d)</th><th>Scope / Owner</th><th>Target date</th><th>Revised target</th><th>Status</th></tr>`;
   use.forEach((r,i)=>{const late=r[C.pct]<100&&r[C.fEF]>r[C.bEF];
-    h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||r[C.ownship]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${rowChip(r)}</td></tr>`});
+    h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim" title="${esc(String(r[C.pkg]))}">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||r[C.ownship]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${rowChip(r)}</td></tr>`});
   return h+"</table></div>";
 }
 function engOverview(rows){
@@ -2103,7 +2154,7 @@ function engOverview(rows){
      <td class="num">${pct(["technicalbidevaluation"])}</td>
      <td class="num">${pct(["designdocumentapprovalfromendclient"])}</td>
      <td class="dim">— / — (manual)</td>
-     <td>${crit?esc(String(crit[C.name]).slice(0,44))+` <span class="dim">(float ${crit[C.tf]} days)</span>`:"—"}</td>
+     <td title="${crit?esc(String(crit[C.name])):""}">${crit?esc(String(crit[C.name]).slice(0,44))+` <span class="dim">(float ${crit[C.tf]} days)</span>`:"—"}</td>
      <td>${spi>=0.95?chip("good","On track"):chip("warn","Delayed")}</td></tr></table></div>`);
 }
 function pageDept(key){
@@ -2112,6 +2163,8 @@ function pageDept(key){
   h+=gaugeCard(rows);
   h+=`<div class="card span8"><h2>S-curve — ${esc(DNAME[key])}</h2><div class="hint">cumulative plan vs actual</div>${scurve(rows,"scd",false)}</div>`;
   h+=kpiCards(rows,false);
+  // same layout as the summary page: variance reasons sit beside the KPI cards
+  h+=reasonsCard(key,"span10");
   if(key==="engineering"){
     h+=engOverview(rows);
     h+=card("span12","Engineering package pipeline","document stages per package · click a row for activities",pipeTable(rows,"pe",true));
@@ -2131,7 +2184,6 @@ function pageDept(key){
   }else{
     h+=card("span12","Sections","progress by section · Actual % vs Baseline Plan %",stageSecs(rows));
   }
-  h+=reasonsCard(key,"span12");
   h+="</div>";
   setTimeout(()=>{bindPipe("pe");bindPipe("pd");bindKpi(rows,key)},0);
   return h;
@@ -2141,9 +2193,9 @@ function stageSecs(rows){
   const g={};rows.forEach(r=>{const k=String(r[C.sec]||"").trim()||"Section not set in VisiLean";
     (g[k]=g[k]||[]).push(r)});
   let h="";
-  Object.entries(g).forEach(([s,rr])=>{h+=`<div class="prow"><div class="nm">${esc(s.slice(0,34))} <span class="dim">(${rr.length})</span></div>
-   <div class="pbar"><div class="fill" style="width:${Math.min(100,actPctAt(rr,SW))}%"></div><div class="tick" style="left:${Math.min(100,planPct(rr,SW))}%"></div></div>
-   <div class="val"><b>${fmt1(actPctAt(rr,SW))}%</b> <span class="dim">/ ${fmt1(planPct(rr,SW))}%</span></div></div>`});
+  Object.entries(g).forEach(([s,rr])=>{h+=`<div class="prow"><div class="nm" title="${esc(s)} — ${rr.length} activities">${esc(s.slice(0,34))} <span class="dim">(${rr.length})</span></div>
+   <div class="val"><b>${fmt1(actPctAt(rr,SW))}%</b> <span class="dim">/ ${fmt1(planPct(rr,SW))}%</span></div>
+   <div class="pbar"><div class="fill" style="width:${Math.min(100,actPctAt(rr,SW))}%"></div><div class="tick" style="left:${Math.min(100,planPct(rr,SW))}%"></div></div></div>`});
   return h;
 }
 // ---------- shell ----------
@@ -2156,7 +2208,7 @@ function navHtml(){
 }
 function fillSelect(id,vals,cur){
   const el=document.getElementById(id);const first=el.querySelector("option").outerHTML;
-  el.innerHTML=first+vals.map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v.length>34?v.slice(0,33)+"…":v)}</option>`).join("");
+  el.innerHTML=first+vals.map(v=>`<option value="${esc(v)}" title="${esc(v)}" ${v===cur?"selected":""}>${esc(v.length>34?v.slice(0,33)+"…":v)}</option>`).join("");
 }
 function syncFilterUI(){
   const f=state.f;
@@ -2207,6 +2259,7 @@ function render(){
   document.querySelectorAll("tr.regrow").forEach(el=>{el.addEventListener("click",()=>{
     const p=el.dataset.pkg;statSel=statSel===p?"":p;render();})});
   if(_keep)window.scrollTo(0,_sy);else window.scrollTo(0,0);lastPage=state.page;
+  setTimeout(pinTwrapHeaders,0);
 }
 ["f-dept","f-type","f-area","f-pkg","f-owner","f-ownship"].forEach(id=>{
   document.getElementById(id).addEventListener("change",e=>{
