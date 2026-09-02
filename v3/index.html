@@ -185,6 +185,14 @@ tr:hover td{background:var(--blue-wash)}
 .critgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:9px;margin-top:6px}
 .critpt{border:1px solid var(--line2);border-radius:var(--r-tile);padding:8px 10px;background:var(--surface);min-width:0}
 .critpt .cph{font-size:11px;line-height:1.35;margin-bottom:3px}
+/* a point that carries an activity opens the property panel on click */
+.critpt[data-uid]{cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease}
+.critpt[data-uid]:hover{border-color:var(--blue);box-shadow:var(--shadow-lift)}
+.critpt[data-uid]:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* solo mode: the activity panel opened directly from a card, with no drill list —
+   hide the empty list box and dock the panel to the right edge */
+#rsnwrap.soloact #rsnmodal-box{display:none}
+#rsnwrap.soloact{justify-content:flex-end}
 /* milestone cards + mini track */
 .mstrack{position:relative;height:26px;margin:4px 6px 10px}
 .mstline{position:absolute;top:12px;left:0;right:0;height:4px;background:var(--grid);border-radius:2px}
@@ -1109,8 +1117,17 @@ function markActRow(){
     tr.classList.toggle("sel",tr.dataset.uid!==""&&+tr.dataset.uid===_actUid)});
 }
 function closeActPanel(){
-  const w=document.getElementById("rsnwrap");if(w)w.classList.remove("withpanel");
+  const w=document.getElementById("rsnwrap");
+  // panel opened solo (no drill list behind it): closing it closes the modal too,
+  // otherwise only the dimmed backdrop would remain
+  if(w&&w.classList.contains("soloact")){w.classList.remove("soloact");closeRsn();return}
+  if(w)w.classList.remove("withpanel");
   _actUid=null;_actNav=[];markActRow();
+}
+// open the activity property panel directly from a card, without a drill list
+function openActSolo(uid){
+  const w=document.getElementById("rsnwrap");if(w)w.classList.add("soloact");
+  openAct(uid);
 }
 function actBack(){const f=_actNav.pop();if(f)f();else closeActPanel()}
 function openAct(uid,keepTrail){
@@ -1130,6 +1147,8 @@ function openAct(uid,keepTrail){
 }
 function showRsnPanel(title,body,back){
   applyViewport();
+  // a real drill list is opening — leave solo mode so the list box shows again
+  const w=document.getElementById("rsnwrap");if(w)w.classList.remove("soloact");
   document.getElementById("rsnmodal-t").innerHTML=title;
   document.getElementById("rsnmodal-bd").innerHTML=body;
   document.getElementById("rsnmodal-back").style.display=back?"":"none";
@@ -1182,6 +1201,7 @@ function openRsnList(deptKey){
 function openRsn(uid,fromList){ openAct(uid); return; }
 function closeRsn(){
   document.getElementById("rsnmodal").classList.remove("on");
+  const w=document.getElementById("rsnwrap");if(w)w.classList.remove("soloact");
   document.body.style.overflow="";rsnSel=null;_nav=[];closeActPanel();
 }
 // One record per late event, exactly as VisiLean files them: an activity that both
@@ -1868,14 +1888,21 @@ function critPoints(rows){
     .sort((a,b)=>a[C.tf]-b[C.tf]||a[C.fES]-b[C.fES]).slice(0,5);
   let h=`<div class="card span12"><h2>Critical points — management attention</h2><div class="hint">immediate critical activities (due within ~60 days) · buffer &amp; closeout excluded</div>`;
   h+=`<div style="margin-bottom:2px">${chip("vlnr","Supercritical (zero float): "+sup.length)} ${chip("mut","with owner: "+sup.filter(r=>r[C.owner]||r[C.ownship]).length)}</div>`;
-  // points run across the full card width (grid, wraps on smaller screens)
+  // points run across the full card width (grid, wraps on smaller screens);
+  // each point opens the activity property panel, same as any drill row
   if(top.length){
     h+=`<div class="critgrid">`;
     top.forEach((r,i)=>{const wbsFull=`${DNAME[r[C.dept]]||""} › ${String(r[C.sec])} › ${String(r[C.pkg])}${r[C.area]&&r[C.area]!=="Off-site / Office"?" › "+r[C.area]:""}`;
-      h+=`<div class="critpt"><div class="cph"><b>Point-${i+1}:</b> ${esc(r[C.name])} ${rowChip(r)}</div>
+      const uid=(C.uid!==undefined&&r[C.uid]!=null)?` data-uid="${r[C.uid]}" tabindex="0" role="button" title="Open activity detail"`:"";
+      h+=`<div class="critpt"${uid}><div class="cph"><b>Point-${i+1}:</b> ${esc(r[C.name])} ${rowChip(r)}</div>
      <div class="small dim" title="WBS: ${esc(wbsFull)}">WBS: ${esc(DNAME[r[C.dept]]||"")} › ${esc(String(r[C.sec]).slice(0,28))} › ${esc(String(r[C.pkg]).slice(0,32))}${r[C.area]&&r[C.area]!=="Off-site / Office"?" › "+esc(r[C.area]):""}</div>
      <div class="small dim">float ${r[C.tf]} days · window ${wdate(r[C.fES])} → ${wdate(r[C.fEF],1)} · owner: ${esc(r[C.owner]||r[C.ownship]||"unassigned")}</div></div>`});
     h+=`</div>`;
+    setTimeout(()=>{document.querySelectorAll(".critpt[data-uid]").forEach(el=>{
+      const go=()=>openActSolo(+el.dataset.uid);
+      el.addEventListener("click",go);
+      el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
+    })},0);
   }else h+=`<div class="fnote" style="padding:6px 0">no critical activities due within the next ~60 days for this selection</div>`;
   return h+"</div>";
 }
@@ -2287,24 +2314,36 @@ function applyTheme(t){
 document.querySelectorAll("#thm button").forEach(b=>b.addEventListener("click",()=>{lsSet("kp-thm",b.dataset.t);applyTheme(b.dataset.t)}));
 applyTheme(lsGet("kp-thm")||"auto");
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>applyTheme(lsGet("kp-thm")||"auto"));
+// Refresh = the page reloads on every click, full stop. It first checks whether a
+// newer VisiLean build exists (instant reload into it); when none exists it says so
+// — the sync publishes only when data actually CHANGES, so "old" usually means
+// "nothing changed" — and still reloads, so the click always lands on the newest
+// published build. Your page, filters and scroll position are restored via saveUI().
 const _rbtn=document.getElementById("btn-refresh");
 if(_rbtn)_rbtn.addEventListener("click",async()=>{
   _rbtn.textContent="⟳ checking…";_rbtn.disabled=true;
+  const reload=()=>{saveUI();location.replace(location.pathname+"?r="+Date.now())};
   try{
     const r=await fetch("meta.json?t="+Date.now(),{cache:"no-store"});
     const m2=await r.json();
     if(m2.generatedAt&&m2.generatedAt!==M.generatedAt){
       _rbtn.textContent="⟳ new data — reloading…";
-      saveUI();
-      setTimeout(()=>location.replace(location.pathname+"?r="+Date.now()),400);
-    }else{
-      _rbtn.textContent="✓ latest ("+(M.generatedAt||M.statusDate)+")";
-      setTimeout(()=>{_rbtn.textContent="⟳ Refresh";_rbtn.disabled=false},4000);
+      setTimeout(reload,400);
+      return;
     }
+    // no newer build published — check (public API, best-effort) that the sync is alive
+    let note="no VisiLean data changes since "+(M.generatedAt||M.statusDate);
+    try{
+      const ar=await fetch("https://api.github.com/repos/Vikas-visilean/ntpc-block8-mis-dashboard/actions/runs?per_page=1&status=in_progress",{cache:"no-store"});
+      if(ar.ok){const aj=await ar.json();if((aj.total_count|0)>0)note="sync is running · "+note}
+    }catch(e){}
+    _rbtn.textContent="⟳ reloading…";
+    showTip({clientX:innerWidth-330,clientY:60},"<b>Reloading the latest build.</b><br>"+note+" — the sync checks VisiLean every ~5 minutes and publishes the moment something changes.");
+    setTimeout(()=>{hideTip();reload()},1600);
   }catch(e){
-    _rbtn.textContent="⟳ Refresh";_rbtn.disabled=false;
-    showTip({clientX:innerWidth-260,clientY:60},"Could not check for updates — this page shows the latest published build; the VisiLean sync runs every 5 minutes.");
-    setTimeout(hideTip,4000);
+    // even if the check fails, honour the click — reload to whatever is newest
+    _rbtn.textContent="⟳ reloading…";
+    setTimeout(reload,400);
   }
 });
 // keep the reader's place across a reload
@@ -2376,9 +2415,9 @@ function paintAge(){
   const mins=Math.max(0,Math.round((Date.now()-_genMs)/60000));
   el.textContent=mins<1?"live":(mins<60?mins+" min old":Math.floor(mins/60)+"h "+(mins%60)+"m old");
   el.className=mins<=10?"fresh":(mins<=30?"aging":"stale");
-  el.title="VisiLean data age. The sync runs every 5 minutes; this page also checks for new data every minute.";
+  el.title="Time since VisiLean last published a data change. The sync checks every ~5 minutes and publishes only when something changed — an older stamp usually means nothing changed since then, not that the sync is down.";
 }
-if(M.generatedAt){document.getElementById("h-gen").textContent="refreshed "+M.generatedAt;paintAge();setInterval(paintAge,30000);}
+if(M.generatedAt){document.getElementById("h-gen").textContent="last data change "+M.generatedAt;paintAge();setInterval(paintAge,30000);}
 // background poll: pick up a new build without anyone pressing Refresh
 let _pollBusy=false,_pending=null;
 // Never reload while somebody is reading. A new build only lights up a button; the
