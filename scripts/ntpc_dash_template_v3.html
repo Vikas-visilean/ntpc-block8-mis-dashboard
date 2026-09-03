@@ -271,8 +271,10 @@ tr:hover td{background:var(--blue-wash)}
 .notecard .nf{font-size:9.5px;color:var(--mut);margin-top:5px;line-height:1.45}
 .notecard.derived{background:var(--crit-wash)}
 .notecard.derived .nb{color:var(--crit-text)}
+/* a delayed row whose cause is an unfinished predecessor */
+tr.predrow td:first-child{box-shadow:inset 3px 0 0 var(--crit)}
 .drow.sel td{background:var(--blue-wash)}
-.drow.sel td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
+.dbox .drow.sel td:first-child,.drow.sel td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
 @media(max-width:1000px){
   /* stacked: stretch, or the drill table's min-width sizes the box past the wrapper */
   #rsnwrap{flex-direction:column;align-items:stretch}
@@ -937,6 +939,25 @@ function linksOf(uid,dir){
   return out.sort((a,b)=>(a.done-b.done)||((b.fEF-b.bEF)-(a.fEF-a.bEF)));
 }
 function predsOf(uid){return linksOf(uid,"pred")}
+// A delayed activity is "waiting on a predecessor" when at least one of its
+// predecessors is still unfinished: the delay is inherited from upstream rather
+// than owned here. Computed once over the whole set — predsOf() per row is cheap
+// but this is asked for on every card render.
+let _predBlocked=null;
+function predBlockedSet(){
+  if(_predBlocked)return _predBlocked;
+  const s=new Set();
+  if(C.uid!==undefined&&C.dly!==undefined)
+    L.forEach(r=>{if(r[C.dly]&&predsOf(r[C.uid]).some(p=>!p.done))s.add(r[C.uid])});
+  _predBlocked=s;return s;
+}
+const isPredDelayed=r=>C.uid!==undefined&&!!r&&!!r[C.dly]&&predBlockedSet().has(r[C.uid]);
+// the predecessor actually holding this one up (worst first), for labels/tooltips
+function predBlocker(r){
+  if(!isPredDelayed(r))return null;
+  const open=predsOf(r[C.uid]).filter(p=>!p.done);
+  return open.length?{p:open[0],n:open.length}:null;
+}
 // What Notes should say for a delayed activity nobody has explained yet.
 function predNote(r){
   if(C.uid===undefined||!r[C.dly])return "";
@@ -1102,7 +1123,8 @@ function drillRender(){
   page.forEach(r=>{
     const ru=(C.uid!==undefined&&r&&r[C.uid]!=null)?r[C.uid]:"";
     const clickable=s.onRow||ru!=="";
-    h+=`<tr${clickable?' class="drow" style="cursor:pointer" title="Open activity detail"':""} data-rid="${esc(s.rowId?s.rowId(r):"")}" data-uid="${ru}">`;
+    const cls=[clickable?"drow":"",s.rowClass?(s.rowClass(r)||""):""].filter(Boolean).join(" ");
+    h+=`<tr${cls?` class="${cls}"`:""}${clickable?' style="cursor:pointer" title="Open activity detail"':""} data-rid="${esc(s.rowId?s.rowId(r):"")}" data-uid="${ru}">`;
     cols.forEach(c=>{h+=`<td class="${c.num?"num":""}">${c.html?c.html(r):esc(String(c.get(r)??"—"))}</td>`});
     h+=`</tr>`});
   if(!page.length)h+=`<tr><td colspan="${cols.length}" style="color:var(--mut);padding:14px">No rows for this selection.</td></tr>`;
@@ -1464,30 +1486,46 @@ function kpiDrill(kind,rows,deptKey){
   const withMs=(kind==="all"&&!deptKey&&(DATA.msLeaves||[]).length)?rows.concat(DATA.msLeaves):rows;
   const base=withMs,sel=S.f?withMs.filter(S.f):withMs;
   const by={};sel.forEach(r=>{const k=DNAME[r[C.dept]]||"—";by[k]=(by[k]||0)+1});
+  // Delayed drill: name the cause of each delay, mark the inherited ones, and let
+  // them be listed on their own
+  const isDly=kind==="dly", pdN=isDly?sel.filter(isPredDelayed).length:0;
+  const cols=stdCols();
+  if(isDly)cols.splice(7,0,{k:"cause",label:"Delay cause",w:170,
+    get:r=>isPredDelayed(r)?"Waiting on predecessor":"Own delay",
+    txt:r=>{const b=predBlocker(r);return b?"Waiting on predecessor: "+b.p.name:"Own delay"},
+    html:r=>{const b=predBlocker(r);
+      return b?`<span title="${esc(predNote(r))}">${chip("vlnr","Predecessor")} <span class="dim">${esc(String(b.p.name).slice(0,26))}${b.n>1?" +"+(b.n-1):""}</span></span>`
+              :`<span title="Every predecessor is complete — this delay sits with the activity itself">${chip("mut","Own delay")}</span>`}});
   drillOpen({
     eyebrow:(deptKey?DNAME[deptKey]:"Project")+" · KPI",
     title:S.t,
     status:pill((kind==="dly"||kind==="stp")?"crit":(kind==="done"?"good":(kind==="wip"?"warn":"info")),sel.length.toLocaleString()),
-    formula:`<b>${sel.length.toLocaleString()}</b> of <b>${base.length.toLocaleString()}</b> activities in scope = <b>${fmt1(base.length?100*sel.length/base.length:0)}%</b>`,
+    formula:`<b>${sel.length.toLocaleString()}</b> of <b>${base.length.toLocaleString()}</b> activities in scope = <b>${fmt1(base.length?100*sel.length/base.length:0)}%</b>`
+      +(isDly?` · <b>${pdN.toLocaleString()}</b> waiting on an unfinished predecessor (marked <span style="color:var(--crit-text)">▌</span>), <b>${(sel.length-pdN).toLocaleString()}</b> delayed on their own`:``),
     reconcile:`<span class="pill good">✓ counted live from VisiLean · ${base.length.toLocaleString()} activities in the current filter</span>`,
     breakdownBy:"department",
     breakdown:Object.entries(by).map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n),
     // click a department in the breakdown -> the table lists only its activities
     breakdownFilter:label=>r=>(DNAME[r[C.dept]]||"—")===label,
     rows:sel,
-    subsets:[{k:"all",label:"All"},
-             {k:"task",label:"Tasks",f:r=>r[C.stage]!=="Milestone"},
+    // the inherited delays are marked with a red bar down the left of the row
+    rowClass:isDly?(r=>isPredDelayed(r)?"predrow":""):null,
+    subsets:[{k:"all",label:"All"}]
+      .concat(isDly?[{k:"pred",label:"Waiting on predecessor",f:isPredDelayed},
+                     {k:"own",label:"Own delay",f:r=>!isPredDelayed(r)}]:[])
+      .concat([{k:"task",label:"Tasks",f:r=>r[C.stage]!=="Milestone"},
              {k:"ms",label:"Milestones",f:r=>r[C.stage]==="Milestone"},
              {k:"crit",label:"Critical (VisiLean)",f:r=>!!r[C.vcrit]},
              {k:"nb",label:"No baseline",f:r=>!!r[C.nd]},
-             {k:"pb",label:"Post-baseline",f:r=>!!r[C.pb]}],
-    cols:stdCols(),
+             {k:"pb",label:"Post-baseline",f:r=>!!r[C.pb]}]),
+    cols,
   });
 }
 function kpiCards(rows,projectLevel){
   const inprog=rows.filter(isWip).length, stopped=rows.filter(isStopped).length;
   const total=rows.length,done=rows.filter(isDone).length,dl=rows.filter(isDelayed).length,
-        ls=rows.filter(isLateStart).length,cr=rows.filter(isCrit).length;
+        ls=rows.filter(isLateStart).length,cr=rows.filter(isCrit).length,
+        pdl=rows.filter(isPredDelayed).length;   // delayed because upstream is unfinished
   const bfin=rows.length?Math.max(...rows.map(r=>r[C.bEF])):0,ffin=rows.length?Math.max(...rows.map(r=>r[C.fEF])):0;
   const d2cod=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
   const c=(t,big,cmp,ch,dk)=>`<div class="card span2 kpi${dk?" clickable":""}"${dk?` data-kpi="${dk}" tabindex="0" title="Drill through to the activities"`:""}>
@@ -1504,7 +1542,11 @@ function kpiCards(rows,projectLevel){
        (projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones${M.naExcluded?` · ${M.naExcluded} Not Applicable excluded`:""}${pbN?` · ${pbN} post-baseline revisions`:""}`
          :(pbN?`in scope · ${pbN} post-baseline`:"in scope"),null,"all")
    + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count",null,"done")
-   + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"),"dly")
+   // how many of the delays are inherited from an unfinished predecessor — the
+   // drill marks exactly these rows and can list them on their own
+   + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,
+       (cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"))
+       +` <span title="Delayed activities with at least one predecessor still unfinished — the delay is inherited from upstream. Open the card to see them marked.">${chip("blue",pdl+" due to predecessor")}</span>`,"dly")
    + c("In progress",inprog.toLocaleString(),`started, not yet complete`,null,"wip")
    + c("Stopped",stopped.toLocaleString(),stopped?`work halted in VisiLean`:`none halted`,
        stopped?chip("vlst","needs attention"):null,"stp")
