@@ -14,6 +14,9 @@
   --serious:#ff944b; --crit:#ff4343; --crit-text:#c42121; --crit-fade:#ffd0d0; --crit-wash:#ffecec;
   --cyan-info:#00618a;
   --tip-bg:#002d62; --tip-fg:#ffffff; --tip-fg2:#b9c7da;
+  /* row-hover fill for FROZEN cells: must be opaque, or the columns scrolling
+     underneath a sticky cell show through it and the text appears doubled */
+  --surface-hov:#e6f6fc;
   --shadow-card:0 1px 0 rgba(0,45,98,.02),0 6px 24px -18px rgba(0,45,98,.15);
   --shadow-lift:0 10px 30px -12px rgba(0,45,98,.28);
   --shadow-popover:0 18px 45px -12px rgba(0,45,98,.35),0 0 0 1px rgba(0,45,98,.06);
@@ -29,6 +32,7 @@
   --crit-text:#ff9b9b; --crit-fade:#6d1c1c; --crit-wash:rgba(255,67,67,.18);
   --cyan-info:#6bcbf2;
   --tip-bg:#eef3fa; --tip-fg:#0a1220; --tip-fg2:#41506b;
+  --surface-hov:#0d334c;
   --shadow-card:0 1px 0 rgba(0,0,0,.2),0 6px 24px -18px rgba(0,0,0,.7);
   --shadow-lift:0 10px 30px -12px rgba(0,0,0,.75);
   --shadow-popover:0 18px 45px -12px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.07);
@@ -126,7 +130,9 @@ th{background:var(--surface);box-shadow:inset 0 -1px 0 var(--line2)}
 .twrap table.frz td:first-child,.twrap table.frz th:first-child{position:sticky;left:0;z-index:2;background:var(--surface)}
 .twrap table.frz tr:first-child th:first-child{z-index:5}
 .twrap table.frz td:first-child{box-shadow:inset -1px 0 0 var(--line2)}
-.twrap table.frz tr:hover td:first-child{background:var(--blue-wash)}
+/* opaque, never the translucent wash: a see-through frozen cell lets the
+   horizontally scrolled columns render through it (text on text) */
+.twrap table.frz tr:hover td:first-child{background:var(--surface-hov)}
 th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line2);white-space:nowrap}
 th.sortable{cursor:pointer;user-select:none}
 th.sortable:hover{color:var(--blue)}
@@ -146,7 +152,7 @@ tr:hover td{background:var(--blue-wash)}
 .detpin .dethd .dim{flex:1}
 .detpin .detscroll{overflow:auto;max-height:340px}
 .detpin .detscroll table{min-width:820px}
-.stickycol tr:hover td:first-child{background:var(--blue-wash)}
+.stickycol tr:hover td:first-child{background:var(--surface-hov)}
 .pcell{min-width:86px}
 .pcell .d{font-size:8.5px;color:var(--mut);margin-top:1px}
 .pcell .d.red{color:var(--crit-text);font-weight:600}
@@ -297,6 +303,38 @@ tr:hover td{background:var(--blue-wash)}
 .dfoot button:disabled{opacity:.4;cursor:default}
 .dfilt{width:100%;border:1px solid var(--line2);border-radius:6px;padding:2px 5px;font:inherit;
  font-size:9.5px;background:var(--surface);color:var(--ink)}
+/* per-column value filter: a ▾ button next to the header opens a checkbox list
+   of the values actually present in that column */
+.dfwrap{display:flex;gap:3px;align-items:center}
+.dfbtn{border:1px solid var(--line2);background:var(--surface);color:var(--mut);border-radius:5px;
+ padding:0 4px;cursor:pointer;font-size:9px;line-height:15px;flex:0 0 auto}
+.dfbtn:hover{background:var(--blue-wash);color:var(--blue);border-color:var(--blue-lt)}
+.dfbtn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+th .thf{margin-left:4px;vertical-align:middle}
+#colpopover{position:fixed;z-index:600;display:none;background:var(--surface);border:1px solid var(--line2);
+ border-radius:8px;box-shadow:var(--shadow-popover);padding:7px 8px;min-width:215px;max-width:310px;font-size:10.5px}
+#colpopover .cfhd{font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+ color:var(--mut);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#colpopover .cfq{width:100%;border:1px solid var(--line2);border-radius:6px;padding:3px 6px;font:inherit;
+ font-size:10px;background:var(--page);color:var(--ink);margin-bottom:5px}
+#colpopover .cflist{max-height:232px;overflow:auto}
+#colpopover label{display:flex;gap:6px;align-items:center;padding:2px;cursor:pointer;border-radius:4px}
+#colpopover label:hover{background:var(--blue-wash)}
+#colpopover label input{accent-color:var(--blue);flex:0 0 auto;margin:0}
+#colpopover label .l{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#colpopover label .n{color:var(--mut);font-variant-numeric:tabular-nums}
+#colpopover .cfsep{border-top:1px solid var(--line);margin:4px 0}
+#colpopover .cfft{display:flex;gap:6px;justify-content:space-between;border-top:1px solid var(--line);
+ margin-top:5px;padding-top:5px}
+#colpopover .cfft button{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);
+ border-radius:6px;padding:2px 8px;font-size:10px;font-weight:600;cursor:pointer}
+#colpopover .cfft button:hover{background:var(--blue-wash);color:var(--blue);border-color:var(--blue-lt)}
+#colpopover .cfnone{color:var(--mut);padding:6px 2px}
+/* a breakdown row that filters the table below it */
+.dbrow{cursor:pointer}
+.dbrow:hover td{background:var(--blue-wash)}
+.dbrow.sel td{background:var(--blue-wash);font-weight:700}
+.dbrow.sel td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
 #rsnmodal-back{border:1px solid var(--line2);background:var(--surface);color:var(--blue);font-size:14px;line-height:1;
  border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto;display:none}
 #rsnmodal-back:hover{background:var(--blue-wash)}
@@ -739,12 +777,96 @@ function copyOut(txt,btn,okMsg,restore){
   }else{copyFallback(txt)?done():hard()}
 }
 let _dspec=null,_dsub="",_dsort={k:null,dir:1},_dpage=0,_dfilt={};
-const DPAGE=25;
+let _dpick={};      // column key -> null | Set of chosen values (dropdown filter)
+let _dbsel=null;    // breakdown row currently drilled into (e.g. one department)
+// KP asked for more rows before paging; the table body scrolls inside its own box
+const DPAGE=100;
 // Where the back arrow goes. Each drill-in pushes how to get back, so an activity
 // opened from a card returns to that card's list, and a predecessor opened from an
 // activity returns to that activity.
 let _nav=[];
 function navBack(){const f=_nav.pop();if(f)f();else closeRsn()}
+// ---------- per-column value filter (shared by every table) ----------
+// KP asked for a dropdown of the values that actually occur in a column, so a stage
+// or a status can be picked instead of typed. Selection model: null = no filter
+// (everything shown), a Set = show only those values (an empty Set shows nothing).
+let _cfAnchor=null,_cfState=null;
+function ensureColPop(){
+  let el=document.getElementById("colpopover");
+  if(el)return el;
+  el=document.createElement("div");el.id="colpopover";document.body.appendChild(el);
+  addEventListener("mousedown",e=>{
+    if(el.style.display==="none")return;
+    if(el.contains(e.target)||(_cfAnchor&&_cfAnchor.contains(e.target)))return;
+    closeColPop();
+  },true);
+  addEventListener("keydown",e=>{
+    if(e.key!=="Escape"||el.style.display==="none")return;
+    e.stopPropagation();closeColPop();          // Esc closes the popover, not the modal
+  },true);
+  addEventListener("resize",()=>{if(_cfAnchor)positionColPop(_cfAnchor)});
+  return el;
+}
+function closeColPop(){
+  const el=document.getElementById("colpopover");
+  if(el)el.style.display="none";
+  _cfAnchor=null;_cfState=null;
+}
+// items() -> [{v,label,n}] recomputed on every repaint so the counts stay honest
+function colFilterPop(anchor,title,items,holder,onChange){
+  ensureColPop();
+  _cfAnchor=anchor;_cfState={title,items,holder,onChange,q:""};
+  paintColPop();positionColPop(anchor);
+}
+function paintColPop(){
+  const el=document.getElementById("colpopover"),st=_cfState;if(!el||!st)return;
+  const all=st.items(),sel=st.holder.get();
+  const q=st.q.trim().toLowerCase();
+  const vis=q?all.filter(x=>String(x.label).toLowerCase().includes(q)):all;
+  const isOn=v=>!sel||sel.has(v);
+  const allOn=!sel;
+  let h=`<div class="cfhd">${esc(st.title)}</div>`;
+  h+=`<input class="cfq" placeholder="Search…" value="${esc(st.q)}">`;
+  h+=`<label><input type="checkbox" class="cfall" ${allOn?"checked":""}><span class="l">(Select all)</span>
+      <span class="n">${all.reduce((a,x)=>a+x.n,0)}</span></label><div class="cfsep"></div>`;
+  h+=`<div class="cflist">`;
+  if(!vis.length)h+=`<div class="cfnone">No matching values</div>`;
+  vis.forEach(x=>{h+=`<label><input type="checkbox" class="cfv" data-v="${esc(x.v)}" ${isOn(x.v)?"checked":""}>
+      <span class="l" title="${esc(x.label)}">${esc(x.label)}</span><span class="n">${x.n}</span></label>`});
+  h+=`</div><div class="cfft"><button data-a="only">Only visible</button><button data-a="clear">Clear filter</button></div>`;
+  el.innerHTML=h;
+  const q0=el.querySelector(".cfq");
+  if(q0){q0.addEventListener("input",()=>{st.q=q0.value;paintColPop();positionColPop(_cfAnchor);
+    const n=document.querySelector("#colpopover .cfq");if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}});}
+  const ca=el.querySelector(".cfall");
+  if(ca)ca.addEventListener("change",()=>{st.holder.set(ca.checked?null:new Set());apply()});
+  el.querySelectorAll(".cfv").forEach(cb=>cb.addEventListener("change",()=>{
+    const v=cb.dataset.v;
+    let s=st.holder.get();
+    if(!s)s=new Set(all.map(x=>x.v));      // "all" is implicit — materialise before removing one
+    if(s.has(v))s.delete(v);else s.add(v);
+    st.holder.set(s.size===all.length?null:s);
+    apply();
+  }));
+  el.querySelectorAll(".cfft button").forEach(b=>b.addEventListener("click",()=>{
+    if(b.dataset.a==="clear")st.holder.set(null);
+    else st.holder.set(new Set(vis.map(x=>x.v)));   // keep exactly what the search shows
+    apply();
+  }));
+  function apply(){const f=st.onChange;if(f)f();paintColPop();if(_cfAnchor)positionColPop(_cfAnchor)}
+}
+function positionColPop(anchor){
+  const el=document.getElementById("colpopover");if(!el||!anchor)return;
+  el.style.display="block";
+  // the page renders under html{zoom}; gBCR reports viewport px while left/top are
+  // written in the element's own px, so convert (same reason as pinTwrapHeaders)
+  const z=(typeof effZoom==="function")?effZoom():1;
+  const r=anchor.getBoundingClientRect(),w=el.offsetWidth*z,hgt=el.offsetHeight*z;
+  let left=Math.min(Math.max(6,r.left),Math.max(6,innerWidth-w-6));
+  let top=r.bottom+4;
+  if(top+hgt>innerHeight-6)top=Math.max(6,r.top-hgt-4);
+  el.style.left=(left/z)+"px";el.style.top=(top/z)+"px";
+}
 // ---------- predecessor / successor network ----------
 // Links come from KP's MSP schedule (MSP Unique ID == VisiLean externalId). Everything
 // SHOWN about a linked activity - status, %, dates, reason - is VisiLean's own data.
@@ -883,22 +1005,48 @@ function stdCols(){
 function drillOpen(spec){
   if(!spec.keepNav)_nav=[];
   _dspec=spec;_dsub=(spec.subsets&&spec.subsets[0]&&spec.subsets[0].k)||"";
-  _dsort={k:null,dir:1};_dpage=0;_dfilt={};
+  _dsort={k:null,dir:1};_dpage=0;_dfilt={};_dpick={};_dbsel=null;closeColPop();
   drillRender();
 }
 function drillSub(){const s=_dspec;return s?((s.subsets||[]).find(x=>x.k===_dsub)||null):null}
 function drillCols(){const s=_dspec,sub=drillSub();return (sub&&sub.cols)?sub.cols:(s?s.cols:[])}
-function drillRows(){
+// the value shown for a cell, which is also what the dropdown filters match on
+function drillVal(col,r){return String((col.txt?col.txt(r):col.get(r))??"—").replace(/\s+/g," ").trim()||"—"}
+// rows before any per-column filter: subset + the selected breakdown row
+function drillBaseRows(){
   const s=_dspec;if(!s)return[];
   const sub=drillSub();
   // a subset may carry its own row set, so one drill can offer different views
   let rows=(sub&&sub.rows)?sub.rows:(s.rows||[]);
   if(sub&&sub.f)rows=rows.filter(sub.f);
-  Object.keys(_dfilt).forEach(k=>{
-    const q=(_dfilt[k]||"").toLowerCase();if(!q)return;
-    const col=drillCols().find(c=>c.k===k);if(!col)return;
-    rows=rows.filter(r=>String(col.txt?col.txt(r):col.get(r)??"").toLowerCase().includes(q));
+  // clicking a breakdown row (e.g. a department) narrows the table to it
+  if(_dbsel&&s.breakdownFilter){const f=s.breakdownFilter(_dbsel);if(f)rows=rows.filter(f)}
+  return rows;
+}
+// every column filter except `skip` — so a column's own dropdown still lists all
+// the values it could offer within the rest of the current selection
+function drillFilterRows(rows,skip){
+  const cols=drillCols();
+  cols.forEach(col=>{
+    if(col.k===skip)return;
+    const q=(_dfilt[col.k]||"").toLowerCase();
+    if(q)rows=rows.filter(r=>drillVal(col,r).toLowerCase().includes(q));
+    const sel=_dpick[col.k];
+    if(sel)rows=rows.filter(r=>sel.has(drillVal(col,r)));
   });
+  return rows;
+}
+function drillDistinct(k){
+  const col=drillCols().find(c=>c.k===k);if(!col)return[];
+  const rows=drillFilterRows(drillBaseRows(),k);
+  const m=new Map();
+  rows.forEach(r=>{const v=drillVal(col,r);m.set(v,(m.get(v)||0)+1)});
+  return [...m.entries()].map(([v,n])=>({v,label:v,n}))
+    .sort((a,b)=>String(a.v).localeCompare(String(b.v),undefined,{numeric:true}));
+}
+function drillRows(){
+  const s=_dspec;if(!s)return[];
+  let rows=drillFilterRows(drillBaseRows(),null);
   if(_dsort.k){
     const col=drillCols().find(c=>c.k===_dsort.k);
     if(col)rows=rows.slice().sort((a,b)=>{
@@ -919,10 +1067,18 @@ function drillRender(){
   if(s.formula)h+=`<div class="tile" style="margin-top:0"><span class="ico">=</span><div>${s.formula}</div></div>`;
   if(s.reconcile)h+=`<div style="margin-top:8px">${s.reconcile}</div>`;
   if(s.breakdown&&s.breakdown.length){
-    h+=`<div class="dsec"><div class="eyebrow">Breakdown — ${esc(s.breakdownBy||"by dimension")}</div>
-      <div class="dbox" style="max-height:190px"><table><tr><th>Scope</th><th class="num">Count</th><th class="num">Share</th></tr>`;
+    const bf=!!s.breakdownFilter;                 // clicking a row filters the table
+    h+=`<div class="dsec"><div class="hdrrow"><div class="eyebrow">Breakdown — ${esc(s.breakdownBy||"by dimension")}</div>`;
+    if(bf)h+=_dbsel
+      ? `<div style="font-size:10px">${chip("blue","Showing: "+esc(_dbsel))}
+         <a href="#" id="db-clear" style="color:var(--blue);font-weight:600;margin-left:4px">× show all</a></div>`
+      : `<span style="font-size:10px;color:var(--mut)">click a row to list only its activities</span>`;
+    h+=`</div><div class="dbox" style="max-height:190px"><table><tr><th>Scope</th><th class="num">Count</th><th class="num">Share</th></tr>`;
     const bt=s.breakdown.reduce((a,x)=>a+x.n,0)||1;
-    s.breakdown.forEach(x=>{h+=`<tr><td>${esc(x.label)}</td><td class="num">${x.n}</td>
+    s.breakdown.forEach(x=>{
+      const on=_dbsel===x.label;
+      h+=`<tr${bf?` class="dbrow${on?" sel":""}" data-b="${esc(x.label)}" title="Show only these activities"`:""}>
+      <td>${esc(x.label)}</td><td class="num">${x.n}</td>
       <td class="num">${fmt1(100*x.n/bt)}%</td></tr>`});
     h+=`</table></div></div>`;
   }
@@ -932,12 +1088,16 @@ function drillRender(){
     const src=x.rows||s.rows||[];
     const n=(x.f?src.filter(x.f):src).length;
     h+=`<button class="segbtn ${_dsub===x.k?"on":""}" data-sub="${esc(x.k)}">${esc(x.label)} ${n}</button>`});
-  h+=`</div><span style="margin-left:auto;font-size:10px;color:var(--mut)">click a header to sort · filter under any column</span></div>`;
-  h+=`<div class="dbox" style="max-height:calc(var(--vph) * .52);margin-top:6px"><table><tr>`;
+  h+=`</div><span style="margin-left:auto;font-size:10px;color:var(--mut)">click a header to sort · type or pick <b>▾</b> under any column to filter</span></div>`;
+  h+=`<div class="dbox" style="max-height:calc(var(--vph) * .62);margin-top:6px"><table><tr>`;
   cols.forEach(c=>{const ar=_dsort.k===c.k?(_dsort.dir>0?" ▲":" ▼"):"";
     h+=`<th data-sk="${esc(c.k)}" class="${c.num?"num":""}" style="min-width:${c.w||110}px">${esc(c.label)}${ar}</th>`});
   h+=`</tr><tr>`;
-  cols.forEach(c=>{h+=`<th style="padding-top:0"><input class="dfilt" data-fk="${esc(c.k)}" value="${esc(_dfilt[c.k]||"")}" placeholder="filter"></th>`});
+  cols.forEach(c=>{const on=_dpick[c.k];
+    h+=`<th style="padding-top:0"><div class="dfwrap">
+      <input class="dfilt" data-fk="${esc(c.k)}" value="${esc(_dfilt[c.k]||"")}" placeholder="filter">
+      <button type="button" class="dfbtn${on?" on":""}" data-pk="${esc(c.k)}" title="Pick values for ${esc(c.label)}">▾</button>
+    </div></th>`});
   h+=`</tr>`;
   page.forEach(r=>{
     const ru=(C.uid!==undefined&&r&&r[C.uid]!=null)?r[C.uid]:"";
@@ -948,15 +1108,38 @@ function drillRender(){
   if(!page.length)h+=`<tr><td colspan="${cols.length}" style="color:var(--mut);padding:14px">No rows for this selection.</td></tr>`;
   h+=`</table></div>`;
   const from=total?_dpage*DPAGE+1:0,to=Math.min(total,(_dpage+1)*DPAGE);
-  h+=`<div class="dfoot"><span>${from}–${to} of ${total} · Copy and CSV export every filtered row, not just this page</span>
-    <span><button id="d-copy">Copy</button><button id="d-csv">Export CSV</button>
+  // paging sits right next to the row count, where people look for it
+  h+=`<div class="dfoot"><span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <b>${from}–${to}</b> of ${total}
       <button id="d-prev" ${_dpage<=0?"disabled":""}>Prev</button>
-      <button id="d-next" ${_dpage>=pages-1?"disabled":""}>Next</button></span></div>`;
+      <button id="d-next" ${_dpage>=pages-1?"disabled":""}>Next</button>
+      ${pages>1?`<span class="dim">page ${_dpage+1} of ${pages}</span>`:""}</span>
+    <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Copy and CSV export every filtered row, not just this page
+      <button id="d-copy">Copy</button><button id="d-csv">Export CSV</button></span></div>`;
   showRsnPanel(`<div class="eyebrow">${esc(s.eyebrow||"")}</div>${esc(s.title)} ${s.status||""}`,h,_nav.length>0||!!s.back);
   setTimeout(()=>{
     const bd=document.getElementById("rsnmodal-bd");if(!bd)return;
-    bd.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{_dsub=b.dataset.sub;_dpage=0;_dfilt={};_dsort={k:null,dir:1};drillRender()}));
-    bd.querySelectorAll("th[data-sk]").forEach(th=>th.addEventListener("click",()=>{
+    bd.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{
+      _dsub=b.dataset.sub;_dpage=0;_dfilt={};_dpick={};_dsort={k:null,dir:1};closeColPop();drillRender()}));
+    // breakdown row -> show only that scope's activities in the table below
+    bd.querySelectorAll("tr.dbrow").forEach(tr=>tr.addEventListener("click",()=>{
+      _dbsel=(_dbsel===tr.dataset.b)?null:tr.dataset.b;_dpage=0;closeColPop();drillRender()}));
+    const dbc=document.getElementById("db-clear");
+    if(dbc)dbc.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();_dbsel=null;_dpage=0;drillRender()});
+    // per-column dropdown of the values present in that column
+    bd.querySelectorAll(".dfbtn[data-pk]").forEach(b=>b.addEventListener("click",e=>{
+      e.stopPropagation();
+      const k=b.dataset.pk;
+      if(_cfAnchor===b){closeColPop();return}
+      const col=drillCols().find(c=>c.k===k);
+      colFilterPop(b,col?col.label:k,()=>drillDistinct(k),
+        {get:()=>_dpick[k]||null,set:v=>{if(v)_dpick[k]=v;else delete _dpick[k]}},
+        ()=>{_dpage=0;drillRender();
+          setTimeout(()=>{const nb=document.querySelector(`.dfbtn[data-pk="${CSS.escape(k)}"]`);
+            if(nb){_cfAnchor=nb;positionColPop(nb)}},0);});
+    }));
+    bd.querySelectorAll("th[data-sk]").forEach(th=>th.addEventListener("click",e=>{
+      if(e.target.closest(".dfbtn,.dfilt"))return;      // the filter controls are not a sort click
       const k=th.dataset.sk;_dsort=(_dsort.k===k)?{k,dir:-_dsort.dir}:{k,dir:1};drillRender()}));
     bd.querySelectorAll(".dfilt").forEach(inp=>{
       inp.addEventListener("input",()=>{_dfilt[inp.dataset.fk]=inp.value;_dpage=0;drillRender();
@@ -1184,6 +1367,7 @@ function openRsnList(deptKey){
     breakdownBy:"reason",
     breakdown:(function(){const c={};recs.forEach(x=>{c[x.c.cat]=(c[x.c.cat]||0)+1});
       return Object.keys(c).map(k=>({label:k,n:c[k]})).sort((a,b)=>b.n-a.n)})(),
+    breakdownFilter:label=>r=>catsOf(r).some(x=>x.cat===label),
     rows, cols,
     rowId:r=>String(r[C.tid]),
     onRow:id=>{const m=by[String(id)];if(m)openRsn(m.uid,true)},
@@ -1288,6 +1472,8 @@ function kpiDrill(kind,rows,deptKey){
     reconcile:`<span class="pill good">✓ counted live from VisiLean · ${base.length.toLocaleString()} activities in the current filter</span>`,
     breakdownBy:"department",
     breakdown:Object.entries(by).map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n),
+    // click a department in the breakdown -> the table lists only its activities
+    breakdownFilter:label=>r=>(DNAME[r[C.dept]]||"—")===label,
     rows:sel,
     subsets:[{k:"all",label:"All"},
              {k:"task",label:"Tasks",f:r=>r[C.stage]!=="Milestone"},
@@ -1537,6 +1723,10 @@ const LONGLEAD=/pv module|mms|tracker|inverter duty|central inverter|main auxili
 let pipeSearch="", pipeDelOnly=false, pipeFocus="";
 const pipeColSel={}, pipeColOpen={};   // per-table stage column selection
 const pipeL1={}, pipeL2={};              // per-table L1 (section) / L2-L3 (package) filters
+// per-table, per-stage-column value filter: idp -> {stage: null | Set of status labels}
+const pipeCellFilt={}, pipeColOpts={};
+function pipeCellLabel(st){return st?({done:"Complete",inprog:"Started",late:"Not Committed",
+  watch:"Not Committed",future:"Not Committed"}[st]||"Not Committed"):"—"}
 function cellState(rr){
   if(!rr||!rr.length)return null;
   if(rr.every(isDone))return "done";
@@ -1568,6 +1758,18 @@ function pipeTable(rows,idp,engMode){
   const allCols=Object.keys(colMin).sort((a,b)=>colMin[a]-colMin[b]).slice(0,32);
   const sel=pipeColSel[idp];
   let cols=sel&&sel.size?allCols.filter(c=>sel.has(c)):allCols;
+  // per-stage-column value filter (the ▾ on each header). Options are taken before
+  // the cell filters are applied, so a column keeps offering its full value list.
+  const cellF=pipeCellFilt[idp]||(pipeCellFilt[idp]={});
+  const stageStateOf=(x,cn)=>pipeCellLabel(cellState(x.rr.filter(r=>colKey(r)===cn)));
+  pipeColOpts[idp]={};
+  cols.forEach(cn=>{
+    const c={};
+    groups.filter(x=>cols.every(o=>o===cn||!cellF[o]||cellF[o].has(stageStateOf(x,o))))
+      .forEach(x=>{const l=stageStateOf(x,cn);c[l]=(c[l]||0)+1});
+    pipeColOpts[idp][cn]=Object.keys(c).sort().map(l=>({v:l,label:l,n:c[l]}));
+  });
+  cols.forEach(cn=>{const f=cellF[cn];if(f)groups=groups.filter(x=>f.has(stageStateOf(x,cn)))});
   // stage summary cards
   let sc=`<div class="stgcards">`;
   cols.forEach(cn=>{
@@ -1583,7 +1785,7 @@ function pipeTable(rows,idp,engMode){
     cols.map(cn=>{const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
       // headers wrap to two lines so most stage names read in full; the title
       // tooltip always carries the complete name for the ones still cut
-      return `<th title="${esc(lbl)}">${esc(lbl.length>34?lbl.slice(0,33)+"…":lbl)}</th>`}).join("")+`<th class="num">%</th></tr>`;
+      return `<th title="${esc(lbl)}">${esc(lbl.length>34?lbl.slice(0,33)+"…":lbl)}<button type="button" class="dfbtn thf${cellF[cn]?" on":""}" data-pcf="${esc(cn)}" data-p="${idp}" title="Filter packages by their status in this stage">▾</button></th>`}).join("")+`<th class="num">%</th></tr>`;
   const PL={done:["vlc","Complete"],inprog:["vls","Started"],late:["vlnc","Not Committed"],watch:["vlnc","Not Committed"],future:["vlnc","Not Committed"]};
   groups.forEach((x,gi)=>{
     h+=`<tr class="prowclick" data-g="${idp}-${gi}"><td title="${esc(x.pkg)}"><b>${esc(x.pkg.slice(0,40))}</b>
@@ -1653,6 +1855,18 @@ function pipeTable(rows,idp,engMode){
     <span class="fnote">${groups.length} packages · click a row for activities</span></div>`+h;
 }
 function bindPipe(idp){
+  // stage-column value filters (▾ in each header)
+  document.querySelectorAll(`.dfbtn[data-pcf][data-p="${idp}"]`).forEach(b=>b.addEventListener("click",e=>{
+    e.preventDefault();e.stopPropagation();
+    const cn=b.dataset.pcf;
+    if(_cfAnchor===b){closeColPop();return}
+    const store=pipeCellFilt[idp]||(pipeCellFilt[idp]={});
+    colFilterPop(b,cn,()=>((pipeColOpts[idp]||{})[cn]||[]),
+      {get:()=>store[cn]||null,set:v=>{if(v)store[cn]=v;else delete store[cn]}},
+      ()=>{render();
+        setTimeout(()=>{const nb=document.querySelector(`.dfbtn[data-pcf="${CSS.escape(cn)}"][data-p="${idp}"]`);
+          if(nb){_cfAnchor=nb;positionColPop(nb)}else closeColPop()},0);});
+  }));
   const q=document.getElementById(idp+"-q");
   if(q){
     // Search as you type. render() rebuilds the input, so remember which table was
@@ -1984,6 +2198,7 @@ function openLongLead(){
     breakdown:[{label:"Ahead of baseline",n:items.filter(x=>x.d<0).length},
                {label:"On baseline",n:items.filter(x=>!x.d).length},
                {label:"Behind baseline",n:late}],
+    breakdownFilter:label=>x=>label==="Ahead of baseline"?x.d<0:(label==="On baseline"?!x.d:x.d>0),
     rows:items,
     subsets:[{k:"all",label:"Packages"},
              {k:"act",label:"Activities",rows:L.filter(r=>r[C.type]===AT.SUP),cols:stdCols()},
@@ -2300,7 +2515,7 @@ document.getElementById("f-d1").addEventListener("change",e=>{state.f.w1=wdOfIso
 document.getElementById("f-d2").addEventListener("change",e=>{state.f.w2=wdOfIso(e.target.value);render()});
 document.getElementById("f-crit").addEventListener("click",()=>{state.f.crit=!state.f.crit;render()});
 document.getElementById("f-del").addEventListener("click",()=>{state.f.del=!state.f.del;render()});
-document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false};state.at=SW;pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];render()});
+document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false};state.at=SW;pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];for(const k in pipeCellFilt)delete pipeCellFilt[k];closeColPop();render()});
 document.getElementById("f-date").addEventListener("input",e=>{state.at=+e.target.value;render()});
 function applyTheme(t){
   document.querySelectorAll("#thm button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
