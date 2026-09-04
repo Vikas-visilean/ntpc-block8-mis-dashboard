@@ -530,7 +530,6 @@ const CFG=Object.assign({
 },DATA.cfg||{});
 const AREA_RE=new RegExp(CFG.areaRe,"i");
 // total project weight, so a filtered view can state its share of it
-const WTOT=L.reduce((a,r)=>a+(r[C.wt]>0?r[C.wt]:0),0)||1;
 document.title=CFG.title;
 {const e=id=>document.getElementById(id);
  if(e("h-name"))e("h-name").textContent=CFG.name;
@@ -713,7 +712,7 @@ function gaugeCard(rows,span){
   const wsum=rows.reduce((x,r)=>x+(r[C.wt]||0),0);
   const sup=(C.sup!==undefined)?rows.filter(r=>r[C.sup]).length:0;
   const basis=`weightage-based · earned units ÷ total units over the ${rows.length.toLocaleString()} activities in view`
-    +` · they carry ${fmt1(100*wsum/WTOT)}% of project weight · ${fmt1(wc)}% of them have a weightage set`
+    +` · they carry ${fmt1(wsum)}% of project weight · ${fmt1(wc)}% of them have a weightage set`
     +(sup?` · ${sup} superseded revision${sup===1?"":"s"} carry no weight — the deliverable's weight sits on its current revision`:``);
   return `<div class="card ${span||"span4"}"><h2>Overall progress</h2>
    <div class="hint">${basis}</div>
