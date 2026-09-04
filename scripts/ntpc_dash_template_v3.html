@@ -2057,7 +2057,13 @@ function feederMap(rows){
   const fy=y=>G.flipY?(Y1-y+Y0):y;                       // DXF measures up, SVG down
   const pstr=pts=>pts.map(([x,y])=>`${x-X0+PAD},${fy(y)-Y0+PAD}`).join(" ");
   const by={};areaList(rows).forEach(([k,rr])=>by[k]=rr);
-  let g=`<svg class="pmap" viewBox="0 0 ${W+2*PAD} ${H+2*PAD}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Plant layout by feeder">`;
+  // Work the drawing does not cover - off-site and office activities - gets a box of
+  // its own beside the plots, dashed to show it carries no site geometry. Without it
+  // that scope would be missing from this view entirely.
+  const mapped=new Set((G.blocks||[]).map(b=>b.area));
+  const off=areaList(rows).filter(([k])=>!mapped.has(k));
+  const GAP=Math.round(W*0.014), COLW=off.length?Math.round(W*0.24):0;
+  let g=`<svg class="pmap" viewBox="0 0 ${W+2*PAD+COLW} ${H+2*PAD}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Plant layout by feeder">`;
   (G.plots||[]).forEach(p=>{g+=`<polygon class="plot" points="${pstr(p.pts)}"><title>${esc(p.label||"Plot")}</title></polygon>`});
   const fs=Math.max(30,Math.round(W/95));                // scales with the drawing, not the screen
   (G.blocks||[]).forEach(b=>{
@@ -2078,25 +2084,30 @@ function feederMap(rows){
   (G.markers||[]).forEach(m=>{
     g+=`<rect class="icr" x="${m.x-X0+PAD-ms/2}" y="${fy(m.y)-Y0+PAD-ms/2}" width="${ms}" height="${ms}" rx="${ms*0.18}"><title>${esc(m.label)}${m.area?" \u00b7 "+esc(m.area):""}</title></rect>`;
   });
+  if(off.length){
+    // sized to read as a side note, not as a fifth plot
+    const bw=COLW-GAP, bh=Math.min(Math.round(H*0.46),Math.round((H-GAP*(off.length-1))/off.length));
+    off.forEach(([k,rr],i)=>{
+      const a=actPctAt(rr,SW),p=planPct(rr,SW),dl=rr.filter(isBehind).length;
+      const x=W+PAD+GAP, y=PAD+i*(bh+GAP), cx=x+bw/2, cy=y+bh/2;
+      const behind=a+0.05<p, arrow=rr.length?(behind?" \u25bc":" \u25b2"):"";
+      g+=`<rect class="blk off${state.f.area===k?" sel":""}" data-area="${esc(k)}" tabindex="0" role="button"
+           x="${x}" y="${y}" width="${bw}" height="${bh}" rx="${Math.round(W*0.004)}"
+           fill="${pmapFill(a)}" fill-opacity="${a>0.05?0.5:1}" stroke="var(--mut)" stroke-width="2.5" stroke-dasharray="14 9"/>`;
+      g+=`<text x="${cx}" y="${y-GAP*0.3}" text-anchor="middle" font-size="${fs*0.62}" style="fill:var(--mut)">not on the drawing</text>`;
+      g+=`<text x="${cx}" y="${cy-fs*0.55}" text-anchor="middle" font-size="${fs}" font-weight="800"
+           style="fill:${behind?"var(--crit-text)":"var(--ink)"}">A: ${fmt1(a)}%${arrow}</text>`;
+      g+=`<text x="${cx}" y="${cy+fs*0.5}" text-anchor="middle" font-size="${fs*0.8}" style="fill:var(--mut)">P: ${fmt1(p)}%</text>`;
+      g+=`<text x="${cx}" y="${cy+fs*1.55}" text-anchor="middle" font-size="${fs*0.72}" font-weight="700" style="fill:var(--ink2)">${esc(k)}${dl?"  \u23f0"+dl:""}</text>`;
+    });
+  }
   g+=`</svg>`;
   // an area the drawing does not cover - off-site and office work - would otherwise
   // vanish from this view, so it keeps a chip of its own under the map
-  const mapped=new Set((G.blocks||[]).map(b=>b.area));
-  const off=areaList(rows).filter(([k])=>!mapped.has(k));
-  let offh="";
-  if(off.length){
-    offh=`<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px;align-items:center">
-      <span class="eyebrow">not on the drawing</span>`
-      +off.map(([k,rr])=>{const a=actPctAt(rr,SW),p=planPct(rr,SW);
-        return `<button class="offarea ftile" data-area="${esc(k)}" style="cursor:pointer;padding:5px 9px;text-align:left;border:1px solid ${state.f.area===k?"var(--blue)":"var(--line2)"};border-radius:7px;background:var(--surface)">
-          <b style="font-size:10px">${esc(k)}</b>
-          <span class="dim" style="font-size:9.5px"> · A: <b style="color:${a+0.05<p?"var(--crit-text)":"var(--ink)"}">${fmt1(a)}%</b> / P: ${fmt1(p)}% · ${rr.length} activities</span></button>`}).join("")
-      +`</div>`;
-  }
   const lg=`<div class="pmaplg">`+PMAP_BANDS.map(b=>`<span><span class="sw" style="background:${b[1]}"></span>${b[2]}</span>`).join("")
     +`<span style="margin-left:auto"><span class="sw" style="background:var(--surface);border-color:var(--mut)"></span>inverter control room</span></div>`;
   setTimeout(()=>{
-    document.querySelectorAll(".pmap .blk[data-area]").forEach(el=>{
+    document.querySelectorAll(".pmap [data-area]").forEach(el=>{
       const k=el.dataset.area, rr=by[k]||[];
       const go=()=>{state.f.area=state.f.area===k?"":k;render()};
       el.addEventListener("click",go);
@@ -2107,14 +2118,7 @@ function feederMap(rows){
       }
     });
   },0);
-  setTimeout(()=>{
-    document.querySelectorAll(".offarea[data-area]").forEach(el=>{
-      const k=el.dataset.area, rr=(by[k]||[]);
-      el.addEventListener("click",()=>{state.f.area=state.f.area===k?"":k;render()});
-      if(rr.length){el.addEventListener("mousemove",e=>showTip(e,areaFacts(k,rr)));el.addEventListener("mouseleave",hideTip)}
-    });
-  },0);
-  return lg+g+offh;
+  return lg+g;
 }
 function feederTiles(rows){
   let h=`<div class="bgrid">`;
@@ -2444,22 +2448,24 @@ function pageSummary(){
   return h;
 }
 let layoutView="map";
+// One layout card for every page that shows the block/feeder breakdown: the site map
+// when the project ships geometry, the tile grid otherwise, with a toggle between them.
+function layoutCard(rows,title,idp){
+  if(!CFG.plantLayout)
+    return card("span12",title,"click a tile to filter \u00b7 Actual % (red = behind baseline plan)",feederTiles(rows));
+  setTimeout(()=>{const t=document.getElementById(idp);
+    if(t)t.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{layoutView=b.dataset.v;render()}))},0);
+  return card("span12",title,
+    "drawn to the site layout \u00b7 click a block to filter \u00b7 hover for quantities \u00b7 A = actual, P = plan (red = behind plan)",
+    layoutView==="tiles"?feederTiles(rows):feederMap(rows),
+    `<div class="toggle2" id="${idp}"><button data-v="map" class="${layoutView!=="tiles"?"on":""}">Site map</button><button data-v="tiles" class="${layoutView==="tiles"?"on":""}">Tiles</button></div>`);
+}
 function pageLayout(){
   const rows=filtered();
   const site=rows.filter(r=>r[C.dept]==="execution"||r[C.dept]==="tnc"||r[C.dept]==="hoto");
   const use=site.length?site:rows;
   let h=`<div class="grid">`;
-  if(CFG.plantLayout){
-    // this project ships its site geometry, so show the real layout; the tile grid
-    // stays one click away and carries the same numbers
-    h+=card("span12","Plant Layout — Site Map",
-      "drawn to the site layout · click a block to filter · hover for quantities · A = actual, P = plan (red = behind plan)",
-      layoutView==="tiles"?feederTiles(use):feederMap(use),
-      `<div class="toggle2" id="lay-view"><button data-v="map" class="${layoutView!=="tiles"?"on":""}">Site map</button><button data-v="tiles" class="${layoutView==="tiles"?"on":""}">Tiles</button></div>`);
-    setTimeout(()=>{const t=document.getElementById("lay-view");
-      if(t)t.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{layoutView=b.dataset.v;render()}))},0);
-  }else
-  h+=card("span12","Plant Layout — Block / Feeder Scorecard","click a tile to filter · Actual % (red = behind baseline plan)",feederTiles(use));
+  h+=layoutCard(use,CFG.plantLayout?"Plant Layout — Site Map":"Plant Layout — Block / Feeder Scorecard","lay-view");
   h+=card("span12","Area Scorecard","weightage-based vs plan",scorecard(use));
   h+="</div>";
   return h;
@@ -2604,7 +2610,7 @@ function pageDept(key){
     h+=card("span12","All approval groups","",regTable(rows,false,"ra"));
     h+=card("span12","Statutory Updates Sheet — Exec View","document-wise · target vs revised date · click an approval above to focus, or scroll for all",statSheet(rows));
   }else if(key==="execution"||key==="tnc"){
-    h+=card("span12","Block / Feeder scorecard","click a tile to filter · Actual % (red = behind baseline plan)",feederTiles(rows));
+    h+=layoutCard(rows,CFG.plantLayout?"Block / Feeder scorecard — Site Map":"Block / Feeder scorecard","layd-view");
     h+=card("span12","Stage progress","by work type · Actual % vs Baseline Plan %",stageBars(rows));
   }else{
     h+=card("span12","Sections","progress by section · Actual % vs Baseline Plan %",stageSecs(rows));
@@ -2732,7 +2738,7 @@ if(_rbtn)_rbtn.addEventListener("click",async()=>{
     // no newer build published — check (public API, best-effort) that the sync is alive
     let note="no VisiLean data changes since "+(M.generatedAt||M.statusDate);
     try{
-      const ar=await fetch("https://api.github.com/repos/Vikas-visilean/ntpc-block8-mis-dashboard/actions/runs?per_page=1&status=in_progress",{cache:"no-store"});
+      const ar=await fetch(CFG.actionsRunsApi||"https://api.github.com/repos/Vikas-visilean/ntpc-block8-mis-dashboard/actions/runs?per_page=1&status=in_progress",{cache:"no-store"});
       if(ar.ok){const aj=await ar.json();if((aj.total_count|0)>0)note="sync is running · "+note}
     }catch(e){}
     _rbtn.textContent="⟳ reloading…";
