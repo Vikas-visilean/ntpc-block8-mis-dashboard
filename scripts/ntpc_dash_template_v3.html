@@ -187,6 +187,16 @@ tr:hover td{background:var(--blue-wash)}
 .stgc .fb{height:3px;background:var(--grid);border-radius:2px;margin-top:3px;overflow:hidden}
 .stgc .fb i{display:block;height:100%;background:var(--blue);border-radius:2px}
 .mswrap{overflow-x:auto}
+/* plant layout drawn to the site geometry (cfg.plantLayout, from the DXF) */
+.pmap{width:100%;height:auto;display:block;overflow:visible}
+.pmap .blk{cursor:pointer;transition:filter .15s ease}
+.pmap .blk:hover{filter:brightness(.94)}
+.pmap .blk.sel{stroke:var(--blue);stroke-width:6}
+.pmap .plot{fill:none;stroke:var(--line2);stroke-width:3;stroke-dasharray:14 10}
+.pmap .icr{fill:var(--surface);stroke:var(--mut);stroke-width:2;cursor:help}
+.pmap text{pointer-events:none}
+.pmaplg{display:flex;gap:11px;flex-wrap:wrap;font-size:9.5px;color:var(--ink2);margin:1px 0 6px}
+.pmaplg .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px;border:1px solid rgba(0,45,98,.18)}
 /* critical points laid out across the card width, wrapping on smaller screens */
 .critgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:9px;margin-top:6px}
 .critpt{border:1px solid var(--line2);border-radius:var(--r-tile);padding:8px 10px;background:var(--surface);min-width:0}
@@ -2017,6 +2027,95 @@ function areaList(rows){
   return Object.keys(set).sort((a,b)=>{const na=a.match(AREA_RE),nb=b.match(AREA_RE);
     if(na&&nb)return +na[1]-+nb[1]; if(na)return -1; if(nb)return 1; return a.localeCompare(b)}).map(k=>[k,set[k]]);
 }
+// Progress bands for the site map, as on the layout drawing's legend.
+const PMAP_BANDS=[[100,"var(--good)","= 100%"],[75,"#57A344","\u2265 75%"],
+ [40,"var(--warn)","\u2265 40%"],[0.05,"#F0796B","> 0%"],[-1,"var(--surface)","not started"]];
+function pmapFill(a){for(const[t,c]of PMAP_BANDS.map(b=>[b[0],b[1]]))if(a>=t)return c;return "var(--surface)"}
+// One row of the detail a tile shows, for the map's hover tooltip.
+function areaFacts(k,rr){
+  const a=actPctAt(rr,SW),p=planPct(rr,SW),dl=rr.filter(isBehind).length,cr=rr.filter(isCrit).length;
+  const spi=p>0.05?a/p:null;
+  let t=`<b>${esc(k)}</b><br>Actual <b>${fmt1(a)}%</b> \u00b7 plan ${fmt1(p)}%`
+       +(spi===null?"":` \u00b7 SPI ${spi.toFixed(2)}`)
+       +`<br><span class="t2">${rr.length} activities`+(dl?` \u00b7 ${dl} delayed`:``)+(cr?` \u00b7 ${cr} critical`:``)+`</span>`;
+  FCATS.forEach(([cn,fn])=>{
+    const cr2=rr.filter(fn);if(!cr2.length)return;
+    const q2=cr2.filter(r=>r[C.uom]&&r[C.uom]!=="Lot"&&r[C.uom]!=="%");
+    const qt=q2.reduce((x,r)=>x+(r[C.qty]||0),0),qd=q2.reduce((x,r)=>x+(r[C.qty]||0)*r[C.pct]/100,0);
+    const cp=actPctAt(cr2,SW),uom=q2.length?(q2[0][C.uom]||""):"";
+    t+=`<br><span class="t2">${cn}: ${qt>0?`${fq(qd)}/${fq(qt)} ${esc(uom)} \u00b7 `:``}${Math.round(cp)}%</span>`;
+  });
+  return t;
+}
+// The site as it is actually laid out: feeder blocks, plot boundaries and the
+// inverter control rooms, from the project's drawing. Clicking a block filters the
+// dashboard to it, exactly like the tiles.
+function feederMap(rows){
+  const G=CFG.plantLayout;
+  const[X0,Y0,X1,Y1]=G.extent, W=X1-X0, H=Y1-Y0;
+  const PAD=Math.round(W*0.012);
+  const fy=y=>G.flipY?(Y1-y+Y0):y;                       // DXF measures up, SVG down
+  const pstr=pts=>pts.map(([x,y])=>`${x-X0+PAD},${fy(y)-Y0+PAD}`).join(" ");
+  const by={};areaList(rows).forEach(([k,rr])=>by[k]=rr);
+  let g=`<svg class="pmap" viewBox="0 0 ${W+2*PAD} ${H+2*PAD}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Plant layout by feeder">`;
+  (G.plots||[]).forEach(p=>{g+=`<polygon class="plot" points="${pstr(p.pts)}"><title>${esc(p.label||"Plot")}</title></polygon>`});
+  const fs=Math.max(30,Math.round(W/95));                // scales with the drawing, not the screen
+  (G.blocks||[]).forEach(b=>{
+    const rr=by[b.area]||[];
+    const a=rr.length?actPctAt(rr,SW):0, p=rr.length?planPct(rr,SW):0;
+    const xs=b.pts.map(q=>q[0]),ys=b.pts.map(q=>fy(q[1]));
+    const cx=(Math.min(...xs)+Math.max(...xs))/2-X0+PAD, cy=(Math.min(...ys)+Math.max(...ys))/2-Y0+PAD;
+    const behind=a+0.05<p, arrow=rr.length?(behind?" \u25bc":" \u25b2"):"";
+    const dl=rr.filter(isBehind).length;
+    g+=`<polygon class="blk${state.f.area===b.area?" sel":""}" data-area="${esc(b.area)}" tabindex="0" role="button"
+         points="${pstr(b.pts)}" fill="${pmapFill(a)}" fill-opacity="${a>0.05?0.5:1}" stroke="var(--ink2)" stroke-width="2.5"/>`;
+    g+=`<text x="${cx}" y="${cy-fs*0.55}" text-anchor="middle" font-size="${fs}" font-weight="800"
+         style="fill:${behind?"var(--crit-text)":"var(--ink)"}">A: ${fmt1(a)}%${arrow}</text>`;
+    g+=`<text x="${cx}" y="${cy+fs*0.5}" text-anchor="middle" font-size="${fs*0.8}" style="fill:var(--mut)">P: ${fmt1(p)}%</text>`;
+    g+=`<text x="${cx}" y="${cy+fs*1.55}" text-anchor="middle" font-size="${fs*0.82}" font-weight="700" style="fill:var(--ink2)">${esc(b.area)}${dl?"  \u23f0"+dl:""}</text>`;
+  });
+  const ms=Math.max(18,Math.round(W/190));
+  (G.markers||[]).forEach(m=>{
+    g+=`<rect class="icr" x="${m.x-X0+PAD-ms/2}" y="${fy(m.y)-Y0+PAD-ms/2}" width="${ms}" height="${ms}" rx="${ms*0.18}"><title>${esc(m.label)}${m.area?" \u00b7 "+esc(m.area):""}</title></rect>`;
+  });
+  g+=`</svg>`;
+  // an area the drawing does not cover - off-site and office work - would otherwise
+  // vanish from this view, so it keeps a chip of its own under the map
+  const mapped=new Set((G.blocks||[]).map(b=>b.area));
+  const off=areaList(rows).filter(([k])=>!mapped.has(k));
+  let offh="";
+  if(off.length){
+    offh=`<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px;align-items:center">
+      <span class="eyebrow">not on the drawing</span>`
+      +off.map(([k,rr])=>{const a=actPctAt(rr,SW),p=planPct(rr,SW);
+        return `<button class="offarea ftile" data-area="${esc(k)}" style="cursor:pointer;padding:5px 9px;text-align:left;border:1px solid ${state.f.area===k?"var(--blue)":"var(--line2)"};border-radius:7px;background:var(--surface)">
+          <b style="font-size:10px">${esc(k)}</b>
+          <span class="dim" style="font-size:9.5px"> · A: <b style="color:${a+0.05<p?"var(--crit-text)":"var(--ink)"}">${fmt1(a)}%</b> / P: ${fmt1(p)}% · ${rr.length} activities</span></button>`}).join("")
+      +`</div>`;
+  }
+  const lg=`<div class="pmaplg">`+PMAP_BANDS.map(b=>`<span><span class="sw" style="background:${b[1]}"></span>${b[2]}</span>`).join("")
+    +`<span style="margin-left:auto"><span class="sw" style="background:var(--surface);border-color:var(--mut)"></span>inverter control room</span></div>`;
+  setTimeout(()=>{
+    document.querySelectorAll(".pmap .blk[data-area]").forEach(el=>{
+      const k=el.dataset.area, rr=by[k]||[];
+      const go=()=>{state.f.area=state.f.area===k?"":k;render()};
+      el.addEventListener("click",go);
+      el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
+      if(rr.length){
+        el.addEventListener("mousemove",e=>showTip(e,areaFacts(k,rr)));
+        el.addEventListener("mouseleave",hideTip);
+      }
+    });
+  },0);
+  setTimeout(()=>{
+    document.querySelectorAll(".offarea[data-area]").forEach(el=>{
+      const k=el.dataset.area, rr=(by[k]||[]);
+      el.addEventListener("click",()=>{state.f.area=state.f.area===k?"":k;render()});
+      if(rr.length){el.addEventListener("mousemove",e=>showTip(e,areaFacts(k,rr)));el.addEventListener("mouseleave",hideTip)}
+    });
+  },0);
+  return lg+g+offh;
+}
 function feederTiles(rows){
   let h=`<div class="bgrid">`;
   areaList(rows).forEach(([k,rr])=>{
@@ -2344,11 +2443,22 @@ function pageSummary(){
   h+="</div>";
   return h;
 }
+let layoutView="map";
 function pageLayout(){
   const rows=filtered();
   const site=rows.filter(r=>r[C.dept]==="execution"||r[C.dept]==="tnc"||r[C.dept]==="hoto");
   const use=site.length?site:rows;
   let h=`<div class="grid">`;
+  if(CFG.plantLayout){
+    // this project ships its site geometry, so show the real layout; the tile grid
+    // stays one click away and carries the same numbers
+    h+=card("span12","Plant Layout — Site Map",
+      "drawn to the site layout · click a block to filter · hover for quantities · A = actual, P = plan (red = behind plan)",
+      layoutView==="tiles"?feederTiles(use):feederMap(use),
+      `<div class="toggle2" id="lay-view"><button data-v="map" class="${layoutView!=="tiles"?"on":""}">Site map</button><button data-v="tiles" class="${layoutView==="tiles"?"on":""}">Tiles</button></div>`);
+    setTimeout(()=>{const t=document.getElementById("lay-view");
+      if(t)t.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{layoutView=b.dataset.v;render()}))},0);
+  }else
   h+=card("span12","Plant Layout — Block / Feeder Scorecard","click a tile to filter · Actual % (red = behind baseline plan)",feederTiles(use));
   h+=card("span12","Area Scorecard","weightage-based vs plan",scorecard(use));
   h+="</div>";
