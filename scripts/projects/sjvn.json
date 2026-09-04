@@ -14,13 +14,13 @@
   "location": "Khavda, Gujarat",
   "plant": "SJVN Khavda — 200 MW",
   "tech": "Solar",
-  "week": "7-day weeks",
+  "week": "6-day weeks",
   "loa": "Start 16-Oct-2025",
 
   "calendar": {
     "startDate": "2025-10-16",
-    "weeklyOff": [],
-    "_comment": "day 1 of the working-day axis = earliest planned start in VisiLean. 7-day week: VisiLean planned and actual dates fall on every weekday incl. Sunday (438 planned, 30 actual on Sundays, 04-Sep-2026 check) and the MSP calendar is 3,360 min/week = 7 x 8 h"
+    "weeklyOff": [6],
+    "_comment": "day 1 of the working-day axis = earliest planned start in VisiLean. 6-day week, Sunday off - confirmed by KP (04-Sep-2026); VisiLean dates that fall on a Sunday are placed on the working-day axis the same way as for NTPC"
   },
   "baselineMode": "planned",
   "_baselineMode_comment": "VisiLean carries no baseline dates for this project (checked 04-Sep-2026: 0 of 1,966 rows). 'planned' = treat VisiLean planned dates as the baseline and do NOT flag rows as un-baselined. Switch to 'visilean' once the team sets a baseline in VisiLean.",
