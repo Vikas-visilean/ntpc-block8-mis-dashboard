@@ -1,0 +1,78 @@
+{
+  "_comment": "SJVN Khavda 200 MW - project configuration. Read by the data builder (schedule vocabulary, calendar, output paths) and published to the page as DATA.cfg (labels, procurement columns). Never put API tokens here - they live in the gitignored scripts/vl_tokens.json / Actions secrets.",
+  "key": "sjvn",
+  "projectId": "7DAD8CE4-4DD0-62DA-9D8D-9D10A2E11289",
+  "outDir": "sjvn",
+  "dataFile": "sjvn_dashboard_data.json",
+  "relationsFile": "sjvn_relations.json",
+
+  "title": "SJVN Khavda 200 MW — MIS Dashboard (Live)",
+  "name": "SJVN Khavda 200 MW",
+  "client": "KPI",
+  "clientShort": "SJVN",
+  "capacity": "200 MWac",
+  "location": "Khavda, Gujarat",
+  "plant": "SJVN Khavda — 200 MW",
+  "tech": "Solar",
+  "week": "6-day weeks",
+  "loa": "Start 16-Oct-2025",
+
+  "calendar": {
+    "startDate": "2025-10-16",
+    "weeklyOff": [6],
+    "_comment": "day 1 of the working-day axis = earliest planned start in VisiLean; Sunday off, as NTPC"
+  },
+  "baselineMode": "planned",
+  "_baselineMode_comment": "VisiLean carries no baseline dates for this project (checked 04-Sep-2026: 0 of 1,966 rows). 'planned' = treat VisiLean planned dates as the baseline and do NOT flag rows as un-baselined. Switch to 'visilean' once the team sets a baseline in VisiLean.",
+  "activityTypeFromDepartment": true,
+  "_activityTypeFromDepartment_comment": "no 'Activity Type' custom field in this project; derive Engineering / Procurement - Supply / Procurement - Services / Construction from the department so the EPC bifurcation and S-curve disciplines work",
+
+  "areaRe": "^Feeder[ -]?(\\d+)",
+  "areaFromLevel3": "^Feeder-(\\d+)",
+  "_area_comment": "areas are the four 50 MW feeders; VisiLean 'location' is blank on 63% of rows, so the area is read from WBS Level 3 ('Feeder-2 - 50 MW') and the (F2) suffix",
+
+  "departments": {
+    "_comment": "VisiLean 'Department' custom field -> dashboard department key",
+    "BD Activities": "initiation",
+    "Planning and design": "engineering",
+    "Procurement": "supply",
+    "Procurement/Service Vendors": "services",
+    "Statutory": "regulatory",
+    "Execution": "execution",
+    "Completion of Facilities": "hoto"
+  },
+
+  "procurementSteps": {
+    "_comment": "'Type of Work' values, in pipeline order; keys are the normalised task names",
+    "order": ["vendorfinalization", "pr", "purchaseorderwithadvpayment", "materialmanufacturing", "fatinspectioncall", "mdcc", "paymentbeforedispatch", "materialdispatchreceiptatsite"]
+  },
+  "procDateCols": [
+    ["Vendor Finalisation", ["vendorfinalization"]],
+    ["PR", ["pr"]],
+    ["PO + Advance", ["purchaseorderwithadvpayment"]],
+    ["Manufacturing", ["materialmanufacturing"]],
+    ["FAT / Inspection", ["fatinspectioncall"]],
+    ["MDCC", ["mdcc"]],
+    ["Payment before dispatch", ["paymentbeforedispatch"]],
+    ["Dispatch & Receipt at Site", ["materialdispatchreceiptatsite"]]
+  ],
+  "delayHeads": [
+    ["a. Vendor finalisation", ["vendorfinalization"]],
+    ["b. PR", ["pr"]],
+    ["c. PO with advance", ["purchaseorderwithadvpayment"]],
+    ["d. FAT / inspection call", ["fatinspectioncall"]],
+    ["e. MDCC", ["mdcc"]]
+  ],
+  "poStep": ["purchaseorderwithadvpayment"],
+  "grnStep": ["materialdispatchreceiptatsite"],
+  "rfpStep": ["vendorfinalization"],
+  "tbeStep": ["fatinspectioncall"],
+  "clientApprovalStep": ["approval"],
+  "longLead": "module|mms|inverter|transformer|33 ?kv|scb|string combiner|scada",
+  "regCrit": ["ceachargingapproval", "connectivityagreement", "gedafinalapproval", "gedaprovisional", "trialruncertificate", "feespaymentrldc", "cod"],
+  "statSteps": {
+    "cea": ["ceachargingapproval"],
+    "cod": ["cod", "trialruncertificate"],
+    "sldc": ["wrldc", "schedul"]
+  }
+}

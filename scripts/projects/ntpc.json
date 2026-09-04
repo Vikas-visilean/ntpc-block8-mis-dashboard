@@ -1,0 +1,24 @@
+{
+  "_comment": "NTPC Bikaner Block 8 - project configuration. Mirrors the values the data builder and template have carried since v1, so the NTPC build stays byte-identical; anything absent here falls back to the template's own defaults.",
+  "key": "ntpc",
+  "projectId": "7A2842F6-7E5F-DB7C-3E7F-0EE7EF60698F",
+  "outDir": "v3",
+  "dataFile": "ntpc_dashboard_data_v2.json",
+  "relationsFile": "vl_relations.json",
+
+  "title": "KPIGEL-NTPC Bikaner Block 8 (200MW) — MIS Dashboard v2 (Live)",
+  "name": "NTPC Bikaner Block 8 · 200 MW",
+  "client": "KPI Green Energy",
+  "clientShort": "NTPC",
+  "capacity": "200 MWac",
+  "location": "Bikaner, Rajasthan",
+  "plant": "NTPC Bikaner — Block 8",
+  "tech": "Solar · Tracker",
+  "week": "6-day weeks",
+  "loa": "LOA 07-May-2026",
+
+  "calendar": { "startDate": "2026-05-07", "weeklyOff": [6] },
+  "baselineMode": "visilean",
+  "activityTypeFromDepartment": false,
+  "areaRe": "^Block[ -]?(\\d+)"
+}
