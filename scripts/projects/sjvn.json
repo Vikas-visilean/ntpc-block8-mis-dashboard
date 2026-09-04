@@ -592,5 +592,7 @@
         "area": "Feeder-4"
       }
     ]
-  }
+  },
+  "actionsRunsApi": "https://api.github.com/repos/Vikas-visilean/ntpc-block8-mis-dashboard/actions/workflows/refresh-sjvn.yml/runs?per_page=1&status=in_progress",
+  "_actionsRunsApi_comment": "best-effort, public API: lets the Refresh button say whether this project's sync worker is running. Purely informational - the click always reloads."
 }
