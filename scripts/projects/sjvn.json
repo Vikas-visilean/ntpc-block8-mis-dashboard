@@ -5,7 +5,6 @@
   "outDir": "sjvn",
   "dataFile": "sjvn_dashboard_data.json",
   "relationsFile": "sjvn_relations.json",
-
   "title": "SJVN Khavda 200 MW — MIS Dashboard (Live)",
   "name": "SJVN Khavda 200 MW",
   "client": "KPI",
@@ -16,27 +15,25 @@
   "tech": "Solar",
   "week": "6-day weeks",
   "loa": "Start 16-Oct-2025",
-
   "calendar": {
     "startDate": "2025-10-16",
-    "weeklyOff": [6],
+    "weeklyOff": [
+      6
+    ],
     "_comment": "day 1 of the working-day axis = earliest planned start in VisiLean. 6-day week, Sunday off - confirmed by KP (04-Sep-2026); VisiLean dates that fall on a Sunday are placed on the working-day axis the same way as for NTPC"
   },
   "baselineMode": "planned",
   "_baselineMode_comment": "Neither VisiLean nor the MSP carries baseline dates for this project (checked 04-Sep-2026). 'planned' = VisiLean planned dates ARE the baseline and rows are not flagged un-baselined. Switch to 'visilean' once the team sets a baseline in VisiLean.",
   "activityTypeFromDepartment": true,
   "_activityTypeFromDepartment_comment": "no 'Activity Type' custom field in this project; Engineering / Procurement - Supply / Procurement - Services / Construction are derived from the department so the EPC bifurcation and S-curve disciplines work",
-
   "areaRe": "^Feeder[ -]?(\\d+)",
   "areaFromLevel3": "^Feeder[ -]?(\\d+)",
   "areaLabel": "Feeder-%s",
   "_area_comment": "areas are the four 50 MW feeders. VisiLean 'location' is blank on 63% of rows, so the feeder number is read from WBS Level 3 ('Feeder-2 - 50 MW'), Level 4 ('Feeder-4 (L&G)') or the location ('Feeder 2 - ...')",
-
   "packageFromField": false,
   "_packageFromField_comment": "in this project the 'Package' custom field holds the Level-2 group (Supply / Construction / Design Approval), not a package, so packages come from the WBS levels: Level 3 for supply ('Inverter (SPLY)'), the deepest work package for execution",
   "itemJoinLevel4": true,
   "_itemJoinLevel4_comment": "procurement runs per feeder under each package, so the pipeline row is package x feeder",
-
   "departments": {
     "_comment": "VisiLean 'Department' custom field -> dashboard department key; 'Dept/Level2-prefix' splits a department on Level 2",
     "BD Activities": "initiation",
@@ -47,68 +44,553 @@
     "Execution": "execution",
     "Completion of Facilities": "hoto"
   },
-
-  "engStage": [["approval", "Acceptance"], ["submission", "Submission"]],
+  "engStage": [
+    [
+      "approval",
+      "Acceptance"
+    ],
+    [
+      "submission",
+      "Submission"
+    ]
+  ],
   "procStage": [
-    [["vendorfinalization", "pr"], "Tender"],
-    [["purchaseorderwithadvpayment"], "Order & Advance"],
-    [["materialmanufacturing", "fatinspectioncall", "mdcc"], "Mfg & Quality"],
-    [["materialdispatchreceiptatsite"], "Delivery / JMS"],
-    [["paymentbeforedispatch"], "Payments"]
+    [
+      [
+        "vendorfinalization",
+        "pr"
+      ],
+      "Tender"
+    ],
+    [
+      [
+        "purchaseorderwithadvpayment"
+      ],
+      "Order & Advance"
+    ],
+    [
+      [
+        "materialmanufacturing",
+        "fatinspectioncall",
+        "mdcc"
+      ],
+      "Mfg & Quality"
+    ],
+    [
+      [
+        "materialdispatchreceiptatsite"
+      ],
+      "Delivery / JMS"
+    ],
+    [
+      [
+        "paymentbeforedispatch"
+      ],
+      "Payments"
+    ]
   ],
   "subMap": [
-    [["vendorfinalization", "pr"], "Tender"],
-    [["purchaseorderwithadvpayment"], "PO"],
-    [["materialmanufacturing"], "Mfg"],
-    [["fatinspectioncall", "mdcc"], "Inspection / MDCC-JMS"],
-    [["paymentbeforedispatch"], "Payment"],
-    [["materialdispatchreceiptatsite"], "At Site"]
+    [
+      [
+        "vendorfinalization",
+        "pr"
+      ],
+      "Tender"
+    ],
+    [
+      [
+        "purchaseorderwithadvpayment"
+      ],
+      "PO"
+    ],
+    [
+      [
+        "materialmanufacturing"
+      ],
+      "Mfg"
+    ],
+    [
+      [
+        "fatinspectioncall",
+        "mdcc"
+      ],
+      "Inspection / MDCC-JMS"
+    ],
+    [
+      [
+        "paymentbeforedispatch"
+      ],
+      "Payment"
+    ],
+    [
+      [
+        "materialdispatchreceiptatsite"
+      ],
+      "At Site"
+    ]
   ],
   "execStage": [
-    [["icrswitchyard", "switchyard", "poolingsubstation", "pss"], "PSS & Switchyard"],
-    [["modulemoutingstructure", "modulemounting", "mms", "actuator", "tracker", "purlin", "torque"], "MMS & Module"],
-    [["moduleinstallation", "pvmodule", "module"], "MMS & Module"],
-    [["solardccable", "dccable", "dcpower", "stringcombiner", "scb", "auguring"], "DC Works"],
-    [["accable", "htcable", "33kv", "mvac", "termination", "jointing", "lvcable", "ltcable"], "AC / HT Works"],
-    [["earthing", "lightning", "lightening"], "Earthing & LA"],
-    [["pile", "piling", "foundation", "civil", "fencing", "boundary", "road", "drain", "landallocation", "siteclearance", "grading", "levelling", "leveling"], "Civil & Foundations"],
-    [["commissioning", "testing", "test", "trialrun", "synchron"], "T&C"],
-    [["cleaningsystem", "robotic", "wms", "weather", "cctv", "scada", "ups", "transformer", "idt", "panel", "inverter", "equipment", "installation"], "Equipment"]
+    [
+      [
+        "icrswitchyard",
+        "switchyard",
+        "poolingsubstation",
+        "pss"
+      ],
+      "PSS & Switchyard"
+    ],
+    [
+      [
+        "modulemoutingstructure",
+        "modulemounting",
+        "mms",
+        "actuator",
+        "tracker",
+        "purlin",
+        "torque"
+      ],
+      "MMS & Module"
+    ],
+    [
+      [
+        "moduleinstallation",
+        "pvmodule",
+        "module"
+      ],
+      "MMS & Module"
+    ],
+    [
+      [
+        "solardccable",
+        "dccable",
+        "dcpower",
+        "stringcombiner",
+        "scb",
+        "auguring"
+      ],
+      "DC Works"
+    ],
+    [
+      [
+        "accable",
+        "htcable",
+        "33kv",
+        "mvac",
+        "termination",
+        "jointing",
+        "lvcable",
+        "ltcable"
+      ],
+      "AC / HT Works"
+    ],
+    [
+      [
+        "earthing",
+        "lightning",
+        "lightening"
+      ],
+      "Earthing & LA"
+    ],
+    [
+      [
+        "pile",
+        "piling",
+        "foundation",
+        "civil",
+        "fencing",
+        "boundary",
+        "road",
+        "drain",
+        "landallocation",
+        "siteclearance",
+        "grading",
+        "levelling",
+        "leveling"
+      ],
+      "Civil & Foundations"
+    ],
+    [
+      [
+        "commissioning",
+        "testing",
+        "test",
+        "trialrun",
+        "synchron"
+      ],
+      "T&C"
+    ],
+    [
+      [
+        "cleaningsystem",
+        "robotic",
+        "wms",
+        "weather",
+        "cctv",
+        "scada",
+        "ups",
+        "transformer",
+        "idt",
+        "panel",
+        "inverter",
+        "equipment",
+        "installation"
+      ],
+      "Equipment"
+    ]
   ],
-  "supplySummary": { "level1": "Procurement", "level2": "Supply", "level3Blank": true, "packageFrom": "name",
-    "_comment": "the package summary row ('PV Module (SPLY)') carries no Level 3/4 - the feeder sub-summaries and leaves beneath it do - and is named after the package; its planned end is the package delivery date" },
-
+  "supplySummary": {
+    "level1": "Procurement",
+    "level2": "Supply",
+    "level3Blank": true,
+    "packageFrom": "name",
+    "_comment": "the package summary row ('PV Module (SPLY)') carries no Level 3/4 - the feeder sub-summaries and leaves beneath it do - and is named after the package; its planned end is the package delivery date"
+  },
   "procurementSteps": {
     "_comment": "'Type of Work' values, in pipeline order; keys are the normalised task names",
-    "order": ["vendorfinalization", "pr", "purchaseorderwithadvpayment", "materialmanufacturing", "fatinspectioncall", "mdcc", "paymentbeforedispatch", "materialdispatchreceiptatsite"]
+    "order": [
+      "vendorfinalization",
+      "pr",
+      "purchaseorderwithadvpayment",
+      "materialmanufacturing",
+      "fatinspectioncall",
+      "mdcc",
+      "paymentbeforedispatch",
+      "materialdispatchreceiptatsite"
+    ]
   },
   "procDateCols": [
-    ["Vendor Finalisation", ["vendorfinalization"]],
-    ["PR", ["pr"]],
-    ["PO + Advance", ["purchaseorderwithadvpayment"]],
-    ["Manufacturing", ["materialmanufacturing"]],
-    ["FAT / Inspection", ["fatinspectioncall"]],
-    ["MDCC", ["mdcc"]],
-    ["Payment before dispatch", ["paymentbeforedispatch"]],
-    ["Dispatch & Receipt at Site", ["materialdispatchreceiptatsite"]]
+    [
+      "Vendor Finalisation",
+      [
+        "vendorfinalization"
+      ]
+    ],
+    [
+      "PR",
+      [
+        "pr"
+      ]
+    ],
+    [
+      "PO + Advance",
+      [
+        "purchaseorderwithadvpayment"
+      ]
+    ],
+    [
+      "Manufacturing",
+      [
+        "materialmanufacturing"
+      ]
+    ],
+    [
+      "FAT / Inspection",
+      [
+        "fatinspectioncall"
+      ]
+    ],
+    [
+      "MDCC",
+      [
+        "mdcc"
+      ]
+    ],
+    [
+      "Payment before dispatch",
+      [
+        "paymentbeforedispatch"
+      ]
+    ],
+    [
+      "Dispatch & Receipt at Site",
+      [
+        "materialdispatchreceiptatsite"
+      ]
+    ]
   ],
   "delayHeads": [
-    ["a. Vendor finalisation", ["vendorfinalization"]],
-    ["b. PR", ["pr"]],
-    ["c. PO with advance", ["purchaseorderwithadvpayment"]],
-    ["d. FAT / inspection call", ["fatinspectioncall"]],
-    ["e. MDCC", ["mdcc"]]
+    [
+      "a. Vendor finalisation",
+      [
+        "vendorfinalization"
+      ]
+    ],
+    [
+      "b. PR",
+      [
+        "pr"
+      ]
+    ],
+    [
+      "c. PO with advance",
+      [
+        "purchaseorderwithadvpayment"
+      ]
+    ],
+    [
+      "d. FAT / inspection call",
+      [
+        "fatinspectioncall"
+      ]
+    ],
+    [
+      "e. MDCC",
+      [
+        "mdcc"
+      ]
+    ]
   ],
-  "poStep": ["purchaseorderwithadvpayment"],
-  "grnStep": ["materialdispatchreceiptatsite"],
-  "rfpStep": ["vendorfinalization"],
-  "tbeStep": ["fatinspectioncall"],
-  "clientApprovalStep": ["approval"],
+  "poStep": [
+    "purchaseorderwithadvpayment"
+  ],
+  "grnStep": [
+    "materialdispatchreceiptatsite"
+  ],
+  "rfpStep": [
+    "vendorfinalization"
+  ],
+  "tbeStep": [
+    "fatinspectioncall"
+  ],
+  "clientApprovalStep": [
+    "approval"
+  ],
   "longLead": "module|mms|inverter|transformer|33 ?kv|scb|string combiner|scada",
-  "regCrit": ["ceachargingapproval", "connectivityagreement", "gedafinalapproval", "gedaprovisional", "trialruncertificate", "feespaymentrldc", "cod"],
+  "regCrit": [
+    "ceachargingapproval",
+    "connectivityagreement",
+    "gedafinalapproval",
+    "gedaprovisional",
+    "trialruncertificate",
+    "feespaymentrldc",
+    "cod"
+  ],
   "statSteps": {
-    "cea": ["ceachargingapproval"],
-    "cod": ["cod", "trialruncertificate"],
-    "sldc": ["wrldc", "schedul"]
+    "cea": [
+      "ceachargingapproval"
+    ],
+    "cod": [
+      "cod",
+      "trialruncertificate"
+    ],
+    "sldc": [
+      "wrldc",
+      "schedul"
+    ]
+  },
+  "plantLayout": {
+    "_comment": "site geometry from Feeder_ICR_Layout.dxf (layers PLOT-OUTER, FEEDER-BOX, ICR-TEXT). Coordinates are the drawing's own units; the page flips Y because DXF measures upward and SVG downward.",
+    "units": "drawing units (m)",
+    "extent": [
+      0,
+      0,
+      5611,
+      928
+    ],
+    "flipY": true,
+    "plots": [
+      {
+        "label": "PLOT-4",
+        "pts": [
+          [
+            2934,
+            199
+          ],
+          [
+            5611,
+            199
+          ],
+          [
+            5240,
+            928
+          ],
+          [
+            2934,
+            928
+          ]
+        ]
+      },
+      {
+        "label": "PLOT-1",
+        "pts": [
+          [
+            0,
+            0
+          ],
+          [
+            2873,
+            0
+          ],
+          [
+            2873,
+            634
+          ],
+          [
+            0,
+            634
+          ]
+        ]
+      }
+    ],
+    "blocks": [
+      {
+        "area": "Feeder-1",
+        "pts": [
+          [
+            35,
+            329
+          ],
+          [
+            2838,
+            329
+          ],
+          [
+            2838,
+            599
+          ],
+          [
+            35,
+            599
+          ]
+        ]
+      },
+      {
+        "area": "Feeder-2",
+        "pts": [
+          [
+            35,
+            35
+          ],
+          [
+            2838,
+            35
+          ],
+          [
+            2838,
+            305
+          ],
+          [
+            35,
+            305
+          ]
+        ]
+      },
+      {
+        "area": "Feeder-3",
+        "pts": [
+          [
+            2969,
+            575
+          ],
+          [
+            5223,
+            575
+          ],
+          [
+            5223,
+            893
+          ],
+          [
+            2969,
+            893
+          ]
+        ]
+      },
+      {
+        "area": "Feeder-4",
+        "pts": [
+          [
+            2969,
+            234
+          ],
+          [
+            5223,
+            234
+          ],
+          [
+            5223,
+            551
+          ],
+          [
+            2969,
+            551
+          ]
+        ]
+      }
+    ],
+    "markers": [
+      {
+        "label": "ICR-1",
+        "x": 2458,
+        "y": 352,
+        "area": "Feeder-1"
+      },
+      {
+        "label": "ICR-2",
+        "x": 1542,
+        "y": 411,
+        "area": "Feeder-1"
+      },
+      {
+        "label": "ICR-3",
+        "x": 396,
+        "y": 371,
+        "area": "Feeder-1"
+      },
+      {
+        "label": "ICR-4",
+        "x": 2149,
+        "y": 121,
+        "area": "Feeder-2"
+      },
+      {
+        "label": "ICR-5",
+        "x": 1259,
+        "y": 176,
+        "area": "Feeder-2"
+      },
+      {
+        "label": "ICR-6",
+        "x": 170,
+        "y": 129,
+        "area": "Feeder-2"
+      },
+      {
+        "label": "ICR-7",
+        "x": 3471,
+        "y": 722,
+        "area": "Feeder-3"
+      },
+      {
+        "label": "ICR-8",
+        "x": 4284,
+        "y": 692,
+        "area": "Feeder-3"
+      },
+      {
+        "label": "ICR-9",
+        "x": 4909,
+        "y": 644,
+        "area": "Feeder-3"
+      },
+      {
+        "label": "ICR-10",
+        "x": 3457,
+        "y": 305,
+        "area": "Feeder-4"
+      },
+      {
+        "label": "ICR-11",
+        "x": 4217,
+        "y": 300,
+        "area": "Feeder-4"
+      },
+      {
+        "label": "ICR-12",
+        "x": 4981,
+        "y": 399,
+        "area": "Feeder-4"
+      }
+    ]
   }
 }
