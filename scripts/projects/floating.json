@@ -213,6 +213,12 @@
   "_countSummaries_comment": "Final Acceptance document counts (92 'Final Acceptance' + 11 'Final Acceptance on System Study' activities) and PO Placement counts (26 packages) both resolve in this schedule, so the KP count-summary cards work as they do on NTPC",
   "procDatesCard": false,
   "_procDatesCard_comment": "as on NTPC: the pipeline table replaces the Key Procurement Dates matrix on the procurement pages",
+  "quantityFields": {
+    "planned": "Planned Quantity",
+    "actual": "Actual Quantity",
+    "uom": "UoM"
+  },
+  "_quantityFields_comment": "KP 25-Sep: this project keeps no measured scope in VisiLean. totalQuantity is the placeholder 100 on all 3,508 rows and quantityUnits is 'Units' on all but one, so the built-in fields say nothing; the built-in actualQuantity is only totalQuantity x percentComplete (481 rows sit at exactly 100.0 because they are 100% done), not a booked figure. Naming the custom fields here makes them the source of truth, so a row without them carries no quantity at all and the placeholder stops reaching the drill tables and the stage bars. The names match S7, so the moment the site starts filling them in the figures appear on their own - nothing to change here.",
   "actionsRunsApi": "https://api.github.com/repos/Vikas-visilean/ntpc-block8-mis-dashboard/actions/workflows/refresh-floating.yml/runs?per_page=1&status=in_progress",
   "_actionsRunsApi_comment": "best-effort, public API: lets the Refresh button say whether this project's sync worker is running. Purely informational - the click always reloads.",
   "syncRepo": "Vikas-visilean/ntpc-block8-mis-dashboard",
