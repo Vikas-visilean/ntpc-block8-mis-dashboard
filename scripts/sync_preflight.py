@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Say whether this project's VisiLean credentials exist before the refresh loop runs.
 
-    python scripts/sync_preflight.py <ntpc|sjvn|adani|adanis7|floating|adopt>
+    python scripts/sync_preflight.py <ntpc|sjvn|adani|adanis7|floating|talaja|adopt>
 
 VisiLean issues one API token per project, and it serves every feed a dashboard reads
 (tasks, history, constraints). The token is looked up in this order - see vl_token.py:

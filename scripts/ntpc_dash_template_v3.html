@@ -2073,6 +2073,14 @@ addEventListener("resize",pinTwrapHeaders);
 
 const MQAP_SUBS=new Set(["draftingconceptualdiscussion","internalcheckingofmqap","internalapproval","submissiontocustomer","finalacceptanceofmqap"]);
 const nrm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,"");
+/* Does this activity name carry one of a step's keys? Projects name their steps two ways:
+   NTPC writes them out in full ("PO Placement"), so a contains-match is right; Talaja
+   prefixes the vendor ("Apar - PO", "Apar - MDCC"), where a contains-match on "po" would
+   also catch "Pole Erection". Such a project sets stepMatch:"suffix" and the key has to
+   end the name. The default is unchanged. */
+const stepHit=(name,keys)=>{const n=nrm(String(name||""));    // n8() tolerated a null name; keep that
+  return (CFG.stepMatch==="suffix") ? keys.some(k=>n===k||n.endsWith(k))
+                                    : keys.some(k=>n.includes(k))};
 function colKey(r){
   const k=nrm(r[C.name]);
   // Some schedules name every procurement activity "<Package>-<Step>-Lot-NN", so the
@@ -2274,9 +2282,9 @@ function scopeOrderDeliver(rows,asIs){
   Object.entries(g).sort().forEach(([pkg,rr])=>{
     const scope=Math.max(...rr.map(r=>r[C.qty]||0),0);
     if(!scope||scope<=1)return;
-    const po=rr.filter(r=>CFG.poStep.some(k=>nrm(r[C.name]).includes(k)));
+    const po=rr.filter(r=>stepHit(r[C.name],CFG.poStep));
     const poDone=po.length&&po.every(isDone);
-    const grn=rr.filter(r=>CFG.grnStep.some(k=>nrm(r[C.name]).includes(k)));
+    const grn=rr.filter(r=>stepHit(r[C.name],CFG.grnStep));
     const del=grn.reduce((a,r)=>a+(r[C.qty]||0)*r[C.pct]/100,0);
     const gplan=grn.length?Math.max(...grn.map(r=>r[C.bEF])):0,gfc=grn.length?Math.max(...grn.map(r=>r[C.fEF])):0;
     nrows++;
@@ -2798,7 +2806,7 @@ function stepRows(rows,spec){
   // the step itself first - one per package. NTPC also carries "KP to EPC PO Placement",
   // and a name-contains match would count that as a second PO for every package.
   const exact=rows.filter(r=>keys.some(k=>nrm(r[C.name])===k));
-  return exact.length?exact:rows.filter(r=>keys.some(k=>nrm(r[C.name]).includes(k)));
+  return exact.length?exact:rows.filter(r=>stepHit(r[C.name],keys));
 }
 function stepCounts(rows,spec){
   const sel=stepRows(rows,spec);
@@ -4632,7 +4640,7 @@ function pageMom(){
 // ---------- Exec Director dept views (wishlist 10-Aug) ----------
 const n8=x=>String(x||"").toLowerCase().replace(/[^a-z0-9]/g,"");
 function pkgMap(rows){const by={};rows.forEach(r=>{const p=r[C.pkg];(by[p]=by[p]||{rows:[],w:0}).rows.push(r);by[p].w+=(r[C.wt]>0?r[C.wt]:0)});return by}
-function stepOf(info,keys){for(const r of info.rows){const n=n8(r[C.name]);if(keys.some(k=>n.includes(k)))return r}return null}
+function stepOf(info,keys){for(const r of info.rows){if(stepHit(r[C.name],keys))return r}return null}
 function dcell(r){if(!r)return `<td class="dim">—</td>`;
   let col="inherit",w=400,sfx="";
   if(r[C.pct]>=100){col="#1b8a2f";w=600;sfx=" ✓"}                                  // VisiLean Complete

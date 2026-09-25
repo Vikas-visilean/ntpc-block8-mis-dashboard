@@ -28,6 +28,15 @@ sys.path.insert(0, SCR)
 from vl_token import TokenPool, TokenRejected, fetch_json    # noqa: E402
 # one token serves every feed; a rejected VL_TOKEN_<KEY> falls back to VL_TOKENS_JSON
 POOL = TokenPool(PKEY, CFG.get("name", PKEY))
+# A project whose VisiLean tokens are pinned per payload (ABREL Talaja) names one per
+# feed; everyone else has a single token and every pool here resolves to it.
+_POOLS = {}
+def pool_for(kind):
+    if kind == "task":
+        return POOL
+    if kind not in _POOLS:
+        _POOLS[kind] = TokenPool(PKEY, CFG.get("name", PKEY), feed=kind)
+    return _POOLS[kind]
 
 def fetch(kind, attempts=3):
     tp = "task" if kind == "history" else kind
@@ -37,7 +46,8 @@ def fetch(kind, attempts=3):
         # audit trail the variance reasons are written into
         flags = ("&IncludeStatusChange=true&IncludeReschedule=true"
                  "&IncludeQuantities=true&IncludeConstraintNotes=true")
-    return fetch_json(POOL, lambda t: f"{BASE}?accessToken={t}&projectId={PROJECT}&type={tp}{flags}",
+    return fetch_json(pool_for(kind),
+                      lambda t: f"{BASE}?accessToken={t}&projectId={PROJECT}&type={tp}{flags}",
                       attempts=attempts, label=kind)
 
 print("fetching VisiLean APIs...")
@@ -65,7 +75,17 @@ except Exception as e:
     print(f"SKIP this cycle - VisiLean API unreachable after retries: {e}")
     sys.exit(0)
 print("tasks:", len(TASKS), "| constraints:", len(CONS), "| history:", len(HIST))
-RELS = json.load(open(os.path.join(SCR, CFG.get("relationsFile", "vl_relations.json")), encoding="utf-8"))
+# The logic network comes from the planner''s own file (MPP/XER/XML), not from VisiLean -
+# its API carries no prerequisites. A project that has not exported one yet simply has no
+# network: float, the critical chain and "delayed by a predecessor" stay empty rather than
+# the build failing, and the page says so instead of implying there are no dependencies.
+_rels_path = os.path.join(SCR, CFG.get("relationsFile", "vl_relations.json"))
+if os.path.exists(_rels_path):
+    RELS = json.load(open(_rels_path, encoding="utf-8"))
+else:
+    RELS = []
+    print("no relations file (%s) - predecessor analysis is off for this project"
+          % os.path.basename(_rels_path))
 
 # ---------- calendar ----------
 _cal = CFG.get("calendar") or {}
@@ -125,6 +145,12 @@ recs = {}
 milestones_raw = []
 NA_SKIPPED = []
 NA_UIDS = set()
+NOWBS_SKIPPED = []
+# A schedule may carry rows that are not scope at all. Talaja's has 43: "Manpower",
+# "60/70MT crane", "Low Bed Trailer (Hub And TP Shifting)" - VisiLean resource records
+# with no WBS, no department and no weightage, all sharing one placeholder month. Left in,
+# they land in Project Initiation and read as activities nobody is progressing.
+SCOPE_NEEDS_WBS = bool(CFG.get("scopeRequiresWbs"))
 GUID = {t.get("guid"): t for t in TASKS if t.get("guid")}
 
 def chain_names(t):
@@ -282,6 +308,10 @@ for t in TASKS:
         NA_SKIPPED.append(r["name"])
         NA_UIDS.add(uid)
         continue
+    if SCOPE_NEEDS_WBS and not (L[0] or "").strip() and not str(r["deptcf"] or "").strip() \
+            and not str(cf.get("Weightage") or "").strip():
+        NOWBS_SKIPPED.append(r["name"])
+        continue
     recs[uid] = r
 
 leafs = {u: r for u, r in recs.items() if not r["parent"]}
@@ -320,7 +350,8 @@ if REV_GROUPS:
 if REV_MIXED:
     print("  NOTE: left alone (parent still has MSP-imported children):", ", ".join(REV_MIXED[:5]))
 print("usable leaves:", len(leafs), "| milestones:", len(milestones_raw),
-      "| excluded (trade = Not Applicable):", len(NA_SKIPPED))
+      "| excluded (trade = Not Applicable):", len(NA_SKIPPED),
+      ("| excluded (no WBS, no weightage): %d" % len(NOWBS_SKIPPED)) if NOWBS_SKIPPED else "")
 if INHERITED:
     print("classification inherited from the parent for %d rows with no custom fields:"
           % len(INHERITED), ", ".join("%s %s<-%s" % x for x in INHERITED[:4]),
@@ -364,14 +395,22 @@ LOGIC_COV = round(100.0 * len(_inlogic) / max(1, len(leafs)), 1)
 print(f"logic coverage: {LOGIC_COV}% of leaves are in the relation network")
 
 # ---------- classification ----------
-DEPTS = [("initiation", "Project Initiation"), ("engineering", "Design & Engineering"),
+DEPTS = [("initiation", "Project Initiation"), ("land", "Land Activities"),
+         ("engineering", "Design & Engineering"),
          ("quality", "Quality Assurance"), ("supply", "Procurement - Supply"),
          ("services", "Procurement - Services"),
          ("regulatory", "Regulatory & Statutory"), ("execution", "Execution & Construction"),
          ("tnc", "Testing & Commissioning"), ("hoto", "HOTO (Handover)")]
 UNCLASSIFIED = []
 # project vocabulary hooks (each falls back to the NTPC behaviour when absent)
-DEPT_MAP = {"/".join(norm(p) for p in k.split("/")): v
+def _dept_rule(k):
+    """"Dept/prefix" splits a department on Level 2, "Dept/L3:prefix" on Level 3. norm()
+    drops the colon, so the marker is read here, before the parts are normalised."""
+    parts = k.split("/", 1)
+    if len(parts) == 2 and parts[1].strip().lower().startswith("l3:"):
+        return norm(parts[0]) + "/l3:" + norm(parts[1].strip()[3:])
+    return "/".join(norm(p) for p in parts)
+DEPT_MAP = {_dept_rule(k): v
             for k, v in (CFG.get("departments") or {}).items() if not k.startswith("_")}
 ATYPE_FROM_DEPT = bool(CFG.get("activityTypeFromDepartment"))
 # A project may name its Activity Type values differently ("Execution" for what the
@@ -388,7 +427,8 @@ ATYPE_BY_DEPT = {"engineering": "Engineering", "supply": "Procurement - Supply",
                  "services": "Procurement - Services", "execution": "Construction",
                  "tnc": "Construction", "regulatory": "Statutory & Approvals",
                  "liaisoning": "Statutory & Approvals", "quality": "Quality",
-                 "initiation": "Project Management", "hoto": "Handover"}
+                 "initiation": "Project Management", "hoto": "Handover",
+                 "land": "Land Acquisition"}
 AREA_L3_RE = re.compile(CFG["areaFromLevel3"], re.I) if CFG.get("areaFromLevel3") else None
 AREA_LABEL = CFG.get("areaLabel", "Area-%s")
 PKG_FROM_FIELD = CFG.get("packageFromField", True)
@@ -399,11 +439,16 @@ def dept_of(r):
     l2 = norm(r["L"][1])
     # the project's own map first: "Department" -> key, or "Department/Level2-prefix"
     # for a split such as Procurement/Service Vendors
+    l3 = norm(r["L"][2]) if len(r["L"]) > 2 else ""
     if DEPT_MAP:
         for k, v in DEPT_MAP.items():
             if "/" in k:
                 a, b = k.split("/", 1)
-                if a == l1 and b and l2.startswith(b): return v
+                # "Dept/prefix" splits on Level 2, "Dept/l3:prefix" on Level 3 - Talaja's
+                # procurement is one department whose service vendors only show up there
+                if b.startswith("l3:"):
+                    if a == l1 and l3.startswith(b[3:]): return v
+                elif a == l1 and b and l2.startswith(b): return v
         if l1 in DEPT_MAP: return DEPT_MAP[l1]
     if l1.startswith("testing"): return "tnc"
     if l1.startswith("projectinitiation"): return "initiation"
