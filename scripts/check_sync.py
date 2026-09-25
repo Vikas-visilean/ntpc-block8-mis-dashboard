@@ -23,6 +23,7 @@ DASH = [
     ("Adani Green S6a · 234 MW", "adani", "refresh-adani.yml"),
     ("Adani Green S7 · 300 MW", "adani-s7", "refresh-adani-s7.yml"),
     ("Floating Solar · Kadana Dam", "floating", "refresh-floating.yml"),
+    ("ABREL Talaja · 83.7 MW wind", "talaja", "refresh-talaja.yml"),
     ("Adoption tracker", "adoption", "refresh-adoption.yml"),
     ("Updates", "updates", "refresh-adoption.yml"),
 ]

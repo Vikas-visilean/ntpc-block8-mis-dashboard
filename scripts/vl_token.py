@@ -23,14 +23,22 @@ SCR = os.path.dirname(os.path.abspath(__file__))
 TOKENS_FILE = os.path.join(SCR, "vl_tokens.json")
 TOKENS_FILE_NAME = "scripts/vl_tokens.json"
 
-KEYS = ("ntpc", "sjvn", "adani", "adanis7", "floating")
+KEYS = ("ntpc", "sjvn", "adani", "adanis7", "floating", "talaja")
 LABELS = {
     "ntpc":     "NTPC Bikaner Block 8",
     "sjvn":     "SJVN Khavda",
     "adani":    "Adani S6a",
     "adanis7":  "Adani S7",
     "floating": "Floating Solar",
+    "talaja":   "ABREL Talaja",
 }
+# Usually one token serves every feed. ABREL Talaja is the exception: VisiLean issued it
+# three tokens, each pinned to a payload - the Include* flags in the URL are ignored, so
+# the task token returns task rows whatever you ask it for, and only the history token
+# returns activityHistory. Such a project names a token per feed with a suffixed key,
+# "talaja.history", and the plain "talaja" entry is the fallback for any feed without one
+# (type=constraintLog, for instance, which every Talaja token serves).
+FEED_SUFFIXES = ("history", "constraintlog")
 # keys that only ever appeared in the old three-tokens-per-project shape
 LEGACY_KEYS = {"task", "history", "constraintlog", "constraints", "hist", "notes",
                "adopt_task", "adopt_hist", "adopt_notes"}
@@ -51,7 +59,7 @@ class TokenRejected(Exception):
 
 
 def env_name(key):
-    return "VL_TOKEN_" + key.upper()
+    return "VL_TOKEN_" + key.upper().replace(".", "_")
 
 
 def parse_tokens_map(blob, source="VL_TOKENS_JSON"):
@@ -66,7 +74,11 @@ def parse_tokens_map(blob, source="VL_TOKENS_JSON"):
     out = {}
     for k, v in parsed.items():
         kl = str(k).strip().lower()
-        if kl in LEGACY_KEYS or isinstance(v, dict):
+        base = kl.split(".", 1)[0]
+        if base != kl and kl.split(".", 1)[1] not in FEED_SUFFIXES:
+            raise TokenError('%s: "%s" is not a feed this builder fetches; use %s'
+                             % (source, k, " or ".join(base + "." + s for s in FEED_SUFFIXES)))
+        if (base in LEGACY_KEYS and base == kl) or isinstance(v, dict):
             raise TokenError(OLD_SHAPE % source)
         if v is None or (isinstance(v, str) and not v.strip()):
             continue                                   # a placeholder, treat as absent
@@ -89,8 +101,11 @@ def tokens_from_file():
     return parse_tokens_map(text, TOKENS_FILE_NAME) if text.strip() else {}
 
 
-def candidates(key):
-    """Ordered, de-duplicated [(token, source)] for this project. May raise TokenError."""
+def candidates(key, feed=None):
+    """Ordered, de-duplicated [(token, source)] for this project, most specific first.
+
+    With a feed, a token named for that feed ("talaja.history", VL_TOKEN_TALAJA_HISTORY)
+    is tried before the project's own, which remains the fallback."""
     out, seen = [], set()
 
     def add(tok, src):
@@ -99,9 +114,11 @@ def candidates(key):
             seen.add(tok)
             out.append((tok, src))
 
-    add(os.environ.get(env_name(key)), env_name(key))
-    add(tokens_from_env().get(key), "VL_TOKENS_JSON")
-    add(tokens_from_file().get(key), TOKENS_FILE_NAME)
+    names = ([key + "." + feed.lower()] if feed else []) + [key]
+    for nm in names:
+        add(os.environ.get(env_name(nm)), env_name(nm))
+        add(tokens_from_env().get(nm), "VL_TOKENS_JSON [%s]" % nm)
+        add(tokens_from_file().get(nm), "%s [%s]" % (TOKENS_FILE_NAME, nm))
     return out
 
 
@@ -145,11 +162,12 @@ def is_rejection(e):
 class TokenPool:
     """This project's candidate tokens, in the order they should be tried."""
 
-    def __init__(self, key, label=None):
+    def __init__(self, key, label=None, feed=None):
         self.key = key
-        self.label = label or LABELS.get(key, key)
+        self.feed = feed
+        self.label = (label or LABELS.get(key, key)) + (" (%s feed)" % feed if feed else "")
         try:
-            self._c = candidates(key)
+            self._c = candidates(key, feed)
         except TokenError as e:
             raise SystemExit(str(e))
         if not self._c:

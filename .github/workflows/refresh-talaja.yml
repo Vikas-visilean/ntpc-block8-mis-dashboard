@@ -1,0 +1,101 @@
+name: Refresh ABREL Talaja dashboard from VisiLean
+
+# Runs twice a day (10:21 and 16:21 IST) and whenever someone presses "Run workflow"
+# in the Actions tab. Each run is ONE refresh: fetch VisiLean, rebuild, commit and push
+# only if the data or the template changed. Same pattern as refresh-adani-s7.yml.
+#
+# Talaja is the project whose VisiLean tokens are pinned per payload: the task token
+# returns task rows whatever flags the URL carries, and only the history token returns
+# activityHistory. So this workflow passes a second secret, VL_TOKEN_TALAJA_HISTORY, for
+# that feed; VL_TOKEN_TALAJA covers the task and constraint-log feeds. See vl_token.py.
+#
+# GitHub fires scheduled runs on a best-effort basis, so a scheduled run may start a
+# little later than asked (typically 10-30 min, worst case ~2 h). Press "Run workflow"
+# if you need the numbers right now.
+
+on:
+  schedule:
+    # cron is UTC. IST = UTC+5:30. Each project is offset a few minutes from the others
+    # so the workers do not all push to the repo at the same second.
+    - cron: "51 4 * * *"      # 10:21 IST
+    - cron: "51 10 * * *"     # 16:21 IST
+  workflow_dispatch:          # manual: Actions tab -> "Run workflow", or `gh workflow run refresh-talaja.yml`
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-talaja
+  cancel-in-progress: true      # a manual run started during a scheduled one replaces it
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Resolve credentials. VL_TOKEN_TALAJA is tried first, then the project's entry in
+      # the single VL_TOKENS_JSON secret. Not configured = warning + skipped refresh,
+      # never a failed run - see scripts/sync_preflight.py.
+      - name: Resolve VisiLean credentials
+        id: pre
+        env:
+          VL_TOKENS_JSON: ${{ secrets.VL_TOKENS_JSON }}
+          VL_TOKEN_TALAJA: ${{ secrets.VL_TOKEN_TALAJA }}
+        run: python scripts/sync_preflight.py talaja
+
+      - name: Refresh once (fetch, build, publish if changed)
+        if: steps.pre.outputs.configured == 'true'
+        env:
+          VL_TOKENS_JSON: ${{ secrets.VL_TOKENS_JSON }}
+          VL_TOKEN_TALAJA: ${{ secrets.VL_TOKEN_TALAJA }}
+          VL_TOKEN_TALAJA_HISTORY: ${{ secrets.VL_TOKEN_TALAJA_HISTORY }}
+        run: |
+          set -uo pipefail
+          git config user.name  "visilean-bot"
+          git config user.email "support@visilean.com"
+
+          # VisiLean occasionally blinks; give it three tries two minutes apart before
+          # calling the run failed.
+          built=false
+          for attempt in 1 2 3 ; do
+            echo "::group::attempt $attempt  $(date -u '+%H:%M:%S UTC')"
+            if python scripts/dash_data.py talaja && python scripts/build_dash.py talaja ; then
+              built=true
+              echo "::endgroup::"
+              break
+            fi
+            echo "attempt $attempt failed (VisiLean unreachable or build error)"
+            echo "::endgroup::"
+            git checkout -- talaja 2>/dev/null || true
+            [ "$attempt" -lt 3 ] && sleep 120
+          done
+
+          if [ "$built" != "true" ]; then
+            echo "::error title=ABREL Talaja refresh failed::3 attempts failed - VisiLean unreachable, token rejected, or a build error."
+            echo "### ABREL Talaja refresh failed" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "All 3 attempts failed. Check the logs above: a rejected token gives HTTP 400 from VisiLean." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          if git diff --quiet -- talaja/.datahash talaja/.tplhash ; then
+            echo "no data change - nothing published"
+            echo "No change in VisiLean data since the last build; nothing published." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          git add talaja
+          git commit -m "talaja auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || true
+          # the other projects publish at about the same time, so expect a few rejected pushes
+          for try in 1 2 3 4 5 ; do
+            git pull --rebase --autostash -q && git push -q && { echo "published"; echo "Published a new build at $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            echo "push retry $try"; sleep $((10*try))
+          done
+          echo "::error::could not push after 5 tries"
+          exit 1
