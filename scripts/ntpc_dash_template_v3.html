@@ -3720,6 +3720,34 @@ const PARK_AREA = {
   batching: ["#a98450", "batching plant"],
   infra:    ["#8d8368", "infrastructure"],
 };
+/* The park belongs to more than one plant. All the code below calls the plant this dashboard
+   is about "s6a", because S6a was the park's first project; rather than thread a key through
+   every branch, a project that sits elsewhere in the same park names its own area with
+   parkModel.self and it is swapped into that slot here, at load. Where the project has no
+   traced area of its own, its footprint is taken from its issued plant layout - the park and
+   the plant sheets share one survey grid - and the real S6a is demoted to a neighbour, which
+   is worth seeing: these plants are built side by side. */
+const SELFLBL=(()=>{
+  const P=CFG.parkModel; if(!P) return "S6a · 234 MW";
+  P.areas=P.areas||{};
+  const self=P.self;
+  if(self&&self!=="s6a"){
+    let mine=P.areas[self];
+    if(!mine&&CFG.siteModel&&CFG.siteModel.blocks&&CFG.siteModel.blocks.length&&P.origin&&CFG.siteModel.origin){
+      const S=CFG.siteModel,dx=S.origin.E-P.origin.E,dy=S.origin.N-P.origin.N,xs=[],ys=[];
+      S.blocks.forEach(b=>(b.poly||[]).forEach(q=>{xs.push(q[0]+dx);ys.push(q[1]+dy)}));
+      if(xs.length)mine=[[Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)]];
+    }
+    if(mine){
+      const nb=P.areas.s6a;
+      P.areas.s6a=mine; delete P.areas[self];
+      if(nb){P.areas.neighbour=nb; PARK_AREA.neighbour=["#4f7f66","S6a - 234 MW"];}
+    }
+  }
+  const lbl=P.selfLabel||"S6a · 234 MW";
+  PARK_AREA.s6a=[PARK_AREA.s6a[0],lbl.replace(" · "," - ")];
+  return lbl;
+})();
 // one colour per kind of place, so the park reads without having to label every dot
 const FAC = {
   helipad:["#e4564f","Helipad"], batching:["#a98450","Batching plant"],
@@ -3770,20 +3798,20 @@ function park3d(rows,idp){
   });
   {const a=(P.areas&&P.areas.s6a&&P.areas.s6a[0]);
    if(a){const q=prj((a[0]+a[2])/2,(a[1]+a[3])/2,0);
-     g+=`<text x="${X(q[0])}" y="${(+Y(q[1])+FS*1.6).toFixed(1)}" text-anchor="middle" font-size="${(FS*1.5).toFixed(0)}" font-weight="800" style="fill:#0f5c35;paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:${(5*K).toFixed(1)}">S6a · 234 MW</text>`}}
+     g+=`<text x="${X(q[0])}" y="${(+Y(q[1])+FS*1.6).toFixed(1)}" text-anchor="middle" font-size="${(FS*1.5).toFixed(0)}" font-weight="800" style="fill:#0f5c35;paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:${(5*K).toFixed(1)}">${esc(SELFLBL)}</text>`}}
   g+=`</svg>`;
   setTimeout(()=>parkGLInit(rows,idp),0);
   const S=P.stats||{};
   const go=(k,col,txt,bold)=>`<button class="lgb" data-go="${k}" onclick="parkGo('${idp}','${k}')" title="show me ${esc(txt)}"><span class="sw" style="background:${col}"></span>${bold?`<b>${txt}</b>`:txt}</button>`;
   const key=Object.entries(FAC).map(([k,v])=>go(k,v[0],v[1])).join("");
   return `<div class="legend" style="margin-bottom:4px">
-      ${go("s6a","#22406a","S6a — this project",1)}
+      ${go("s6a","#22406a",SELFLBL+" — this project",1)}
       ${go("plot","#2f62d8","Khavda plot boundary")}
       ${go("tl33","#1fa8bd","33kV TL corridor")}
       ${go("tl400","#7b5fd0","400kV TL")}
       ${go("nogo","#cf4a46","no-go area")}
       ${key}
-      <span class="dim">${(W/1000).toFixed(1)} km × ${(D/1000).toFixed(1)} km · ${S.plotAcres?S.plotAcres.toLocaleString():""} acres · ${S.solarMWac?S.solarMWac.toLocaleString():""} MWac solar · ${S.wtg||0} × 5.2 MW WTG (${S.windMW||0} MW) · drag to orbit, scroll to zoom in on the pointer · click a legend entry to fly there, click an S6a block to filter</span>
+      <span class="dim">${(W/1000).toFixed(1)} km × ${(D/1000).toFixed(1)} km · ${S.plotAcres?S.plotAcres.toLocaleString():""} acres · ${S.solarMWac?S.solarMWac.toLocaleString():""} MWac solar · ${S.wtg||0} × 5.2 MW WTG (${S.windMW||0} MW) · drag to orbit, scroll to zoom in on the pointer · click a legend entry to fly there, click a block to filter</span>
     </div><div class="glwrap"><div class="glbox" id="${idp}-gl"></div>${g}</div>`;
 }
 // the legend buttons reach the live scene through here; before it is up, they do nothing
@@ -4336,7 +4364,8 @@ function buildParkGL(rows, idp, box, P){
      const xs=[],ys=[]; S.blocks.forEach(b=>b.poly.forEach(q=>{xs.push(q[0]+dx);ys.push(q[1]+dy)}));
      a=[Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];}
    if(a){const st=(P.stats||{});
-     const c=chip("S6a · 234 MW", "<b>S6a · 234 MW</b><br>this project · 19 ICR blocks",
+     const nb=(CFG.siteModel&&CFG.siteModel.blocks||[]).length;
+     const c=chip(SELFLBL, `<b>${esc(SELFLBL)}</b><br>this project${nb?` · ${nb} ICR blocks`:""}`,
                   new T.Vector3((a[0]+a[2])/2, 340, Z((a[1]+a[3])/2)), true);
      tags.unshift(c);}}
   const v=new T.Vector3();
@@ -4489,7 +4518,7 @@ function pageLayout(){
   {const m=site3d(use,"lay3d");
    if(m)h+=card("span12","Plant Layout — 3D Site Model","real block outlines, roads, corridors, boundary, turbines and BESS off the issued array layout · arrays built = actual % · click a block to filter",m);}
   {const m=park3d(use,"park3d");
-   if(m)h+=card("span12","Khavda Hybrid Park — where S6a sits","the whole park off sheet 1 of the issued array layout · plot boundary, roads, 33kV and 400kV corridors, no-go areas, all 388 turbines, PSS/BESS and GIS yards, batching plants, camps, townships, helipad, container yard, stores and mobile towers · hover any marker",m);}
+   if(m)h+=card("span12",`Khavda Hybrid Park — where ${esc(SELFLBL.split("·")[0].trim())} sits`,"the whole park off sheet 1 of the issued array layout · plot boundary, roads, 33kV and 400kV corridors, no-go areas, all 388 turbines, PSS/BESS and GIS yards, batching plants, camps, townships, helipad, container yard, stores and mobile towers · hover any marker",m);}
   h+=layoutCard(use,CFG.plantLayout?"Plant Layout — Site Map":"Plant Layout — Block / Feeder Scorecard","lay-view");
   h+=card("span12","Area Scorecard","weightage-based vs plan",scorecard(use));
   h+="</div>";
