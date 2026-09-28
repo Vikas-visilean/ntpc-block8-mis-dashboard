@@ -83,11 +83,19 @@ jobs:
             exit 0
           fi
 
-          git add v2 v3          # this workflow builds BOTH NTPC themes
-          git commit -m "v2 auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || true
-          # someone may have pushed while we were building
+          # The other projects publish at about the same time, so a push can be rejected.
+          # Rebasing is the wrong tool here: this page is generated output, not somebody's
+          # edit, and a rebase of it against a concurrent build conflicts and then retries
+          # the same conflict until the run fails. Instead, re-cut the commit on whatever
+          # master has become, keeping the files this run just built. Ours is the newer
+          # render of the newer data, so ours wins by construction and never conflicts.
           for try in 1 2 3 ; do
-            git pull --rebase --autostash -q && git push -q && { echo "published"; echo "Published a new build at $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            git fetch -q origin master
+            git reset -q --mixed origin/master      # keep the built files, move onto master
+            git add v2 v3          # this workflow builds BOTH NTPC themes
+            git commit -q -m "v2 auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || {
+              echo "nothing left to publish after $(git rev-parse --short origin/master)"; exit 0; }
+            git push -q && { echo "published"; echo "Published a new build at $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
             echo "push retry $try"; sleep 5
           done
           echo "::error::could not push after 3 tries"

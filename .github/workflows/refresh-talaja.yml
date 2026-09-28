@@ -90,11 +90,19 @@ jobs:
             exit 0
           fi
 
-          git add talaja
-          git commit -m "talaja auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || true
-          # the other projects publish at about the same time, so expect a few rejected pushes
+          # The other projects publish at about the same time, so a push can be rejected.
+          # Rebasing is the wrong tool here: this page is generated output, not somebody's
+          # edit, and a rebase of it against a concurrent build conflicts and then retries
+          # the same conflict until the run fails. Instead, re-cut the commit on whatever
+          # master has become, keeping the files this run just built. Ours is the newer
+          # render of the newer data, so ours wins by construction and never conflicts.
           for try in 1 2 3 4 5 ; do
-            git pull --rebase --autostash -q && git push -q && { echo "published"; echo "Published a new build at $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            git fetch -q origin master
+            git reset -q --mixed origin/master      # keep the built files, move onto master
+            git add talaja
+            git commit -q -m "talaja auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || {
+              echo "nothing left to publish after $(git rev-parse --short origin/master)"; exit 0; }
+            git push -q && { echo "published"; echo "Published a new build at $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
             echo "push retry $try"; sleep $((10*try))
           done
           echo "::error::could not push after 5 tries"
