@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Assemble the simple user updates report: template + adoption data + logo -> ../updates/
+"""Assemble the User Updates report: template + every project's trail + logo -> ../updates/
 
 Shares scripts/adoption_data.json with the fuller adoption report - same audit trail,
 a simpler view of it (who updated what, when, and what kind of action), modelled on the
@@ -14,7 +14,7 @@ SCR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(SCR)
 
 tpl = open(os.path.join(SCR, "updates_template.html"), encoding="utf-8").read()
-data_txt = open(os.path.join(SCR, "adoption_data.json"), encoding="utf-8").read()
+data_txt = open(os.path.join(SCR, "updates_data.json"), encoding="utf-8").read()
 logo = "data:image/png;base64," + open(os.path.join(SCR, "kp_logo.b64"), encoding="ascii").read().strip()
 
 html = tpl.replace("__LOGO__", logo).replace("__DATA__", data_txt)

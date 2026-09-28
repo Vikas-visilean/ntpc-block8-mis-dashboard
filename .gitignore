@@ -1,9 +1,10 @@
-﻿scripts/vl_tokens.json
+scripts/vl_tokens.json
 scripts/ntpc_dashboard_data_v2.json
 
 scripts/__pycache__/
 scripts/sjvn_dashboard_data.json
 scripts/adoption_data.json
+scripts/updates_data.json
 scripts/adani_dashboard_data.json
 scripts/adanis7_dashboard_data.json
 scripts/talaja_dashboard_data.json

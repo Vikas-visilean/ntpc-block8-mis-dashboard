@@ -1,9 +1,10 @@
-name: Refresh NTPC user adoption + updates reports from VisiLean
+name: Refresh the NTPC user adoption tracker from VisiLean
 
 # Runs twice a day (10:15 and 16:15 IST) and whenever someone presses "Run workflow"
 # in the Actions tab. Each run is ONE refresh: fetch VisiLean, rebuild, commit and push
 # only if the data or the template changed. Same pattern as refresh-v2.yml.
-# Builds both the Adoption tracker (/adoption/) and the Updates report (/updates/).
+# Builds the Adoption tracker (/adoption/). The Updates report has its own workflow now,
+# refresh-updates.yml, because it reads every project rather than only NTPC.
 #
 # GitHub fires scheduled runs on a best-effort basis, so a scheduled run may start a
 # little later than asked (typically 10-30 min, worst case ~2 h). Press "Run workflow"
@@ -61,14 +62,14 @@ jobs:
           built=false
           for attempt in 1 2 3 ; do
             echo "::group::attempt $attempt  $(date -u '+%H:%M:%S UTC')"
-            if python scripts/adoption_data.py && python scripts/build_adoption.py && python scripts/build_updates.py ; then
+            if python scripts/adoption_data.py && python scripts/build_adoption.py ; then
               built=true
               echo "::endgroup::"
               break
             fi
             echo "attempt $attempt failed (VisiLean unreachable or build error)"
             echo "::endgroup::"
-            git checkout -- adoption updates 2>/dev/null || true
+            git checkout -- adoption 2>/dev/null || true
             [ "$attempt" -lt 3 ] && sleep 120
           done
 
@@ -86,8 +87,8 @@ jobs:
             exit 0
           fi
 
-          git add adoption updates/index.html updates/meta.json updates/.datahash
-          git commit -m "adoption + updates auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || true
+          git add adoption 
+          git commit -m "adoption auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || true
           # the other projects publish at about the same time, so expect a few rejected pushes
           for try in 1 2 3 4 5 ; do
             git pull --rebase --autostash -q && git push -q && { echo "published"; echo "Published a new build at $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')." >> "$GITHUB_STEP_SUMMARY"; exit 0; }

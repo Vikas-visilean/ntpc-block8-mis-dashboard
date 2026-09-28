@@ -180,6 +180,7 @@ svg text{fill:var(--mut);font-family:inherit}
   <div class="pbadge" id="h-badge">NTPC Block 8</div>
   <h1>User Updates Report</h1>
   <div class="hkpi">
+    <div class="hcard"><div class="v" id="k-proj">—</div><div class="l">Projects</div></div>
     <div class="hcard"><div class="v" id="k-upd">—</div><div class="l">Updates</div></div>
     <div class="hcard"><div class="v" id="k-last">—</div><div class="l">Last update date</div></div>
     <div class="hcard"><div class="v" id="k-users">—</div><div class="l">Users</div></div>
@@ -209,16 +210,17 @@ const M = DATA.meta, C = {}; DATA.cols.forEach((c,i)=>C[c]=i);
 const fixEnc=s=>String(s==null?"":s).replace(/â€”/g,"—").replace(/â€“/g,"–")
   .replace(/â€™/g,"’").replace(/â€œ/g,"“").replace(/â€\u009d/g,"”")
   .replace(/Â(?=[\u00A0-\u00BF])/g,"");
-["project","projectShort","client","source"].forEach(k=>{if(typeof M[k]==="string")M[k]=fixEnc(M[k])});
-/* Hidden from THIS report only - the adoption report shares the same data file and still
-   shows them. Everything downstream derives from EV, so one filter covers the KPIs, the
-   slicers, both charts, the week summary and the log. (KP: monika sen 09-Sep-2026; Vikas
-   Patel and Vikram Singh 18-Sep-2026. Shreyanshi Jaiswal is excluded in the builder instead,
-   so she is out of both reports.) */
-const HIDE_ACTORS=new Set(["monika sen","vikas patel","vikram singh"]);
-const EV = DATA.events.filter(r=>!HIDE_ACTORS.has(String(r[C.actor]||"").trim().toLowerCase()));
-const HIDDEN_PRESENT=new Set(DATA.events.map(r=>String(r[C.actor]||"").trim().toLowerCase())
-  .filter(a=>HIDE_ACTORS.has(a))).size;          // so the roster count stays honest below
+["title","client","source"].forEach(k=>{if(typeof M[k]==="string")M[k]=fixEnc(M[k])});
+(M.projects||[]).forEach(p=>{["name","short","client"].forEach(k=>{if(typeof p[k]==="string")p[k]=fixEnc(p[k])})});
+/* This report reads every project KP runs, so everything a project knows about itself -
+   its users' departments, who has work assigned, who is left out - hangs off the project
+   rather than off the report. Accounts nobody wants counted are dropped by the builder,
+   per project, so nothing is filtered here. */
+const PROJECTS=(M.projects||[]);
+const PROJ={};PROJECTS.forEach(p=>PROJ[p.key]=p);
+const PKEYS=PROJECTS.map(p=>p.key);
+const pname=k=>{const p=PROJ[k];return p?(p.short||p.name||k):k};
+const EV = DATA.events;
 
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=n=>Number(n||0).toLocaleString();
@@ -242,12 +244,13 @@ function showTip(e,html){const t=document.getElementById("tip");t.innerHTML=html
 function hideTip(){const t=document.getElementById("tip");if(t)t.style.display="none"}
 
 /* first person to touch each activity - the reference's "First HistoryOwerns" */
-const FIRST={};
+const FIRST={};      // "<project>|<activity>" - ids repeat across projects
 EV.slice().sort((a,b)=>String(a[C.ts]).localeCompare(String(b[C.ts]))).forEach(r=>{
-  if(FIRST[r[C.tid]]===undefined)FIRST[r[C.tid]]=r[C.actor]});
+  const k=r[C.proj]+"|"+r[C.tid];
+  if(FIRST[k]===undefined)FIRST[k]=r[C.actor]});
 
 /* ---------- filter state: multi-select sets, like Power BI slicers ---------- */
-const S={day:new Set(),actor:new Set(),action:new Set(),trade:new Set(),status:new Set()};
+const S={proj:new Set(),day:new Set(),actor:new Set(),action:new Set(),trade:new Set(),status:new Set()};
 const F={d1:"",d2:"",loc:"",q:""};
 let page=0;
 function keep(r,skip){
@@ -259,6 +262,7 @@ function keep(r,skip){
   if(F.q){const q=F.q.toLowerCase();
     if(!(String(r[C.task]).toLowerCase().includes(q)||String(r[C.detail]).toLowerCase().includes(q)))return false}
   if(!nd&&skip!=="day"&&S.day.size&&!S.day.has(day))return false;
+  if(skip!=="proj"&&S.proj.size&&!S.proj.has(r[C.proj]))return false;
   if(skip!=="actor"&&S.actor.size&&!S.actor.has(r[C.actor]))return false;
   if(skip!=="action"&&S.action.size&&!S.action.has(r[C.action]))return false;
   if(skip!=="trade"&&S.trade.size&&!S.trade.has(r[C.trade]||"— not set"))return false;
@@ -288,13 +292,15 @@ function slicer(title,setName,opts,order){
     `</div></div></div>`;
 }
 function renderRail(){
-  const anyF=S.day.size||S.actor.size||S.action.size||S.trade.size||S.status.size||F.d1||F.d2||F.loc||F.q;
+  const anyF=S.proj.size||S.day.size||S.actor.size||S.action.size||S.trade.size||S.status.size||F.d1||F.d2||F.loc||F.q;
   let h=`<div class="slicer"><h3>History date</h3><div class="body">
       <div class="dpair"><div><label>From</label><input type="date" id="f-d1" value="${F.d1}"></div>
       <div><label>To</label><input type="date" id="f-d2" value="${F.d2}"></div></div>
       <div style="margin-top:8px"><input type="search" id="f-q" placeholder="Search activity or history…" value="${esc(F.q)}"></div>
       ${anyF?`<div class="railtop" style="margin-top:8px"><button class="reset" id="f-reset">Clear all filters</button></div>`:""}
     </div></div>`;
+  if(PKEYS.length>1)h+=slicer("Project","proj",optCounts("proj","proj"),
+    (a,b)=>PKEYS.indexOf(a[0])-PKEYS.indexOf(b[0]));
   h+=slicer("List of history date","day",optCounts("day","day"),(a,b)=>b[0].localeCompare(a[0]));
   h+=slicer("Owners (updated by)","actor",optCounts("actor","actor"));
   h+=slicer("History category","action",optCounts("action","action"));
@@ -303,6 +309,9 @@ function renderRail(){
   const rail=document.getElementById("rail");rail.innerHTML=h;
   rail.querySelectorAll('input[data-set="action"]').forEach(el=>{
     const t=el.parentElement.querySelector(".t");t.textContent=aLabel(el.dataset.v);t.title=aLabel(el.dataset.v)});
+  rail.querySelectorAll('input[data-set="proj"]').forEach(el=>{
+    const t=el.parentElement.querySelector(".t");const p=PROJ[el.dataset.v];
+    t.textContent=pname(el.dataset.v);t.title=p?(p.name||"")+(p.client?" · "+p.client:""):el.dataset.v});
   rail.querySelectorAll('input[data-set="day"]').forEach(el=>{
     const t=el.parentElement.querySelector(".t");t.textContent=dshow(el.dataset.v+"T00:00:00");t.title=el.dataset.v});
   rail.querySelectorAll("input[data-set]").forEach(el=>
@@ -414,9 +423,15 @@ function vbars(items,o){
    updates is often not their own (Fenil Rana is in Project and updates Procurement's work).
    A user who owns no task has no entry, so for them fall back to the departments that own
    the activities they update, and say so in the tooltip. */
-const USER_DEPT={};Object.entries(M.deptByUser||{}).forEach(([k,v])=>{USER_DEPT[String(k).trim().toLowerCase()]=v});
-/* KP's answer for a user VisiLean has no task for - reported as KP's, not VisiLean's */
-const KP_DEPT={};Object.entries(M.deptManual||{}).forEach(([k,v])=>{KP_DEPT[String(k).trim().toLowerCase()]=v});
+const USER_DEPT={},KP_DEPT={};      // "<project>|<user>" -> department
+PROJECTS.forEach(p=>{
+  Object.entries(p.deptByUser||{}).forEach(([k,v])=>{USER_DEPT[p.key+"|"+String(k).trim().toLowerCase()]=v});
+  Object.entries(p.deptManual||{}).forEach(([k,v])=>{KP_DEPT[p.key+"|"+String(k).trim().toLowerCase()]=v});
+});
+/* the projects a person updates in, so a name can be asked about the right one */
+const ACTOR_PROJ={};
+EV.forEach(r=>{const a=String(r[C.actor]||"").trim().toLowerCase();
+  (ACTOR_PROJ[a]=ACTOR_PROJ[a]||new Set()).add(r[C.proj])});
 const PEOPLE=new Set(EV.map(r=>String(r[C.actor]||"").trim().toLowerCase()).filter(Boolean));
 const ACT_DEPT=(()=>{const g={};
   EV.forEach(r=>{const d=String(r[C.owner]||"").trim();
@@ -426,9 +441,13 @@ const ACT_DEPT=(()=>{const g={};
     const ds=Object.entries(v).sort((x,y)=>y[1]-x[1]);
     out[a]={label:ds[0][0],split:ds.map(([k,n])=>`${k} (${n})`).join(" · ")}});
   return out})();
-function deptOf(a){
+function deptOf(a,pk){
   const key=String(a||"").trim().toLowerCase();
-  const rec=USER_DEPT[key],kp=KP_DEPT[key],inf=ACT_DEPT[a];
+  // a name belongs to a project; without one, ask the projects this person updates in
+  const keys=pk?[pk]:[...(ACTOR_PROJ[key]||[])];
+  let rec=null,kp=null;
+  for(const k of keys){ rec=rec||USER_DEPT[k+"|"+key]; kp=kp||KP_DEPT[k+"|"+key]; }
+  const inf=ACT_DEPT[a];
   const also=inf?` · updates activities owned by ${inf.split}`:"";
   if(rec)return{label:rec,title:`${a} — department recorded in VisiLean: ${rec}`+also};
   if(kp) return{label:kp, title:`${a} — department per KP: ${kp} · VisiLean has no task owned by them, so it is set in the report`+also};
@@ -461,7 +480,9 @@ function weekSummary(){
     .sort((a,b)=>String(b.last).localeCompare(String(a.last)));   // most recently quiet first
   const wlbl=`${dshow(a+"T00:00:00")} – ${dshow(b+"T00:00:00")}`;
   const clean=!(S.actor.size||S.action.size||S.trade.size||S.status.size||F.loc||F.q);
-  const never=Math.max(0,(M.rosterSize||0)-HIDDEN_PRESENT-known.length);   // hidden users are on the roster but not in this report
+  const shownP=S.proj.size?PKEYS.filter(k=>S.proj.has(k)):PKEYS;
+  const rosterAll=shownP.reduce((s,k)=>s+((PROJ[k]||{}).rosterSize||0),0);
+  const never=Math.max(0,rosterAll-known.length);
   const dlt=(n,o,unit)=>{const d=n-o;if(!prv.length)return `<span class="chip mut" style="margin-left:5px">first week in the trail</span>`;
     return `<span class="chip ${d>0?"good":d<0?"crit":"mut"}" style="margin-left:5px">${d>0?"▲":d<0?"▼":"="} ${fmt(Math.abs(d))} ${unit} vs previous week</span>`};
   const tile=(v,l,s,fil)=>`<div class="wtile${fil?"":" flat"}"${fil?' data-wkf="1" title="filter the whole page to this week"':""}>
@@ -509,16 +530,27 @@ function weekSummary(){
    adoption gap there is, so name them with what they are holding. Deliberately not
    week-scoped: "never" means never. */
 function neverUpdatedCard(){
-  const acted=new Set(EV.map(r=>String(r[C.actor]||"").trim().toLowerCase()));
-  const never=(M.assignees||[]).filter(a=>!acted.has(String(a.name||"").trim().toLowerCase())
-    && !HIDE_ACTORS.has(String(a.name||"").trim().toLowerCase()));
+  /* An assignee belongs to one project, so ask each project about its own people. Only
+     the projects in view are asked, so the card follows the Project slicer. */
+  const shown=S.proj.size?PKEYS.filter(k=>S.proj.has(k)):PKEYS;
+  const never=[];
+  shown.forEach(k=>{
+    const p=PROJ[k]||{};
+    const acted=new Set(EV.filter(r=>r[C.proj]===k)
+      .map(r=>String(r[C.actor]||"").trim().toLowerCase()));
+    (p.assignees||[]).forEach(a=>{
+      if(!acted.has(String(a.name||"").trim().toLowerCase())) never.push(Object.assign({proj:k},a));
+    });
+  });
+  never.sort((a,b)=>(b.tasks||0)-(a.tasks||0));
   if(!never.length)return "";
   const tot=never.reduce((s,a)=>s+(a.tasks||0),0),mx=Math.max(1,...never.map(a=>a.tasks||0));
   return card("sp12",`Assigned work but never updated <span class="dim" style="font-weight:400">(${never.length} user${never.length===1?"":"s"})</span>`,
     "activities are assigned to them in VisiLean, yet the trail holds no update from them at all — not this week, not ever",
-    never.map(a=>`<div class="urow" style="cursor:default" title="${esc(a.name)} holds ${fmt(a.tasks)} activities and has never updated in VisiLean">
+    never.map(a=>`<div class="urow" style="cursor:default" title="${esc(a.name)} holds ${fmt(a.tasks)} activities on ${esc(pname(a.proj))} and has never updated in VisiLean">
         <div class="rk dot" style="color:var(--crit)">•</div>
-        <div class="nm">${esc(a.name)}${a.dept?`<span class="dept">${esc(a.dept)}</span>`:""}</div>
+        <div class="nm">${esc(a.name)}${a.dept?`<span class="dept">${esc(a.dept)}</span>`:""}${
+          PKEYS.length>1?`<span class="dept" style="opacity:.75">${esc(pname(a.proj))}</span>`:""}</div>
         <div class="mbar"><i style="width:${Math.max(4,100*(a.tasks||0)/mx).toFixed(1)}%;background:var(--crit)"></i></div>
         <div class="n">${fmt(a.tasks)}</div></div>`).join(""),
     `<span class="chip crit">${fmt(tot)} activities with nobody updating them</span>`);
@@ -537,10 +569,14 @@ function render(){
     .sort((a,b)=>b.n-a.n);
   const last=rs.map(r=>r[C.ts]).filter(Boolean).sort().slice(-1)[0]||"";
 
+  {const inView=new Set(rs.map(r=>r[C.proj])).size, all=PKEYS.length;
+   const el=document.getElementById("k-proj");
+   el.textContent=all>1?(inView===all?fmt(all):inView+" / "+all):fmt(all||1);
+   el.parentElement.title=all>1?PKEYS.map(pname).join(" · "):"";}
   document.getElementById("k-upd").textContent=fmt(rs.length);
   document.getElementById("k-last").textContent=last?dshow(last):"—";
   document.getElementById("k-users").textContent=fmt(byUser.length);
-  document.getElementById("k-acts").textContent=fmt(new Set(rs.map(r=>r[C.tid])).size);
+  document.getElementById("k-acts").textContent=fmt(new Set(rs.map(r=>r[C.proj]+"|"+r[C.tid])).size);
 
   const locs=[...new Set(EV.map(r=>r[C.loc]).filter(Boolean))].sort();
   const ls=document.getElementById("f-loc");
@@ -549,9 +585,9 @@ function render(){
   ls.disabled=!locs.length;
 
   const parts=[];
-  const LBL={day:"Date",actor:"Owner",action:"Category",trade:"Trade",status:"Status"};
+  const LBL={proj:"Project",day:"Date",actor:"Owner",action:"Category",trade:"Trade",status:"Status"};
   Object.keys(S).forEach(k=>S[k].forEach(v=>parts.push(
-    `<span class="fchip" data-un="${k}" data-v="${esc(v)}">${LBL[k]}: ${esc(k==="action"?aLabel(v):k==="day"?dshow(v+"T00:00:00"):v)} ✕</span>`)));
+    `<span class="fchip" data-un="${k}" data-v="${esc(v)}">${LBL[k]}: ${esc(k==="action"?aLabel(v):k==="day"?dshow(v+"T00:00:00"):k==="proj"?pname(v):v)} ✕</span>`)));
   ["d1","d2","loc","q"].forEach(k=>{if(F[k])parts.push(
     `<span class="fchip" data-clr="${k}">${({d1:"From",d2:"To",loc:"Location",q:"Search"})[k]}: ${esc(F[k])} ✕</span>`)});
   document.getElementById("fchips").innerHTML=parts.join("");
@@ -577,13 +613,13 @@ function render(){
   const slice=sorted.slice(page*per,(page+1)*per);
   h+=card("sp12",`Update log <span class="dim" style="font-weight:400">(${fmt(sorted.length)})</span>`,
     "who updated which activity, when, and exactly what VisiLean recorded",
-    slice.length?`<div class="twrap"><table><thead><tr><th>ID</th><th>Activity name</th><th>Status</th>
+    slice.length?`<div class="twrap"><table><thead><tr>${PKEYS.length>1?"<th>Project</th>":""}<th>ID</th><th>Activity name</th><th>Status</th>
       <th>First history owner</th><th>Updated by</th><th>History datetime</th><th>Category</th><th>History</th>
       <th>Trade</th><th>Location</th></tr></thead><tbody>`+
-      slice.map(r=>`<tr><td class="dim mono">${esc(r[C.tid])}</td>
+      slice.map(r=>`<tr>${PKEYS.length>1?`<td class="dim">${esc(pname(r[C.proj]))}</td>`:""}<td class="dim mono">${esc(r[C.tid])}</td>
         <td><b>${esc(r[C.task])}</b>${r[C.pkg]?`<div class="dim" style="font-size:9.5px">${esc(r[C.pkg])}</div>`:""}</td>
         <td><span class="chip ${STONE[r[C.status]]||"mut"}">${esc(r[C.status]||"—")}</span></td>
-        <td class="dim">${esc(FIRST[r[C.tid]]||"—")}</td>
+        <td class="dim">${esc(FIRST[r[C.proj]+"|"+r[C.tid]]||"—")}</td>
         <td class="who">${esc(r[C.actor])}</td>
         <td class="dim mono" style="white-space:nowrap">${dtshow(r[C.ts])}</td>
         <td class="dim">${esc(aLabel(r[C.action]))}</td>
@@ -595,6 +631,7 @@ function render(){
       <button class="btn" id="pg-prev" ${page===0?"disabled":""}>&#8592; Prev</button>
       <span class="dim" style="font-size:10.5px">page ${page+1} of ${pages}</span>
       <button class="btn" id="pg-next" ${page>=pages-1?"disabled":""}>Next &#8594;</button></div>`:"");
+  setBadge();
   document.getElementById("page").innerHTML=h;
 
   document.querySelectorAll("[data-un]").forEach(el=>el.onclick=()=>toggle(el.dataset.un,el.dataset.v));
@@ -611,26 +648,32 @@ function render(){
 }
 
 /* ---------- header meta + controls ---------- */
-document.getElementById("h-badge").textContent=(M.projectShort||M.project||"").replace(/\s*·.*$/,"");
+/* the badge follows the Project slicer: one project by name, otherwise the count */
+function setBadge(){
+  const sel=S.proj.size?PKEYS.filter(k=>S.proj.has(k)):PKEYS;
+  const b=document.getElementById("h-badge");
+  b.textContent=sel.length===1?pname(sel[0]):`${sel.length} projects`;
+  b.title=sel.map(k=>(PROJ[k]||{}).name||k).join(" · ");
+}
 /* when this copy of the page was fetched - the moment Refresh reloaded it */
 const LOADED=new Date();
 const clock=d=>`${String(d.getDate()).padStart(2,"0")}-${MON[d.getMonth()]}-${String(d.getFullYear()).slice(2)}`
   +` ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
 document.getElementById("h-meta").innerHTML=
-  `${esc(M.projectShort||"")} · ${esc(M.client||"")} · LIVE from VisiLean · <span style="color:var(--blue);font-weight:600">last data change ${esc(M.generatedAt||"")}</span>`
+  `${esc(M.client||"KP Group")} · ${PKEYS.length} project${PKEYS.length===1?"":"s"} · LIVE from VisiLean · <span style="color:var(--blue);font-weight:600">last data change ${esc(M.generatedAt||"")}</span>`
   +` · <span id="h-refreshed" title="when this page was last fetched from the server">refreshed ${clock(LOADED)}</span>`;
 
 document.getElementById("f-loc").addEventListener("change",e=>{F.loc=e.target.value;page=0;render()});
 document.getElementById("btn-csv").addEventListener("click",()=>{
-  const head=["ID","Activity name","Status","First history owner","Updated by","History datetime","Category",
+  const head=["Project","ID","Activity name","Status","First history owner","Updated by","History datetime","Category",
               "History","Trade","Location","Department","Activity type","Package","Ownership"];
   const q=s=>`"${String(s==null?"":s).replace(/"/g,'""')}"`;
-  const csv=[head.map(q).join(",")].concat(rows().map(r=>[r[C.tid],r[C.task],r[C.status],FIRST[r[C.tid]]||"",
+  const csv=[head.map(q).join(",")].concat(rows().map(r=>[pname(r[C.proj]),r[C.tid],r[C.task],r[C.status],FIRST[r[C.proj]+"|"+r[C.tid]]||"",
     r[C.actor],dtshow(r[C.ts]),aLabel(r[C.action]),r[C.detail],r[C.trade],r[C.loc],r[C.dept],r[C.atype],
     r[C.pkg],r[C.ownship]].map(q).join(","))).join("\r\n");
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"}));
-  a.download="ntpc-user-updates-"+(M.lastEvent||"")+".csv";document.body.appendChild(a);a.click();a.remove()});
+  a.download="kp-user-updates-"+(M.lastEvent||"")+".csv";document.body.appendChild(a);a.click();a.remove()});
 document.getElementById("btn-refresh").addEventListener("click",e=>{
   const b=e.currentTarget,r=document.getElementById("h-refreshed");
   b.disabled=true;b.textContent="↻ Refreshing…";

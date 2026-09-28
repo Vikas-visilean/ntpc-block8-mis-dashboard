@@ -1,0 +1,147 @@
+# -*- coding: utf-8 -*-
+"""Who is updating VisiLean, across every project KP runs - data for the Updates report.
+
+    python scripts/updates_data.py            all configured projects
+    python scripts/updates_data.py ntpc adani just those
+
+One report, five projects, a project filter on the page. Each project is fetched with its
+own token (VisiLean issues one per project and it serves every feed - see vl_token.py) and
+parsed by updates_trail.py, the same parsing the NTPC adoption tracker has used since
+07-Sep. Every event carries the project it came from, so the page can slice by it.
+
+A project whose token is missing is skipped with a notice rather than failing the run: the
+report is still worth publishing for the projects that are configured, and a missing secret
+is a setup gap nobody fixes by retrying. A token that exists and is REJECTED does fail the
+run, because that is a mistake somebody can fix right now.
+
+Emits scripts/updates_data.json.
+"""
+import io
+import json
+import os
+import sys
+from datetime import datetime, timezone, timedelta
+
+try:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
+SCR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, SCR)
+from vl_token import TokenPool, TokenRejected, fetch_json, missing_message, candidates  # noqa: E402
+from updates_trail import build, COLS                                                   # noqa: E402
+
+BASE = "https://app.visilean.net/pb/PowerBiAPI/resource/powerBi/getData/visilean"
+IST = timezone(timedelta(hours=5, minutes=30))
+
+# the projects this report covers, in the order KP reads them
+PROJECT_KEYS = ["ntpc", "adani", "adanis7", "talaja", "floating"]
+
+# feed -> the flags that select it; every feed is type=task on the one project token
+FEEDS = {
+    "task": "",
+    "hist": ("&IncludeStatusChange=true&IncludeReschedule=true"
+             "&IncludeTaskCreation=true&IncludeQuantities=true"),
+    "notes": "&IncludeConstraintNotes=true&IncludeOther=true",
+}
+
+# Accounts left out of the picture entirely, per project. Shreyanshi Jaiswal is the
+# VisiLean administrator on NTPC: she imports the MPP schedule and reassigns owners and
+# dates, which drowned out the site teams' own updating, so KP asked for her to come out
+# (07-Sep). Vikas Patel and Vikram Singh are VisiLean's own people (18-Sep), monika sen
+# owns no task and VisiLean records no department for her (09-Sep).
+EXCLUDE = {
+    "ntpc": {"shreyanshi jaiswal", "monika sen", "vikas patel", "vikram singh"},
+}
+# a department for a user VisiLean has no task for; the task feed always wins
+MANUAL_DEPT = {}
+
+
+def load_project(key):
+    """(projectId, display name, short name) from the dashboard's own config."""
+    path = os.path.join(SCR, "projects", key + ".json")
+    cfg = json.load(open(path, encoding="utf-8"))
+    name = cfg.get("name") or key
+    short = name.split("·")[0].strip() if "·" in name else name
+    return cfg["projectId"], name, short, cfg.get("client", "")
+
+
+def fetch_project(key, project_id):
+    pool = TokenPool(key, "Updates report")
+    return {kind: fetch_json(
+        pool,
+        lambda t, f=kind: "%s?accessToken=%s&projectId=%s&type=task%s" % (BASE, t, project_id, FEEDS[f]),
+        attempts=3, label="%s/%s" % (key, kind), agent="VisiLean-Updates", timeout=300)
+        for kind in ("task", "hist", "notes")}
+
+
+wanted = [k for k in sys.argv[1:] if not k.startswith("-")] or PROJECT_KEYS
+events, projects, skipped = [], [], []
+
+for key in wanted:
+    project_id, name, short, client = load_project(key)
+    if not candidates(key):
+        print("::notice title=Updates report skipped %s::%s" % (name, missing_message(key)))
+        skipped.append({"key": key, "name": name, "why": "no token"})
+        continue
+    print("fetching %s ..." % name)
+    try:
+        feeds = fetch_project(key, project_id)
+    except TokenRejected as e:
+        # a wrong credential is not an outage: fail so the run goes red
+        print("::error title=Updates report: every %s token rejected::%s" % (name, e))
+        sys.exit(1)
+    except Exception as e:                                        # noqa: BLE001
+        print("SKIP %s this cycle - VisiLean unreachable after retries: %s" % (name, e))
+        skipped.append({"key": key, "name": name, "why": "VisiLean unreachable"})
+        continue
+
+    rows, facts = build(key, feeds, exclude=EXCLUDE.get(key, ()), manual_depts=MANUAL_DEPT.get(key))
+    events.extend(rows)
+    projects.append({
+        "key": key, "name": name, "short": short, "client": client,
+        "events": len(rows), "actors": len(facts["actors"]),
+        "tasks": len({r[3] for r in rows}), "tasksInProject": facts["tasksInProject"],
+        "rosterSize": facts["rosterSize"], "deptByUser": facts["deptByUser"],
+        "deptManual": facts["deptManual"], "assignees": facts["assignees"],
+        "excluded": sorted(EXCLUDE.get(key, ())),
+        "firstEvent": facts["firstEvent"], "lastEvent": facts["lastEvent"],
+        "locFilled": facts["locFilled"],
+    })
+    print("  %s: %d events, %d users, %d of %d activities touched, %s -> %s"
+          % (short, len(rows), len(facts["actors"]), len({r[3] for r in rows}),
+             facts["tasksInProject"], facts["firstEvent"], facts["lastEvent"]))
+
+if not projects:
+    print("::error title=Updates report has no projects::no project could be fetched")
+    sys.exit(1)
+
+events.sort(key=lambda e: (e[0] or "", e[15]))
+now = datetime.now(IST)
+firsts = [p["firstEvent"] for p in projects if p["firstEvent"]]
+lasts = [p["lastEvent"] for p in projects if p["lastEvent"]]
+meta = {
+    "title": "User Updates Report",
+    "client": projects[0]["client"] if len(projects) == 1 else "KP Group",
+    "generatedAt": now.strftime("%d-%b-%Y %H:%M") + " IST",
+    "generatedAtEpoch": int(now.timestamp()),
+    "projects": projects,
+    "skipped": skipped,
+    "events": len(events),
+    "actors": len({e[1] for e in events}),
+    "tasks": len({(e[15], e[3]) for e in events}),
+    "firstEvent": min(firsts) if firsts else "",
+    "lastEvent": max(lasts) if lasts else "",
+    "source": ("VisiLean PowerBI API · type=task with IncludeStatusChange / IncludeReschedule / "
+               "IncludeTaskCreation / IncludeQuantities / IncludeConstraintNotes / IncludeOther"),
+    "noAttachments": True,
+}
+out = {"meta": meta, "cols": COLS, "events": events}
+dst = os.path.join(SCR, "updates_data.json")
+with open(dst, "w", encoding="utf-8") as fh:
+    json.dump(out, fh, ensure_ascii=False, separators=(",", ":"))
+print("wrote %s | %d projects, %d events, %d users, window %s -> %s"
+      % (dst, len(projects), len(events), meta["actors"], meta["firstEvent"], meta["lastEvent"]))
+if skipped:
+    print("skipped: " + ", ".join("%s (%s)" % (s["name"], s["why"]) for s in skipped))

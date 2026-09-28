@@ -1,0 +1,92 @@
+name: Refresh the User Updates report from VisiLean
+
+# One report over every project KP runs, so this run needs every project's token. It reads
+# them all from the single VL_TOKENS_JSON secret, with the per-project VL_TOKEN_* secrets
+# taking precedence where they exist - see scripts/vl_token.py.
+#
+# A project whose token is missing is SKIPPED with a notice and the report is still
+# published for the rest: one unconfigured project should not cost KP the other four.
+# A token that exists and is rejected fails the run, because that is fixable right now.
+#
+# Runs twice a day and whenever someone presses "Run workflow" in the Actions tab. GitHub
+# fires scheduled runs on a best-effort basis and drops them under load, so press "Run
+# workflow" if you need the numbers right now.
+
+on:
+  schedule:
+    # cron is UTC. IST = UTC+5:30. Offset from the other workers so they do not all push
+    # to the repo in the same second.
+    - cron: "48 4 * * *"      # 10:18 IST
+    - cron: "48 10 * * *"     # 16:18 IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-updates
+  cancel-in-progress: true      # a manual run started during a scheduled one replaces it
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Refresh once (fetch every project, build, publish if changed)
+        env:
+          VL_TOKENS_JSON: ${{ secrets.VL_TOKENS_JSON }}
+          VL_TOKEN_NTPC: ${{ secrets.VL_TOKEN_NTPC }}
+          VL_TOKEN_ADANI: ${{ secrets.VL_TOKEN_ADANI }}
+          VL_TOKEN_ADANIS7: ${{ secrets.VL_TOKEN_ADANIS7 }}
+          VL_TOKEN_TALAJA: ${{ secrets.VL_TOKEN_TALAJA }}
+          VL_TOKEN_FLOATING: ${{ secrets.VL_TOKEN_FLOATING }}
+        run: |
+          set -uo pipefail
+          git config user.name  "visilean-bot"
+          git config user.email "support@visilean.com"
+
+          # VisiLean occasionally blinks; give it three tries two minutes apart before
+          # calling the run failed.
+          built=false
+          for attempt in 1 2 3 ; do
+            echo "::group::attempt $attempt  $(date -u '+%H:%M:%S UTC')"
+            if python scripts/updates_data.py && python scripts/build_updates.py ; then
+              built=true
+              echo "::endgroup::"
+              break
+            fi
+            echo "attempt $attempt failed (VisiLean unreachable or build error)"
+            echo "::endgroup::"
+            git checkout -- updates 2>/dev/null || true
+            [ "$attempt" -lt 3 ] && sleep 120
+          done
+
+          if [ "$built" != "true" ]; then
+            echo "::error title=Updates report refresh failed::3 attempts failed - VisiLean unreachable, a token rejected, or a build error."
+            echo "### Updates report refresh failed" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "All 3 attempts failed. Check the logs above: a rejected token gives HTTP 400 from VisiLean." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          if git diff --quiet -- updates/.datahash ; then
+            echo "no new activity in any project - nothing published"
+            echo "No change in VisiLean data since the last build; nothing published." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          git add updates
+          git commit -m "updates report auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || true
+          # the other projects publish at about the same time, so expect a few rejected pushes
+          for try in 1 2 3 4 5 ; do
+            git pull --rebase --autostash -q && git push -q && { echo "published"; echo "Published a new build at $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            echo "push retry $try"; sleep $((10*try))
+          done
+          echo "::error::could not push after 5 tries"
+          exit 1
