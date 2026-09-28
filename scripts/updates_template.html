@@ -720,7 +720,12 @@ const clock=d=>`${String(d.getDate()).padStart(2,"0")}-${MON[d.getMonth()]}-${St
   +` ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
 document.getElementById("h-meta").innerHTML=
   `${esc(M.client||"KP Group")} · ${PKEYS.length} project${PKEYS.length===1?"":"s"} · LIVE from VisiLean · <span style="color:var(--blue);font-weight:600">last data change ${esc(M.generatedAt||"")}</span>`
-  +` · <span id="h-refreshed" title="when this page was last fetched from the server">refreshed ${clock(LOADED)}</span>`;
+  +` · <span id="h-refreshed" title="when this page was last fetched from the server">refreshed ${clock(LOADED)}</span>`
+  /* Somebody whose whole contribution is uploading drawings does not appear here at all,
+     and a project can read as idle when it is not. VisiLean's PowerBI API returns no file
+     events - every attachment flag comes back with the same rows and no upload in them -
+     so the page says so rather than letting the number speak for something it cannot see. */
+  +(M.noAttachments?` · <span title="VisiLean's PowerBI API returns no file or attachment events, on any flag we can ask for, so an upload made in VisiLean cannot reach this report. Updating an activity - status, notes, dates, quantities - does reach it.">file uploads are not counted</span>`:"");
 
 /* the header picker is the quick way in: it replaces the selection outright, where the
    rail slicer adds and removes one project at a time. Both write the same S.proj. */
