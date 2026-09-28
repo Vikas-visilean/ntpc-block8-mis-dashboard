@@ -46,14 +46,23 @@ FEEDS = {
     "notes": "&IncludeConstraintNotes=true&IncludeOther=true",
 }
 
-# Accounts left out of the picture entirely, per project. Shreyanshi Jaiswal is the
-# VisiLean administrator on NTPC: she imports the MPP schedule and reassigns owners and
-# dates, which drowned out the site teams' own updating, so KP asked for her to come out
-# (07-Sep). Vikas Patel and Vikram Singh are VisiLean's own people (18-Sep), monika sen
+# Accounts left out of the picture entirely.
+#
+# EXCLUDE_ALL applies to every project: Shreyanshi Jaiswal and Vikas Patel are VisiLean's
+# own people rather than KP site teams. They administer the schedules - importing MPP
+# files, reassigning owners and dates - which on some projects is most of the trail, and
+# counting it as adoption drowns out the teams actually using VisiLean. KP asked for both
+# out everywhere on 28-Sep; before that it was NTPC alone.
+EXCLUDE_ALL = {"shreyanshi jaiswal", "vikas patel"}
+# and these are one project's own call: Vikram Singh is VisiLean's too (18-Sep), monika sen
 # owns no task and VisiLean records no department for her (09-Sep).
 EXCLUDE = {
-    "ntpc": {"shreyanshi jaiswal", "monika sen", "vikas patel", "vikram singh"},
+    "ntpc": {"monika sen", "vikram singh"},
 }
+
+
+def excluded_for(key):
+    return EXCLUDE_ALL | EXCLUDE.get(key, set())
 # a department for a user VisiLean has no task for; the task feed always wins
 MANUAL_DEPT = {}
 
@@ -97,7 +106,7 @@ for key in wanted:
         skipped.append({"key": key, "name": name, "why": "VisiLean unreachable"})
         continue
 
-    rows, facts = build(key, feeds, exclude=EXCLUDE.get(key, ()), manual_depts=MANUAL_DEPT.get(key))
+    rows, facts = build(key, feeds, exclude=excluded_for(key), manual_depts=MANUAL_DEPT.get(key))
     events.extend(rows)
     projects.append({
         "key": key, "name": name, "short": short, "client": client,
@@ -105,7 +114,7 @@ for key in wanted:
         "tasks": len({r[3] for r in rows}), "tasksInProject": facts["tasksInProject"],
         "rosterSize": facts["rosterSize"], "deptByUser": facts["deptByUser"],
         "deptManual": facts["deptManual"], "assignees": facts["assignees"],
-        "excluded": sorted(EXCLUDE.get(key, ())),
+        "excluded": sorted(excluded_for(key)),
         "firstEvent": facts["firstEvent"], "lastEvent": facts["lastEvent"],
         "locFilled": facts["locFilled"],
     })
