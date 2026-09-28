@@ -38,6 +38,26 @@ IST = timezone(timedelta(hours=5, minutes=30))
 # the projects this report covers, in the order KP reads them
 PROJECT_KEYS = ["ntpc", "adani", "adanis7", "talaja", "floating"]
 
+# Why file uploads are missing, checked 28-Sep-2026.
+#
+# VisiLean's Property Panel shows them ("File 'x.pdf' added to task 'y' by BHAVDIPSINH
+# PARMAR") but this API cannot reach them. The PowerBI endpoint serves exactly two types,
+# task and resource - every other type= is HTTP 500 - and none of the 14 plausible
+# Include* flags for files changes the 7,636 rows it returns by one character.
+#
+# Those events live on the app's own API, which the web client calls per activity:
+#     GET app.visilean.net/sa/VisileanAPI/activity/{activityGuid}/activityHistoryAndComments
+#         ?pageIndex=N&pageSize=20&projectGuid={projectGuid}
+# with objectEventType ACTIVITY_FILE_ADDED / ACTIVITY_FILE_UPLOADED. It authenticates with
+# a logged-in browser session (cookie + X-CSRF-TOKEN); a PowerBI token is bounced to
+# /usernameEntry, so a build job cannot call it. It is also per activity at 20 rows a page,
+# which across these projects is ~30,000 requests a refresh, and there is no project-wide
+# history feed to use instead.
+#
+# So this needs VisiLean to emit the ACTIVITY_FILE_* events on the PowerBI task feed, the
+# same way it already emits status, reschedule and note sentences. The parser in
+# updates_trail.py already reads the upload sentence, so the day they appear they count.
+
 # feed -> the flags that select it; every feed is type=task on the one project token
 FEEDS = {
     "task": "",
@@ -152,6 +172,7 @@ if not projects:
     sys.exit(1)
 
 events.sort(key=lambda e: (e[0] or "", e[15]))
+uploads = sum(1 for e in events if e[COLS.index("action")] == "upload")
 now = datetime.now(IST)
 firsts = [p["firstEvent"] for p in projects if p["firstEvent"]]
 lasts = [p["lastEvent"] for p in projects if p["lastEvent"]]
@@ -169,7 +190,7 @@ meta = {
     "lastEvent": max(lasts) if lasts else "",
     "source": ("VisiLean PowerBI API · type=task with IncludeStatusChange / IncludeReschedule / "
                "IncludeTaskCreation / IncludeQuantities / IncludeConstraintNotes / IncludeOther"),
-    "noAttachments": True,
+    "noAttachments": uploads == 0,
 }
 out = {"meta": meta, "cols": COLS, "events": events}
 dst = os.path.join(SCR, "updates_data.json")
@@ -177,5 +198,7 @@ with open(dst, "w", encoding="utf-8") as fh:
     json.dump(out, fh, ensure_ascii=False, separators=(",", ":"))
 print("wrote %s | %d projects, %d events, %d users, window %s -> %s"
       % (dst, len(projects), len(events), meta["actors"], meta["firstEvent"], meta["lastEvent"]))
+print("file uploads in the feed: %d%s"
+      % (uploads, "" if uploads else "  (VisiLean does not send them - see the note above)"))
 if skipped:
     print("skipped: " + ", ".join("%s (%s)" % (s["name"], s["why"]) for s in skipped))

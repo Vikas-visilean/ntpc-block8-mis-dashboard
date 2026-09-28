@@ -32,12 +32,20 @@ BY = re.compile(r"\bby\s+([A-Za-z][^\.,:;\r\n]{2,40})")
 STRICT_BY = re.compile(
     r"(?:was forced ready to start by|as a result of action by|bulk completed by"
     r"|imported from file[^.]{0,160}?by|created by|completed on time by|started on time by"
-    r"|rescheduled by|assigned to [^.]{1,80}?by)\s+([A-Za-z][^\.,:;\r\n]{2,40})", re.I)
+    r"|rescheduled by|assigned to [^.]{1,80}?by"
+    r"|added to task[^.]{0,160}?by)\s+([A-Za-z][^\.,:;\r\n]{2,40})", re.I)
 # a sentence, not a stray field value ("Construction" arrives in IncludeOther rows)
 SENTENCE = re.compile(r"\bby\b|Task '|Note|note|\s:\s")
 
 ACTIONS = (
     ("import", re.compile(r"imported from file")),
+    # "File 'S1BY-...-0002_R1.pdf' added to task 'Equipment Layout Of IDT Station Type Bb
+    # (33Kv Switchgear)' by BHAVDIPSINH PARMAR" - VisiLean's ACTIVITY_FILE_ADDED /
+    # ACTIVITY_FILE_UPLOADED. The PowerBI feed does not carry these (see the note in
+    # updates_data.py), so this matches nothing today and starts crediting the people who
+    # only ever upload drawings on the day it does.
+    ("upload", re.compile(r"\bFiles?\s+'[^']*'\s+(?:added|uploaded)"
+                          r"|(?:added|uploaded) to task '")),
     ("bulk", re.compile(r"bulk completed")),
     ("forced", re.compile(r"was forced ready")),
     ("assign", re.compile(r"assigned to")),
@@ -100,10 +108,15 @@ def build(key, feeds, exclude=(), manual_depts=None):
                     "firstEvent": "", "lastEvent": "", "locFilled": 0}
 
     alt = "(" + "|".join(re.escape(n) for n in sorted(roster, key=len, reverse=True)) + ")"
-    lead = re.compile(r"^" + alt + r"\s*[:\.]")
-    result_of = re.compile(r"as a result of action by\s+" + alt)
-    by_roster = re.compile(r"\bby\s+" + alt)
-    any_roster = re.compile(alt)
+    # VisiLean spells one person differently depending on which screen wrote the event
+    # - "BHAVDIPSINH PARMAR" in an upload sentence, "Bhavdipsinh Parmar" on the task he
+    # owns - so match regardless of case and then spell them the roster's way, or the
+    # same user lands in the report twice.
+    lead = re.compile(r"^" + alt + r"\s*[:\.]", re.I)
+    result_of = re.compile(r"as a result of action by\s+" + alt, re.I)
+    by_roster = re.compile(r"\bby\s+" + alt, re.I)
+    any_roster = re.compile(alt, re.I)
+    roster_spelling = {n.lower(): n for n in roster}
 
     def actor(sentence):
         s = " ".join(sentence.split())
@@ -129,7 +142,7 @@ def build(key, feeds, exclude=(), manual_depts=None):
 
     def canonical(name):
         k = " ".join(name.split())
-        return canon.setdefault(k.lower(), k)
+        return roster_spelling.get(k.lower()) or canon.setdefault(k.lower(), k)
 
     # ---------- department of each user ----------
     # On the plain type=task feed VisiLean carries the user in `owner` and that user's
