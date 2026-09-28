@@ -32,6 +32,11 @@ d2["meta"].pop("generatedAt", None)
 d2["meta"].pop("generatedAtEpoch", None)
 h = hashlib.sha256(json.dumps(d2, sort_keys=True).encode()).hexdigest()
 open(os.path.join(outdir, ".datahash"), "w").write(h)
+# second guard: the TEMPLATE alone. .datahash only moves when VisiLean data moves, so
+# without this a template change never reaches the published page on its own - the same
+# guard build_dash.py keeps for the project dashboards.
+th = hashlib.sha256((tpl + "\x00" + logo).encode("utf-8")).hexdigest()
+open(os.path.join(outdir, ".tplhash"), "w").write(th)
 
 print("built updates/index.html %d bytes | %d updates | datahash %s"
       % (os.path.getsize(os.path.join(outdir, "index.html")), len(data["events"]), h[:12]))

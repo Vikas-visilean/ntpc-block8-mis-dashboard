@@ -185,6 +185,7 @@ svg text{fill:var(--mut);font-family:inherit}
     <div class="hcard"><div class="v" id="k-last">—</div><div class="l">Last update date</div></div>
     <div class="hcard"><div class="v" id="k-users">—</div><div class="l">Users</div></div>
     <div class="hcard"><div class="v" id="k-acts">—</div><div class="l">Activities</div></div>
+    <select id="f-proj" title="Project"><option value="">All projects</option></select>
     <select id="f-loc" title="Location"><option value="">All locations</option></select>
     <button class="btn dark" id="btn-csv">&#8681; Export CSV</button>
     <button class="btn pri" id="btn-refresh">&#8635; Refresh</button>
@@ -579,6 +580,13 @@ function render(){
   document.getElementById("k-acts").textContent=fmt(new Set(rs.map(r=>r[C.proj]+"|"+r[C.tid])).size);
 
   const locs=[...new Set(EV.map(r=>r[C.loc]).filter(Boolean))].sort();
+  {const ps=document.getElementById("f-proj");
+   const sel=[...S.proj];
+   ps.innerHTML=`<option value="">All projects${PKEYS.length>1?` (${PKEYS.length})`:""}</option>`
+     +PKEYS.map(k=>{const n=(optCounts("proj","proj")[k])||0;
+        return `<option value="${esc(k)}" ${sel.length===1&&sel[0]===k?"selected":""}>${esc(pname(k))}${n?` — ${fmt(n)}`:""}</option>`}).join("")
+     +(sel.length>1?`<option value="__multi" selected>${sel.length} projects selected</option>`:"");
+   ps.style.display=PKEYS.length>1?"":"none";}
   const ls=document.getElementById("f-loc");
   ls.innerHTML=`<option value="">All locations${locs.length?"":" (none set)"}</option>`+
     locs.map(v=>`<option value="${esc(v)}" ${F.loc===v?"selected":""}>${esc(v)}</option>`).join("");
@@ -663,6 +671,14 @@ document.getElementById("h-meta").innerHTML=
   `${esc(M.client||"KP Group")} · ${PKEYS.length} project${PKEYS.length===1?"":"s"} · LIVE from VisiLean · <span style="color:var(--blue);font-weight:600">last data change ${esc(M.generatedAt||"")}</span>`
   +` · <span id="h-refreshed" title="when this page was last fetched from the server">refreshed ${clock(LOADED)}</span>`;
 
+/* the header picker is the quick way in: it replaces the selection outright, where the
+   rail slicer adds and removes one project at a time. Both write the same S.proj. */
+document.getElementById("f-proj").addEventListener("change",e=>{
+  const v=e.target.value;
+  if(v==="__multi")return;                       // the "N selected" placeholder is inert
+  S.proj.clear(); if(v)S.proj.add(v);
+  page=0;render();
+});
 document.getElementById("f-loc").addEventListener("change",e=>{F.loc=e.target.value;page=0;render()});
 document.getElementById("btn-csv").addEventListener("click",()=>{
   const head=["Project","ID","Activity name","Status","First history owner","Updated by","History datetime","Category",

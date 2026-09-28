@@ -75,7 +75,7 @@ jobs:
             exit 1
           fi
 
-          if git diff --quiet -- updates/.datahash ; then
+          if git diff --quiet -- updates/.datahash updates/.tplhash ; then
             echo "no new activity in any project - nothing published"
             echo "No change in VisiLean data since the last build; nothing published." >> "$GITHUB_STEP_SUMMARY"
             exit 0
