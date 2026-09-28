@@ -45,6 +45,8 @@ jobs:
           VL_TOKEN_ADANI: ${{ secrets.VL_TOKEN_ADANI }}
           VL_TOKEN_ADANIS7: ${{ secrets.VL_TOKEN_ADANIS7 }}
           VL_TOKEN_TALAJA: ${{ secrets.VL_TOKEN_TALAJA }}
+          # Talaja's tokens are pinned per payload, so the history feed needs its own
+          VL_TOKEN_TALAJA_HISTORY: ${{ secrets.VL_TOKEN_TALAJA_HISTORY }}
           VL_TOKEN_FLOATING: ${{ secrets.VL_TOKEN_FLOATING }}
         run: |
           set -uo pipefail

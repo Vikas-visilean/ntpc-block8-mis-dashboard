@@ -102,10 +102,25 @@ def load_project(key):
     return cfg["projectId"], name, short, cfg.get("client", "")
 
 
+# Most projects have one token and it serves every feed. ABREL Talaja is the exception:
+# VisiLean pinned each of its tokens to a payload, so the Include* flags in the URL are
+# ignored and only the history token ever returns activityHistory. Ask for the feed's own
+# token - "talaja.history" / VL_TOKEN_TALAJA_HISTORY - and let vl_token fall back to the
+# project's single token, which is what every other project resolves to. Without this
+# Talaja would fetch task rows three times and report nobody as having updated anything.
+_POOLS = {}
+FEED_TOKEN = {"task": None, "hist": "history", "notes": "history"}
+
+
+def pool_for(key, feed):
+    if (key, feed) not in _POOLS:
+        _POOLS[(key, feed)] = TokenPool(key, "Updates report", feed=feed)
+    return _POOLS[(key, feed)]
+
+
 def fetch_project(key, project_id):
-    pool = TokenPool(key, "Updates report")
     return {kind: fetch_json(
-        pool,
+        pool_for(key, FEED_TOKEN[kind]),
         lambda t, f=kind: "%s?accessToken=%s&projectId=%s&type=task%s" % (BASE, t, project_id, FEEDS[f]),
         attempts=3, label="%s/%s" % (key, kind), agent="VisiLean-Updates", timeout=300)
         for kind in ("task", "hist", "notes")}
