@@ -59,6 +59,14 @@ h1{font-size:17px;font-weight:800;letter-spacing:-.01em}
 .btn.dark:hover{background:var(--navy2);color:#fff}
 .btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}
 .btn.pri:hover{background:var(--blue-hov);color:#fff}
+.zoomer{display:flex;align-items:center;gap:6px}
+.zoomer button{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);border-radius:7px;
+ width:24px;height:22px;font-size:13px;font-weight:700;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.zoomer button:hover:not(:disabled){background:var(--blue-wash);color:var(--blue);border-color:var(--blue)}
+.zoomer button:disabled{opacity:.4;cursor:default}
+.zoomer button#au-fit{width:auto;padding:0 8px;font-size:10.5px}
+.zoomer button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.zoomer .dim{font-size:10px}
 .thm{display:flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
 .thm button{padding:5px 9px;font-size:10.5px;color:var(--mut)}
 .thm button.on{background:var(--blue);color:#fff}
@@ -340,6 +348,25 @@ function renderRail(){
    not a ranking. Days with nobody updating are plotted as zero rather than skipped, so
    a gap in adoption reads as a gap. Clicking a point filters to that day, exactly like
    the date slicer. */
+/* How much room each day gets on the chart. Five projects span four months, and 130 days
+   squeezed into one card width leaves the labels unreadable - so past a point the chart
+   stops shrinking and starts scrolling instead. null = choose for me: fit while the range
+   is short, otherwise a readable day width. */
+const AU_STEPS=[0,12,20,32,52,80];       // 0 = fit the card, the rest are px per day
+let AU_Z=null;
+function auStep(days){
+  if(AU_Z!==null)return AU_Z;
+  return days<=45?0:20;                  // beyond ~6 weeks, fitting is false economy
+}
+function auZoom(dir){                    // -1 out, +1 in, 0 fit
+  const days=AU_DAYS||1;
+  if(dir===0){AU_Z=0;render();return}
+  const cur=auStep(days);
+  let i=AU_STEPS.indexOf(cur); if(i<0)i=1;
+  i=Math.max(0,Math.min(AU_STEPS.length-1,i+dir));
+  AU_Z=AU_STEPS[i];render();
+}
+let AU_DAYS=0,AU_PER=0;                  // what the last render actually used
 function usersOverTime(rs,id){
   const g={};rs.forEach(r=>{const d=(r[C.ts]||"").slice(0,10);if(!d)return;(g[d]=g[d]||new Set()).add(r[C.actor])});
   const ks=Object.keys(g).sort();
@@ -349,11 +376,23 @@ function usersOverTime(rs,id){
     if(all.length>=400)all.length=0}                      // absurd span: chart only the days present
   if(!all.length)ks.forEach(k=>all.push(k));
   const val=d=>(g[d]?g[d].size:0);
-  const W=Math.max(1288,all.length*48),H=250,pl=54,pr=14,pt=24,pb=44;   // 2x620 + the 48px of gap and card padding the full-width card does not spend
+  AU_DAYS=all.length;
+  const want=auStep(all.length);         // 0 = fit the card, else px per day
+  const H=250,pl=54,pr=14,pt=24,pb=44;
+  // A day only gets its own width once that is wider than fitting would give it; below
+  // that, zooming in would leave the line hugging the left of an empty card, so fit wins.
+  const full=want?pl+pr+(all.length-1)*want+16:0;
+  const per=(want&&full>1288)?want:0;
+  // fitting keeps the 1288-unit box the other charts use, so the type matches theirs;
+  // zoomed, one unit is one pixel, so the type is exactly its nominal size and the card
+  // scrolls sideways instead of squeezing another fortnight into the same inch
+  AU_PER=per;
+  const W=per?full:Math.max(1288,all.length*48);
   const iw=W-pl-pr,ih=H-pt-pb,max=Math.max(1,...all.map(val));
   const stp=Math.ceil(max/4),top=stp*Math.ceil(max/stp);            // ticks stay whole people
-  const X=i=>pl+(all.length===1?iw/2:iw*i/(all.length-1)),Y=v=>pt+ih*(1-v/top);
-  let s=`<div class="hscroll"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:${Math.min(W,820)}px;height:auto" id="${id}">`;
+  const X=per?(i=>pl+i*per):(i=>pl+(all.length===1?iw/2:iw*i/(all.length-1)));
+  const Y=v=>pt+ih*(1-v/top);
+  let s=`<div class="hscroll"><svg viewBox="0 0 ${W} ${H}" style="${per?`width:${W}px;max-width:none`:`width:100%;min-width:${Math.min(W,820)}px`};height:auto" id="${id}">`;
   for(let v=0;v<=top;v+=stp){const y=Y(v);
     s+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="var(--grid)"/>
         <text x="${pl-7}" y="${y+3}" font-size="9" text-anchor="end">${Math.round(v)}</text>`}
@@ -365,9 +404,11 @@ function usersOverTime(rs,id){
     const v=val(d),sel=S.day.has(d);
     s+=`<circle class="vbar${sel?" sel":""}" data-v="${d}" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${sel?6:4.5}"
          fill="${v?"var(--b2)":"var(--surface)"}" stroke="var(--b2)" stroke-width="1.6"/>`;
-    if(v)s+=`<text x="${X(i).toFixed(1)}" y="${(Y(v)-8).toFixed(1)}" font-size="9" font-weight="800" text-anchor="middle" style="fill:var(--ink)">${v}</text>`;
+    const room=per||(iw/Math.max(1,all.length-1));       // px, or viewBox units when fitting
+    if(v&&room>=16)s+=`<text x="${X(i).toFixed(1)}" y="${(Y(v)-8).toFixed(1)}" font-size="9" font-weight="800" text-anchor="middle" style="fill:var(--ink)">${v}</text>`;
     const p=dp(d+"T00:00:00");
-    if(all.length<=22||i%Math.ceil(all.length/12)===0)
+    const every=Math.max(1,Math.ceil(46/Math.max(6,room)));  // a date every ~46px of room
+    if(i%every===0||i===all.length-1)
       s+=`<text x="${X(i).toFixed(1)}" y="${pt+ih+16}" font-size="8.5" text-anchor="middle">${String(p.d).padStart(2,"0")} ${MON[p.m-1]}</text>`});
   s+=`<text class="axt" x="${pl+iw/2}" y="${H-5}" text-anchor="middle">History date</text>`;
   s+=`</svg></div>`;
@@ -604,10 +645,18 @@ function render(){
   const dayUsers=(()=>{const g={};rs.forEach(r=>{const d=(r[C.ts]||"").slice(0,10);
     if(d)(g[d]=g[d]||new Set()).add(r[C.actor])});return g})();
   const peakDay=Object.keys(dayUsers).sort((a,b)=>dayUsers[b].size-dayUsers[a].size)[0];
-  h+=card("sp12","Number of active users over time",
-    "distinct people who updated on each day · click a point to filter to that day",
-    usersOverTime(rs,"ch-au"),
-    peakDay?`<span class="chip info">peak ${dayUsers[peakDay].size} users on ${dshow(peakDay+"T00:00:00")}</span>`:"");
+  {const chart=usersOverTime(rs,"ch-au");          // sets AU_DAYS and AU_PER, so read after
+   const want=auStep(AU_DAYS), atMin=want===AU_STEPS[0], atMax=want===AU_STEPS[AU_STEPS.length-1];
+   const zoom=`<div class="zoomer" title="how much room each day gets">
+      <button id="au-out" ${atMin?"disabled":""} title="zoom out">−</button>
+      <button id="au-fit" class="${AU_PER?"":"on"}" title="fit the whole range in the card">Fit</button>
+      <button id="au-in" ${atMax?"disabled":""} title="zoom in">+</button>
+      <span class="dim">${AU_PER?`${AU_PER}px / day · scroll sideways`:`${fmt(AU_DAYS)} days in view`}</span>
+    </div>`;
+   h+=card("sp12","Number of active users over time",
+     "distinct people who updated on each day · click a point to filter to that day",
+     chart,
+     `${peakDay?`<span class="chip info">peak ${dayUsers[peakDay].size} users on ${dshow(peakDay+"T00:00:00")}</span> `:""}${zoom}`);}
   h+=weekSummary();
   h+=neverUpdatedCard();
   h+=card("sp6","No of Updates made by Users","click a bar to filter the page to that person",
@@ -641,6 +690,8 @@ function render(){
       <button class="btn" id="pg-next" ${page>=pages-1?"disabled":""}>Next &#8594;</button></div>`:"");
   setBadge();
   document.getElementById("page").innerHTML=h;
+  {const o=document.getElementById("au-out"),fi=document.getElementById("au-fit"),i=document.getElementById("au-in");
+   if(o)o.onclick=()=>auZoom(-1); if(fi)fi.onclick=()=>auZoom(0); if(i)i.onclick=()=>auZoom(1);}
 
   document.querySelectorAll("[data-un]").forEach(el=>el.onclick=()=>toggle(el.dataset.un,el.dataset.v));
   document.querySelectorAll("[data-clr]").forEach(el=>el.onclick=()=>{F[el.dataset.clr]="";page=0;render()});

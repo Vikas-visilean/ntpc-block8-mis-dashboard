@@ -165,20 +165,23 @@ def build(key, feeds, exclude=(), manual_depts=None):
                 continue
             seen.add(sig)
 
-            ts = ""
+            ts, d = "", None
             raw = str(r.get("historyDateTime") or "")
             if raw:
                 try:
                     d = datetime.strptime(raw, "%d/%m/%Y %H:%M:%S")
                     ts = d.strftime("%Y-%m-%dT%H:%M:%S")
-                    lo = d if lo is None or d < lo else lo
-                    hi = d if hi is None or d > hi else hi
                 except ValueError:
-                    ts = ""
+                    ts, d = "", None
 
             who = canonical(actor(txt))
             if who.lower() in exclude:
                 continue
+            # the window belongs to the events the report keeps: counting an excluded
+            # account's imports would have the header claim months the page cannot show
+            if d is not None:
+                lo = d if lo is None or d < lo else lo
+                hi = d if hi is None or d > hi else hi
             cf = r.get("customField") or {}
             events.append([
                 ts,
