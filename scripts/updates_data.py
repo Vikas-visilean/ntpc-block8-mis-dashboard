@@ -63,8 +63,14 @@ EXCLUDE = {
 
 def excluded_for(key):
     return EXCLUDE_ALL | EXCLUDE.get(key, set())
-# a department for a user VisiLean has no task for; the task feed always wins
-MANUAL_DEPT = {}
+# A last resort, for somebody who owns no task on ANY project and so is unknown to every
+# task feed. Taken from Settings -> Users in VisiLean (28-Sep-2026), which the PowerBI API
+# does not expose - type=resource comes back empty and the rest 500 - so it is kept by
+# hand. Names in lower case. Anything the task feeds know is used ahead of guesswork, so
+# an entry is only needed when the pooled lookup below still comes up empty.
+USER_ORG = {
+    "kevin prajapati": "Procurement - KPI",
+}
 
 
 def load_project(key):
@@ -86,7 +92,7 @@ def fetch_project(key, project_id):
 
 
 wanted = [k for k in sys.argv[1:] if not k.startswith("-")] or PROJECT_KEYS
-events, projects, skipped = [], [], []
+events, projects, skipped, fetched = [], [], [], []
 
 for key in wanted:
     project_id, name, short, client = load_project(key)
@@ -105,8 +111,27 @@ for key in wanted:
         print("SKIP %s this cycle - VisiLean unreachable after retries: %s" % (name, e))
         skipped.append({"key": key, "name": name, "why": "VisiLean unreachable"})
         continue
+    fetched.append((key, name, short, client, feeds))
 
-    rows, facts = build(key, feeds, exclude=excluded_for(key), manual_depts=MANUAL_DEPT.get(key))
+# A person's organisation is recorded on the tasks they own, so somebody who owns nothing
+# on one project is usually known from another - Fenil Rana owns no Adani task but is
+# Project - KPI on NTPC. Pool every project's task feed first and each project can then
+# ask who somebody is; its own feed still answers first, this only fills the gaps.
+_org = {}
+for _k, _n, _s, _c, _f in fetched:
+    for r in _f["task"]:
+        who = " ".join(str(r.get("owner") or "").split()).lower()
+        org = " ".join(str(r.get("organisation") or "").split())
+        if who and org:
+            _org.setdefault(who, {})
+            _org[who][org] = _org[who].get(org, 0) + 1
+ORG_FROM_TASKS = {w: max(o.items(), key=lambda kv: kv[1])[0] for w, o in _org.items()}
+print("organisations known from the task feeds: %d people" % len(ORG_FROM_TASKS))
+KNOWN_ORG = dict(ORG_FROM_TASKS)
+KNOWN_ORG.update(USER_ORG)              # a checked answer beats a pooled one
+
+for key, name, short, client, feeds in fetched:
+    rows, facts = build(key, feeds, exclude=excluded_for(key), manual_depts=KNOWN_ORG)
     events.extend(rows)
     projects.append({
         "key": key, "name": name, "short": short, "client": client,

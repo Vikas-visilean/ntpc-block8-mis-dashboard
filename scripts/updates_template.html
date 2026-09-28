@@ -492,7 +492,7 @@ function deptOf(a,pk){
   const inf=ACT_DEPT[a];
   const also=inf?` · updates activities owned by ${inf.split}`:"";
   if(rec)return{label:rec,title:`${a} — department recorded in VisiLean: ${rec}`+also};
-  if(kp) return{label:kp, title:`${a} — department per KP: ${kp} · VisiLean has no task owned by them, so it is set in the report`+also};
+  if(kp) return{label:kp, title:`${a} — organisation recorded against the user in VisiLean: ${kp} · they own no task on this project, so it comes from the user list rather than the schedule`+also};
   if(inf)return{label:inf.label,
     title:`VisiLean has no task owned by ${a}, so this is taken from the activities they update: ${inf.split}`};
   return{label:"department not set",title:"VisiLean records no department for this user"};
