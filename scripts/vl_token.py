@@ -101,6 +101,39 @@ def tokens_from_file():
     return parse_tokens_map(text, TOKENS_FILE_NAME) if text.strip() else {}
 
 
+_TRIMMED = set()
+
+
+def clean_token(raw, source):
+    """The token, even when what was pasted was the whole URL it arrived in.
+
+    VisiLean hands the token over inside an address, so a secret sometimes ends up set to
+    "<token>&projectId=...&type=task" or to the entire URL. The builders append their own
+    query string to it, so projectId and type arrive twice and VisiLean answers
+
+        HTTP 500 - Unknown PowerBI data type: 'task,task'
+
+    which says nothing about the actual mistake and cost an afternoon once. Take the
+    token out of whatever was pasted, and say on the run that the secret needs tidying.
+    A real token is hex, so nothing here can alter a correctly set one.
+    """
+    raw = (raw or "").strip().strip('"').strip("'")
+    if not raw:
+        return ""
+    tok = raw
+    if "accessToken=" in tok:
+        tok = tok.split("accessToken=", 1)[1]
+    for sep in ("&", "?", "#", " "):
+        tok = tok.split(sep, 1)[0]
+    tok = tok.strip()
+    if tok != raw and source not in _TRIMMED:
+        _TRIMMED.add(source)
+        print("::warning title=%s holds more than the token::Using just the accessToken "
+              "value from it. Set the secret to the token alone - no URL, no &projectId, "
+              "no &type." % source)
+    return tok
+
+
 def candidates(key, feed=None):
     """Ordered, de-duplicated [(token, source)] for this project, most specific first.
 
@@ -109,7 +142,7 @@ def candidates(key, feed=None):
     out, seen = [], set()
 
     def add(tok, src):
-        tok = (tok or "").strip()
+        tok = clean_token(tok, src)
         if tok and tok not in seen:
             seen.add(tok)
             out.append((tok, src))
