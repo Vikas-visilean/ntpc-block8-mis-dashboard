@@ -33,7 +33,7 @@ STRICT_BY = re.compile(
     r"(?:was forced ready to start by|as a result of action by|bulk completed by"
     r"|imported from file[^.]{0,160}?by|created by|completed on time by|started on time by"
     r"|rescheduled by|assigned to [^.]{1,80}?by"
-    r"|added to task[^.]{0,160}?by)\s+([A-Za-z][^\.,:;\r\n]{2,40})", re.I)
+    r"|[Ff]iles? '[^']*' added to task[^.]{0,160}?by)\s+([A-Za-z][^\.,:;\r\n]{2,40})", re.I)
 # a sentence, not a stray field value ("Construction" arrives in IncludeOther rows)
 SENTENCE = re.compile(r"\bby\b|Task '|Note|note|\s:\s")
 
@@ -44,8 +44,7 @@ ACTIONS = (
     # ACTIVITY_FILE_UPLOADED. The PowerBI feed does not carry these (see the note in
     # updates_data.py), so this matches nothing today and starts crediting the people who
     # only ever upload drawings on the day it does.
-    ("upload", re.compile(r"\bFiles?\s+'[^']*'\s+(?:added|uploaded)"
-                          r"|(?:added|uploaded) to task '")),
+    ("upload", re.compile(r"\bFiles?\s+'[^']*'\s+(?:added|uploaded|attached)", re.I)),
     ("bulk", re.compile(r"bulk completed")),
     ("forced", re.compile(r"was forced ready")),
     ("assign", re.compile(r"assigned to")),

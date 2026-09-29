@@ -38,7 +38,7 @@ LABELS = {
 # returns activityHistory. Such a project names a token per feed with a suffixed key,
 # "talaja.history", and the plain "talaja" entry is the fallback for any feed without one
 # (type=constraintLog, for instance, which every Talaja token serves).
-FEED_SUFFIXES = ("history", "constraintlog")
+FEED_SUFFIXES = ("history", "constraintlog", "notes")
 # keys that only ever appeared in the old three-tokens-per-project shape
 LEGACY_KEYS = {"task", "history", "constraintlog", "constraints", "hist", "notes",
                "adopt_task", "adopt_hist", "adopt_notes"}

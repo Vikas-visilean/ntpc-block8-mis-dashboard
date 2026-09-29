@@ -109,13 +109,32 @@ def load_project(key):
 # project's single token, which is what every other project resolves to. Without this
 # Talaja would fetch task rows three times and report nobody as having updated anything.
 _POOLS = {}
-FEED_TOKEN = {"task": None, "hist": "history", "notes": "history"}
+FEED_TOKEN = {"task": None, "hist": "history", "notes": "notes"}
 
 
 def pool_for(key, feed):
     if (key, feed) not in _POOLS:
         _POOLS[(key, feed)] = TokenPool(key, "Updates report", feed=feed)
     return _POOLS[(key, feed)]
+
+
+def dedupe_tasks(rows):
+    """One row per activity.
+
+    Most projects' task feed is already that. ABREL Talaja's tokens are each pinned to a
+    history payload, so its task feed repeats an activity once per event - 1,561 rows for
+    897 activities. Counting rows would inflate both the per-user task counts and the
+    project's activity total, so collapse them here; every other project is unchanged.
+    """
+    seen, out = set(), []
+    for r in rows:
+        tid = str(r.get("taskId") or "")
+        if tid and tid in seen:
+            continue
+        if tid:
+            seen.add(tid)
+        out.append(r)
+    return out
 
 
 def fetch_project(key, project_id):
@@ -146,6 +165,7 @@ for key in wanted:
         print("SKIP %s this cycle - VisiLean unreachable after retries: %s" % (name, e))
         skipped.append({"key": key, "name": name, "why": "VisiLean unreachable"})
         continue
+    feeds["task"] = dedupe_tasks(feeds["task"])
     fetched.append((key, name, short, client, feeds))
 
 # A person's organisation is recorded on the tasks they own, so somebody who owns nothing
