@@ -28,15 +28,6 @@ sys.path.insert(0, SCR)
 from vl_token import TokenPool, TokenRejected, fetch_json    # noqa: E402
 # one token serves every feed; a rejected VL_TOKEN_<KEY> falls back to VL_TOKENS_JSON
 POOL = TokenPool(PKEY, CFG.get("name", PKEY))
-# A project whose VisiLean tokens are pinned per payload (ABREL Talaja) names one per
-# feed; everyone else has a single token and every pool here resolves to it.
-_POOLS = {}
-def pool_for(kind):
-    if kind == "task":
-        return POOL
-    if kind not in _POOLS:
-        _POOLS[kind] = TokenPool(PKEY, CFG.get("name", PKEY), feed=kind)
-    return _POOLS[kind]
 
 def fetch(kind, attempts=3):
     tp = "task" if kind == "history" else kind
@@ -46,7 +37,7 @@ def fetch(kind, attempts=3):
         # audit trail the variance reasons are written into
         flags = ("&IncludeStatusChange=true&IncludeReschedule=true"
                  "&IncludeQuantities=true&IncludeConstraintNotes=true")
-    return fetch_json(pool_for(kind),
+    return fetch_json(POOL,
                       lambda t: f"{BASE}?accessToken={t}&projectId={PROJECT}&type={tp}{flags}",
                       attempts=attempts, label=kind)
 

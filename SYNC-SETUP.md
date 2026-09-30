@@ -15,7 +15,9 @@ offset a few minutes from the next so the pushes do not collide:
 | `refresh-adani.yml` | `/adani/` | 10:06, 16:06 |
 | `refresh-adani-s7.yml` | `/adani-s7/` | 10:09, 16:09 |
 | `refresh-floating.yml` | `/floating/` | 10:12, 16:12 |
-| `refresh-adoption.yml` | `/adoption/`, `/updates/` | 10:15, 16:15 |
+| `refresh-adoption.yml` | `/adoption/` | 10:15, 16:15 |
+| `refresh-updates.yml` | `/updates/` | 10:18, 16:18 |
+| `refresh-talaja.yml` | `/talaja/` | 10:21, 16:21 |
 
 **To refresh on demand:** Actions tab → pick the workflow → *Run workflow*, or
 `gh workflow run <file>`. GitHub starts scheduled runs late by 10-30 min (occasionally
@@ -38,14 +40,19 @@ step, and it is done once.**
 
 | Project | Repository secret | Feeds |
 |---|---|---|
-| NTPC Bikaner Block 8 | `VL_TOKEN_NTPC` | `/v2/`, `/v3/`, and the Adoption + Updates reports |
+| NTPC Bikaner Block 8 | `VL_TOKEN_NTPC` | `/v2/`, `/v3/`, and the Adoption tracker |
 | SJVN Khavda | `VL_TOKEN_SJVN` | `/sjvn/` |
 | Adani S6a | `VL_TOKEN_ADANI` | `/adani/` |
 | Adani S7 | `VL_TOKEN_ADANIS7` | `/adani-s7/` |
 | Floating Solar | `VL_TOKEN_FLOATING` | `/floating/` |
+| ABREL Talaja | `VL_TOKEN_TALAJA` | `/talaja/` |
 
-Each secret holds the raw token and nothing else. The Adoption tracker and Updates
-report read the NTPC project, so they use `VL_TOKEN_NTPC`; there is no adoption token.
+Each secret holds the raw token and nothing else, and every project, Talaja included,
+has exactly one. The Adoption tracker reads the NTPC project, so it uses
+`VL_TOKEN_NTPC`. The User Updates report reads NTPC, Adani S6a, Adani S7, Floating and
+Talaja with each of those projects' own secret. There are no report-specific or
+per-feed tokens; a `VL_TOKEN_TALAJA_HISTORY`-style secret or a `"talaja.history"` key is
+no longer read, and the dotted key is refused.
 
 ### The fallback: `VL_TOKENS_JSON`
 
@@ -58,7 +65,8 @@ in one flat map:
   "sjvn":     "…",
   "adani":    "…",
   "adanis7":  "…",
-  "floating": "…"
+  "floating": "…",
+  "talaja":   "…"
 }
 ```
 
@@ -91,7 +99,7 @@ python scripts/check_tokens_json.py tokens.json
 
 It tries each project's one token against all three feeds and prints row counts or the
 exact error — never a token. `HTTP 400 not valid for the requested project` means a
-real token filed under the wrong key; `HTTP 500 API does not exist` means VisiLean
+real token filed under the wrong key; `HTTP 403` (formerly 500) `API does not exist` means VisiLean
 doesn't recognise it at all (mistyped, truncated or revoked). A file in the old nested
 `{"sjvn": {"task": …}}` shape is refused with an explanation.
 
@@ -116,6 +124,8 @@ gh workflow run refresh-adani.yml
 gh workflow run refresh-adani-s7.yml
 gh workflow run refresh-floating.yml
 gh workflow run refresh-adoption.yml
+gh workflow run refresh-updates.yml
+gh workflow run refresh-talaja.yml
 ```
 
 Or from the Actions tab: pick the workflow → *Run workflow*. Every workflow runs once

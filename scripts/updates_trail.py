@@ -3,7 +3,7 @@
 
 Lifted out of adoption_data.py so the Updates report can read five projects with the
 same parsing the NTPC adoption tracker has been using since 07-Sep. Nothing here talks
-to the network: give it the three feeds and it gives you the events and the project's
+to the network: give it the two feeds and it gives you the events and the project's
 own facts (who updates, which department they belong to, who has work assigned).
 
 Where the events come from
@@ -68,9 +68,12 @@ def _clean(name):
 
 
 def build(key, feeds, exclude=(), manual_depts=None):
-    """feeds: {"task": [...], "hist": [...], "notes": [...]} -> (events, facts)."""
+    """feeds: {"task": [...], "hist": [...]} -> (events, facts).
+
+    "hist" is the one type=task request carrying every Include* flag, so it holds the
+    whole trail. Rows repeat across events, hence the (taskId, time, sentence) de-dupe."""
     exclude = {e.lower() for e in exclude}
-    task, hist, notes = feeds["task"], feeds["hist"], feeds["notes"]
+    task, hist = feeds["task"], feeds["hist"]
 
     # ---------- roster ----------
     owners = {}
@@ -80,7 +83,7 @@ def build(key, feeds, exclude=(), manual_depts=None):
             owners[n.lower()] = n
 
     cand, strict = {}, set()
-    for feed in (hist, notes):
+    for feed in (hist,):
         for r in feed:
             txt = str(r.get("activityHistory") or "")
             if not txt:
@@ -167,7 +170,7 @@ def build(key, feeds, exclude=(), manual_depts=None):
     # ---------- events ----------
     seen, events = set(), []
     lo = hi = None
-    for feed in (hist, notes):
+    for feed in (hist,):
         for r in feed:
             txt = str(r.get("activityHistory") or "").strip()
             if len(txt) < 8 or not SENTENCE.search(txt):

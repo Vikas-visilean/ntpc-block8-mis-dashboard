@@ -4,10 +4,9 @@ name: Refresh ABREL Talaja dashboard from VisiLean
 # in the Actions tab. Each run is ONE refresh: fetch VisiLean, rebuild, commit and push
 # only if the data or the template changed. Same pattern as refresh-adani-s7.yml.
 #
-# Talaja is the project whose VisiLean tokens are pinned per payload: the task token
-# returns task rows whatever flags the URL carries, and only the history token returns
-# activityHistory. So this workflow passes a second secret, VL_TOKEN_TALAJA_HISTORY, for
-# that feed; VL_TOKEN_TALAJA covers the task and constraint-log feeds. See vl_token.py.
+# Like every project, Talaja has one VisiLean token, VL_TOKEN_TALAJA, serving the task,
+# history and constraint-log feeds; if VisiLean rejects it the builder falls back to the
+# "talaja" entry of VL_TOKENS_JSON. See vl_token.py.
 #
 # GitHub fires scheduled runs on a best-effort basis, so a scheduled run may start a
 # little later than asked (typically 10-30 min, worst case ~2 h). Press "Run workflow"
@@ -54,7 +53,6 @@ jobs:
         env:
           VL_TOKENS_JSON: ${{ secrets.VL_TOKENS_JSON }}
           VL_TOKEN_TALAJA: ${{ secrets.VL_TOKEN_TALAJA }}
-          VL_TOKEN_TALAJA_HISTORY: ${{ secrets.VL_TOKEN_TALAJA_HISTORY }}
         run: |
           set -uo pipefail
           git config user.name  "visilean-bot"

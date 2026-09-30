@@ -58,13 +58,15 @@ PROJECT_KEYS = ["ntpc", "adani", "adanis7", "talaja", "floating"]
 # same way it already emits status, reschedule and note sentences. The parser in
 # updates_trail.py already reads the upload sentence, so the day they appear they count.
 
-# feed -> the flags that select it; every feed is type=task on the one project token
-FEEDS = {
-    "task": "",
-    "hist": ("&IncludeStatusChange=true&IncludeReschedule=true"
-             "&IncludeTaskCreation=true&IncludeQuantities=true"),
-    "notes": "&IncludeConstraintNotes=true&IncludeOther=true",
-}
+# feed -> the flags that select it; both are type=task on the one project token.
+# One history request with every Include* flag returns the whole trail - status,
+# reschedules, creation, workforce assignment, quantities, constraint notes and the rest
+# ("Other": assignments, owner changes, notes) - so it replaces the earlier hist + notes
+# pair. The plain task feed stays for the roster and the activity count.
+HIST_FLAGS = ("&IncludeStatusChange=true&IncludeReschedule=true&IncludeTaskCreation=true"
+              "&IncludeWorkforceAssignment=true&IncludeQuantities=true"
+              "&IncludeConstraintNotes=true&IncludeOther=true")
+FEEDS = {"task": "", "hist": HIST_FLAGS}
 
 # Accounts left out of the picture entirely.
 #
@@ -102,29 +104,25 @@ def load_project(key):
     return cfg["projectId"], name, short, cfg.get("client", "")
 
 
-# Most projects have one token and it serves every feed. ABREL Talaja is the exception:
-# VisiLean pinned each of its tokens to a payload, so the Include* flags in the URL are
-# ignored and only the history token ever returns activityHistory. Ask for the feed's own
-# token - "talaja.history" / VL_TOKEN_TALAJA_HISTORY - and let vl_token fall back to the
-# project's single token, which is what every other project resolves to. Without this
-# Talaja would fetch task rows three times and report nobody as having updated anything.
+# Every project has one token and it serves both feeds. A rejected VL_TOKEN_<KEY> falls
+# back to the project's VL_TOKENS_JSON entry inside the pool, as for the dashboards.
 _POOLS = {}
-FEED_TOKEN = {"task": None, "hist": "history", "notes": "notes"}
 
 
-def pool_for(key, feed):
-    if (key, feed) not in _POOLS:
-        _POOLS[(key, feed)] = TokenPool(key, "Updates report", feed=feed)
-    return _POOLS[(key, feed)]
+def pool_for(key):
+    if key not in _POOLS:
+        _POOLS[key] = TokenPool(key, "Updates report")
+    return _POOLS[key]
 
 
 def dedupe_tasks(rows):
     """One row per activity.
 
-    Most projects' task feed is already that. ABREL Talaja's tokens are each pinned to a
-    history payload, so its task feed repeats an activity once per event - 1,561 rows for
-    897 activities. Counting rows would inflate both the per-user task counts and the
-    project's activity total, so collapse them here; every other project is unchanged.
+    VisiLean's task feed can repeat an activity once per history event - NTPC returned
+    7,636 rows for 6,840 activities, and ABREL Talaja's former pinned token 1,561 rows for
+    897. Counting rows would inflate both the per-user task counts and the project's
+    activity total, so collapse them here; a feed that is already one row per activity
+    passes through unchanged.
     """
     seen, out = set(), []
     for r in rows:
@@ -139,10 +137,10 @@ def dedupe_tasks(rows):
 
 def fetch_project(key, project_id):
     return {kind: fetch_json(
-        pool_for(key, FEED_TOKEN[kind]),
+        pool_for(key),
         lambda t, f=kind: "%s?accessToken=%s&projectId=%s&type=task%s" % (BASE, t, project_id, FEEDS[f]),
         attempts=3, label="%s/%s" % (key, kind), agent="VisiLean-Updates", timeout=300)
-        for kind in ("task", "hist", "notes")}
+        for kind in FEEDS}
 
 
 wanted = [k for k in sys.argv[1:] if not k.startswith("-")] or PROJECT_KEYS

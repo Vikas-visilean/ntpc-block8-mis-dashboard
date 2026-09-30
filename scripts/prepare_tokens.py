@@ -149,7 +149,7 @@ def main():
     if bad:
         print("%d feed(s) did not work - fix those before pasting." % bad)
         print("  HTTP 400 'not valid for the requested project' = right token, wrong key.")
-        print("  HTTP 500 'API does not exist'                  = token not recognised.")
+        print("  HTTP 403/500 'API does not exist'              = token not recognised.")
         return 1
     print("Every token works for all three feeds. Open that file and either copy all of it")
     print("into the VL_TOKENS_JSON secret, or set each entry as its own VL_TOKEN_<KEY>")

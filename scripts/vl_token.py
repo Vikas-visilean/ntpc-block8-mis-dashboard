@@ -10,7 +10,7 @@ looked up in this order, and every candidate found is kept:
   3. locally, the same flat map in the gitignored scripts/vl_tokens.json
 
 The builders fetch with the first candidate. If VisiLean rejects it (HTTP 400 "not
-valid for the requested project", or HTTP 500 "API does not exist") they switch to the
+valid for the requested project", or HTTP 403/500 "API does not exist") they switch to the
 next one and put a ::warning on the run naming the secret to fix. Only when every
 candidate is rejected does a fetch give up, with TokenRejected, which the builders turn
 into a failed cycle rather than the quiet "SKIP this cycle" an outage gets.
@@ -32,13 +32,10 @@ LABELS = {
     "floating": "Floating Solar",
     "talaja":   "ABREL Talaja",
 }
-# Usually one token serves every feed. ABREL Talaja is the exception: VisiLean issued it
-# three tokens, each pinned to a payload - the Include* flags in the URL are ignored, so
-# the task token returns task rows whatever you ask it for, and only the history token
-# returns activityHistory. Such a project names a token per feed with a suffixed key,
-# "talaja.history", and the plain "talaja" entry is the fallback for any feed without one
-# (type=constraintLog, for instance, which every Talaja token serves).
-FEED_SUFFIXES = ("history", "constraintlog", "notes")
+# Every project, ABREL Talaja included, has exactly one token and it serves every feed:
+# the Include* flags in the URL choose what comes back. (Until 30-Sep-2026 Talaja ran on
+# tokens pinned to one payload each, named "talaja.history" etc.; those are refused now,
+# so a stale per-feed secret cannot quietly override the project token.)
 # keys that only ever appeared in the old three-tokens-per-project shape
 LEGACY_KEYS = {"task", "history", "constraintlog", "constraints", "hist", "notes",
                "adopt_task", "adopt_hist", "adopt_notes"}
@@ -59,7 +56,7 @@ class TokenRejected(Exception):
 
 
 def env_name(key):
-    return "VL_TOKEN_" + key.upper().replace(".", "_")
+    return "VL_TOKEN_" + key.upper()
 
 
 def parse_tokens_map(blob, source="VL_TOKENS_JSON"):
@@ -74,11 +71,12 @@ def parse_tokens_map(blob, source="VL_TOKENS_JSON"):
     out = {}
     for k, v in parsed.items():
         kl = str(k).strip().lower()
-        base = kl.split(".", 1)[0]
-        if base != kl and kl.split(".", 1)[1] not in FEED_SUFFIXES:
-            raise TokenError('%s: "%s" is not a feed this builder fetches; use %s'
-                             % (source, k, " or ".join(base + "." + s for s in FEED_SUFFIXES)))
-        if (base in LEGACY_KEYS and base == kl) or isinstance(v, dict):
+        if "." in kl:
+            base = kl.split(".", 1)[0]
+            raise TokenError('%s: "%s" is a per-feed token, and there are none any more - '
+                             'every project has one token that serves every feed. Put it '
+                             'under "%s" and remove "%s".' % (source, k, base, k))
+        if kl in LEGACY_KEYS or isinstance(v, dict):
             raise TokenError(OLD_SHAPE % source)
         if v is None or (isinstance(v, str) and not v.strip()):
             continue                                   # a placeholder, treat as absent
@@ -134,11 +132,8 @@ def clean_token(raw, source):
     return tok
 
 
-def candidates(key, feed=None):
-    """Ordered, de-duplicated [(token, source)] for this project, most specific first.
-
-    With a feed, a token named for that feed ("talaja.history", VL_TOKEN_TALAJA_HISTORY)
-    is tried before the project's own, which remains the fallback."""
+def candidates(key):
+    """Ordered, de-duplicated [(token, source)] for this project. May raise TokenError."""
     out, seen = [], set()
 
     def add(tok, src):
@@ -147,11 +142,9 @@ def candidates(key, feed=None):
             seen.add(tok)
             out.append((tok, src))
 
-    names = ([key + "." + feed.lower()] if feed else []) + [key]
-    for nm in names:
-        add(os.environ.get(env_name(nm)), env_name(nm))
-        add(tokens_from_env().get(nm), "VL_TOKENS_JSON [%s]" % nm)
-        add(tokens_from_file().get(nm), "%s [%s]" % (TOKENS_FILE_NAME, nm))
+    add(os.environ.get(env_name(key)), env_name(key))
+    add(tokens_from_env().get(key), "VL_TOKENS_JSON")
+    add(tokens_from_file().get(key), TOKENS_FILE_NAME)
     return out
 
 
@@ -189,18 +182,21 @@ def is_rejection(e):
         return False
     if e.code == 400:
         return True
-    return e.code == 500 and "api does not exist" in _body(e).lower()
+    # An unknown token comes back as "API does not exist": HTTP 500 until late Sep-2026,
+    # HTTP 403 since (checked 30-Sep). Match the message, not one status code, so the
+    # fallback to VL_TOKENS_JSON keeps working whichever VisiLean sends. A 403 without it
+    # (e.g. a browser Origin header) is not a token problem and stays an outage.
+    return e.code in (403, 500) and "api does not exist" in _body(e).lower()
 
 
 class TokenPool:
     """This project's candidate tokens, in the order they should be tried."""
 
-    def __init__(self, key, label=None, feed=None):
+    def __init__(self, key, label=None):
         self.key = key
-        self.feed = feed
-        self.label = (label or LABELS.get(key, key)) + (" (%s feed)" % feed if feed else "")
+        self.label = label or LABELS.get(key, key)
         try:
-            self._c = candidates(key, feed)
+            self._c = candidates(key)
         except TokenError as e:
             raise SystemExit(str(e))
         if not self._c:

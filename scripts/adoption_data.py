@@ -20,10 +20,11 @@ a roster first (VisiLean assignees + anyone the trail credits at least three tim
 and only ever attribute an event to a name on that roster — a loose "by (.+)" capture
 would otherwise invent users out of note text.
 
-Three feeds are merged and de-duplicated on (taskId, timestamp, sentence), because the
-flag sets overlap:
-  * IncludeStatusChange / IncludeReschedule / IncludeTaskCreation / IncludeQuantities
-  * IncludeConstraintNotes / IncludeOther   (assignments, owner changes, notes)
+Two requests, both type=task on the one project token:
+  * the history feed, carrying every Include* flag - IncludeStatusChange /
+    IncludeReschedule / IncludeTaskCreation / IncludeWorkforceAssignment /
+    IncludeQuantities / IncludeConstraintNotes / IncludeOther - which returns the whole
+    trail in one response, de-duplicated on (taskId, timestamp, sentence)
   * the plain task feed, used only for the assignee roster and the project size
 
 Known gap: the PowerBI API exposes no file/attachment events, so document uploads
@@ -66,12 +67,10 @@ EXCLUDE_ACTORS = {"shreyanshi jaiswal"}
 # updates_template.html (HIDE_ACTORS) rather than here - KP asked for it there alone.
 
 # feed -> the flags that select it; every feed is type=task on the one project token
-FEEDS = {
-    "task": "",
-    "hist": ("&IncludeStatusChange=true&IncludeReschedule=true"
-             "&IncludeTaskCreation=true&IncludeQuantities=true"),
-    "notes": "&IncludeConstraintNotes=true&IncludeOther=true",
-}
+HIST_FLAGS = ("&IncludeStatusChange=true&IncludeReschedule=true&IncludeTaskCreation=true"
+              "&IncludeWorkforceAssignment=true&IncludeQuantities=true"
+              "&IncludeConstraintNotes=true&IncludeOther=true")
+FEEDS = {"task": "", "hist": HIST_FLAGS}
 
 sys.path.insert(0, SCR)
 from vl_token import TokenPool, TokenRejected, fetch_json    # noqa: E402
@@ -87,7 +86,7 @@ def fetch(kind, attempts=3):
 
 print("fetching VisiLean APIs...")
 try:
-    FEED = {k: fetch(k) for k in ("task", "hist", "notes")}
+    FEED = {k: fetch(k) for k in FEEDS}
 except TokenRejected as e:
     # a wrong credential is not an outage: fail the cycle so the run goes red
     print("::error title=%s every VisiLean token rejected::%s" % (POOL.label, e))
@@ -96,7 +95,7 @@ except Exception as e:                                            # noqa: BLE001
     # transient VisiLean outage: skip this cycle cleanly, the next run recovers
     print("SKIP this cycle - VisiLean API unreachable after retries: %s" % e)
     sys.exit(0)
-print("task %d | hist %d | notes %d" % tuple(len(FEED[k]) for k in ("task", "hist", "notes")))
+print("task %d | hist %d" % tuple(len(FEED[k]) for k in FEEDS))
 
 # ---------- roster ----------
 # Only person-shaped names, so note text can never masquerade as a user.
@@ -120,7 +119,7 @@ for r in FEED["task"]:
 
 cand = {}
 strict = set()
-for feed in ("hist", "notes"):
+for feed in ("hist",):
     for r in FEED[feed]:
         txt = str(r.get("activityHistory") or "")
         if not txt:
@@ -239,7 +238,7 @@ def canon(name):
 seen = set()
 events = []
 lo = hi = None
-for feed in ("hist", "notes"):
+for feed in ("hist",):
     for r in FEED[feed]:
         txt = str(r.get("activityHistory") or "").strip()
         if len(txt) < 8 or not SENTENCE.search(txt):

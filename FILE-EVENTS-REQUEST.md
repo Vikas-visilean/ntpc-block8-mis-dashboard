@@ -85,6 +85,10 @@ token is issued** — which is why ABREL Talaja's two tokens return different ha
 the same trail whatever flags the URL asks for. That is why this is a request for new
 tokens rather than a change we can make from our side.
 
+*Update 30-Sep-2026:* VisiLean has since issued Talaja one standard token, like every
+other project, so it now runs on `VL_TOKEN_TALAJA` alone. The table above records the
+two pinned tokens it replaced.
+
 ## Nothing is needed from us afterwards
 
 `scripts/updates_trail.py` already classifies the upload sentence as its own `upload`

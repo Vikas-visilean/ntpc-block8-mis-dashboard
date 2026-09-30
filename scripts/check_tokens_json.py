@@ -119,7 +119,7 @@ def main():
         print("%d problem(s). VisiLean distinguishes two failures, and they need different fixes:" % bad)
         print("  HTTP 400 'not valid for the requested project' - a real token, filed under the")
         print("           wrong key. Move it to the project it was generated for.")
-        print("  HTTP 500 'API does not exist'                  - VisiLean does not recognise the")
+        print("  HTTP 403/500 'API does not exist'              - VisiLean does not recognise the")
         print("           token at all: mistyped, truncated, or revoked. Generate it again.")
         return 1
     print("Every token works for all three feeds. Paste the file into the VL_TOKENS_JSON")

@@ -1,5 +1,5 @@
 {
-  "_comment": "ABREL Talaja 83.7 MW wind - project configuration. Read by the data builder (dash_data.py: calendar, vocabulary, paths) and published to the page as DATA.cfg (labels, procurement columns). Never put API tokens here - they live in the gitignored scripts/vl_tokens.json / Actions secrets. This project is the one whose VisiLean tokens are pinned per feed, so it names talaja.history alongside talaja; see vl_token.py.",
+  "_comment": "ABREL Talaja 83.7 MW wind - project configuration. Read by the data builder (dash_data.py: calendar, vocabulary, paths) and published to the page as DATA.cfg (labels, procurement columns). Never put API tokens here - they live in the gitignored scripts/vl_tokens.json / Actions secrets. Like every project it has one token (VL_TOKEN_TALAJA, fallback the \"talaja\" entry of VL_TOKENS_JSON) that serves every feed; see vl_token.py.",
   "key": "talaja",
   "projectId": "2F7F0BA6-2345-C92E-81E8-C034D1E9848D",
   "outDir": "talaja",
