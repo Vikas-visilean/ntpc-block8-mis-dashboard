@@ -97,6 +97,26 @@ except Exception as e:                                            # noqa: BLE001
     sys.exit(0)
 print("task %d | hist %d" % tuple(len(FEED[k]) for k in FEEDS))
 
+
+def one_row_per_activity(rows):
+    """VisiLean's type=task feed can repeat an activity once per history event: NTPC's
+    returned 13,009 rows for 6,840 activities on 30-Sep-2026 (7,636 the week before).
+    The roster, tasks-owned and project-size figures below are about activities, so
+    count each taskId once - the same rule updates_data.py applies."""
+    seen, out = set(), []
+    for r in rows:
+        tid = str(r.get("taskId") or "")
+        if tid and tid in seen:
+            continue
+        if tid:
+            seen.add(tid)
+        out.append(r)
+    return out
+
+
+FEED["task"] = one_row_per_activity(FEED["task"])
+print("task feed: %d activities after collapsing repeated rows" % len(FEED["task"]))
+
 # ---------- roster ----------
 # Only person-shaped names, so note text can never masquerade as a user.
 PERSON = re.compile(r"^[A-Za-z][A-Za-z'\-]*(?:\s+[A-Za-z][A-Za-z'\-]*){1,3}$")
