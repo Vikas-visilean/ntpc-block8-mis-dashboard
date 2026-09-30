@@ -763,7 +763,14 @@ for pu in {p[0] for v in preds.values() for p in v}:
 print("logic network: %d activities have a predecessor | %d predecessors are off-dashboard"
       % (len(preds), len(pred_meta)))
 
+CFG = json.load(open(os.path.join(SCR, "projects", "ntpc.json"), encoding="utf-8"))
+
 DATA = {"meta": meta, "months": months, "reasons": reasons, "msLeaves": ms_rows,
+        # the page reads its labels and status vocabulary from here (template CFG).
+        # NTPC is built by this script rather than the shared dash_data.py, so without
+        # this line scripts/projects/ntpc.json reaches nothing and the v3 page silently
+        # keeps the template defaults while every other project honours its config.
+        "cfg": {k: v for k, v in CFG.items() if not k.startswith("_")},
         "preds": {str(k): v for k, v in preds.items()},
         "succs": {str(k): v for k, v in succs.items()},
         "predMeta": {str(k): v for k, v in pred_meta.items()}, "depts": [{"key": k, "name": n} for k, n in DEPTS],
