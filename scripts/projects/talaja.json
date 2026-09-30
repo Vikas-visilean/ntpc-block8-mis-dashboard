@@ -3,6 +3,17 @@
   "key": "talaja",
   "projectId": "2F7F0BA6-2345-C92E-81E8-C034D1E9848D",
   "outDir": "talaja",
+  "vlLabel": {
+    "Not Ready": "Not Started"
+  },
+  "_vlLabel_comment": "as S6a: 'Not Ready' is work that has not begun - 294 of Talaja's 897 activities.",
+  "vlHide": [
+    "Ready",
+    "Forced Ready",
+    "Rejected at QC",
+    "Quality Checked"
+  ],
+  "_vlHide_comment": "as S6a: this project's data carries none of Ready, Forced Ready, Rejected at QC or Quality Checked (checked 30-Sep-2026), so they only lengthen the legend. Warning and Stopped stay, as on S6a - Talaja has 1 activity Stopped and the chip should be readable when it appears.",
   "dataFile": "talaja_dashboard_data.json",
   "relationsFile": "talaja_relations.json",
   "title": "ABREL Talaja 83.7 MW — MIS Dashboard (Live)",

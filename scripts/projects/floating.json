@@ -3,6 +3,17 @@
   "key": "floating",
   "projectId": "A52816EA-1EA7-A978-EEEA-29A0D775CD7F",
   "outDir": "floating",
+  "vlLabel": {
+    "Not Ready": "Not Started"
+  },
+  "_vlLabel_comment": "as S6a: 'Not Ready' is work that has not begun - 2,614 of Floating Solar's 3,508 activities, three quarters of the project.",
+  "vlHide": [
+    "Ready",
+    "Forced Ready",
+    "Rejected at QC",
+    "Quality Checked"
+  ],
+  "_vlHide_comment": "as S6a: the ready / QC ceremony states leave the status legend - 5 activities at Ready, 3 at Forced Ready, 1 Quality checked and none Rejected at QC, out of 3,508 (checked 30-Sep-2026). Hiding is legend-only, so those rows still show their own chip. Warning and Stopped stay, as on S6a.",
   "dataFile": "floating_dashboard_data.json",
   "relationsFile": "floating_relations.json",
   "title": "KPI Floating Solar, Kadana Dam (110 MW) — MIS Dashboard (Live)",

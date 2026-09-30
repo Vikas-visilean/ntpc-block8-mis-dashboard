@@ -3,6 +3,17 @@
   "key": "ntpc",
   "projectId": "7A2842F6-7E5F-DB7C-3E7F-0EE7EF60698F",
   "outDir": "v3",
+  "vlLabel": {
+    "Not Ready": "Not Started"
+  },
+  "_vlLabel_comment": "as S6a: KP reads 'Not Ready' as work that has not begun. It is 5,615 of NTPC's 6,840 activities, so reading it as a problem state made four fifths of the project look blocked.",
+  "vlHide": [
+    "Ready",
+    "Forced Ready",
+    "Rejected at QC",
+    "Quality Checked"
+  ],
+  "_vlHide_comment": "as S6a: the ready / QC ceremony states leave the status legend. NTPC has 2 activities at Ready and 1 at Forced Ready out of 6,840, and none at all at Rejected at QC or Quality Checked (checked 30-Sep-2026). Hiding is legend-only - those three rows still show their own chip. Warning and Stopped stay, as on S6a, so an activity that lands in one is still explained.",
   "dataFile": "ntpc_dashboard_data_v2.json",
   "relationsFile": "vl_relations.json",
   "title": "KPIGEL-NTPC Bikaner Block 8 (200MW) — MIS Dashboard v2 (Live)",
