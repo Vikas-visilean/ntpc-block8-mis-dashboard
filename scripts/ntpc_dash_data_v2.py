@@ -432,6 +432,14 @@ while m0 <= datetime.date(2027, 12, 31):
     months.append({"label": m0.strftime("%b-%y"), "wd": max((i for i, dt in enumerate(wdates) if dt <= m0), default=0) + 1})
     m0 = (m0 + datetime.timedelta(days=46)).replace(day=1) - datetime.timedelta(days=1)
 
+weeks = []
+w0 = datetime.date(2026, 5, 4)
+while w0 <= datetime.date(2027, 12, 31):
+    week_end = w0 + datetime.timedelta(days=6)
+    wd = max((i for i, dt in enumerate(wdates) if dt <= week_end), default=0) + 1
+    weeks.append({"label": w0.strftime("%d-%b-%y"), "wd": wd, "start": w0.isoformat(), "end": week_end.isoformat()})
+    w0 += datetime.timedelta(days=7)
+
 WT_I = 26   # "wt" column - VisiLean's Weightage custom field (asserted below)
 def w_of(x): return x[WT_I] if x[WT_I] and x[WT_I] > 0 else 0.0
 WSUM = sum(w_of(x) for x in rows)
@@ -765,7 +773,7 @@ print("logic network: %d activities have a predecessor | %d predecessors are off
 
 CFG = json.load(open(os.path.join(SCR, "projects", "ntpc.json"), encoding="utf-8"))
 
-DATA = {"meta": meta, "months": months, "reasons": reasons, "msLeaves": ms_rows,
+DATA = {"meta": meta, "months": months, "weeks": weeks, "reasons": reasons, "msLeaves": ms_rows,
         # the page reads its labels and status vocabulary from here (template CFG).
         # NTPC is built by this script rather than the shared dash_data.py, so without
         # this line scripts/projects/ntpc.json reaches nothing and the v3 page silently
