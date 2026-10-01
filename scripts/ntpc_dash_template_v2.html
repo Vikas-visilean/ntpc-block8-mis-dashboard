@@ -1299,7 +1299,7 @@ function scurve(rows,elId,monthly,label,period){
   const ymax=Math.max(5,...P,...F,...A)*1.06;
   const X=i=>padL+iw*i/(n-1), Y=v=>padT+ih*(1-v/ymax);
   const path=arr=>arr.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
-  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="${isWeek?'width:auto;min-width:100%':'width:100%;height:auto'}" id="${elId}-svg">`;
+  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="${isWeek?'width:'+Wc+'px;min-width:100%':'width:100%;height:auto'}" id="${elId}-svg">`;
   for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="8" text-anchor="end">${Math.round(v)}%</text>`}
   ms.forEach((m,i)=>{if(isWeek || i%2===0)g+=`<text x="${X(i)}" y="${Hc-5}" font-size="8" text-anchor="middle">${m.label}</text>`});
   let si=ms.findIndex(m=>m.wd>state.at); if(si<0)si=n-1;
@@ -1355,7 +1355,7 @@ function scurveMulti(rows,elId,monthly,period){
   const ymax=Math.max(5,...series.flatMap(x=>[...x.plan,...x.fc,...x.act]))*1.06;
   const X=i=>padL+iw*i/(n-1),Y=v=>padT+ih*(1-v/ymax);
   const path=arr=>arr.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
-  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="${isWeek?'width:auto;min-width:100%':'width:100%;height:auto'}" id="${elId}-svg">`;
+  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="${isWeek?'width:'+Wc+'px;min-width:100%':'width:100%;height:auto'}" id="${elId}-svg">`;
   for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="8" text-anchor="end">${Math.round(v)}%</text>`}
   ms.forEach((m,i)=>{if(isWeek || i%2===0)g+=`<text x="${X(i)}" y="${Hc-5}" font-size="8" text-anchor="middle">${m.label}</text>`});
   let si=ms.findIndex(m=>m.wd>state.at); if(si<0)si=n-1;
