@@ -1399,6 +1399,140 @@ function scurveTable(rows,period){
   ms.forEach(m=>{h+=`<tr><td>${m.label}</td><td class="num">${fmt1(planPct(rows,m.wd))}</td><td class="num">${m.wd<=SW?fmt1(actPctAt(rows,m.wd)):"—"}</td><td class="num">${fmt1(fcPct(rows,m.wd))}</td></tr>`});
   return h+"</table></div>";
 }
+
+// ---------- Synced S-curve for Weekly View ----------
+// Single shared scroll container for both Cumulative and Monthly charts
+function scurveMultiSynced(rows,elId,period){
+  period = period || "month";
+  const isWeek = period==="week";
+  if(!isWeek){
+    // For month view, fall back to original behavior (two separate charts)
+    return `<div id="${elId}-cum">${scurveMulti(rows,elId+"-cum",false,period)}</div>
+      <div id="${elId}-mon" style="margin-top:12px">${scurveMulti(rows,elId+"-mon",true,period)}</div>`;
+  }
+
+  // Week view: unified synced component
+  const ms = DATA.weeks;
+  const n = ms.length;
+  const sels = scSel.length===1
+    ? [SC_SERIES.find(x=>x[0]===scSel[0])].filter(Boolean)
+    : SC_SERIES.filter(x=>scSel.includes(x[0]));
+  const D = x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);
+
+  // Build series data for both cumulative and monthly
+  const seriesData = sels.map(x=>{
+    const rs = rows.filter(x[2]);
+    const aMs = ms.filter(m=>m.wd<=SW);
+    let plan = ms.map(m=>planPct(rs,m.wd));
+    let fc = ms.map(m=>fcPct(rs,m.wd));
+    let act = aMs.map(m=>actPctAt(rs,m.wd));
+    if(aMs.length<ms.length && (!aMs.length || aMs[aMs.length-1].wd<SW)) act.push(actPctAt(rs,SW));
+    const monthlyPlan = D([...plan]), monthlyFc = D([...fc]), monthlyAct = D([...act]);
+    return {name:x[1], col:x[3], plan, fc, act, monthlyPlan, monthlyFc, monthlyAct, cnt:rs.length};
+  });
+
+  const Wc = Math.max(860, n*35+80);
+  const Hc = 190, padL=32, padR=10, padT=8, padB=20, iw=Wc-padL-padR, ih=Hc-padT-padB;
+
+  // Y-max for cumulative
+  const ymaxCum = Math.max(5, ...seriesData.flatMap(x=>[...x.plan, ...x.fc, ...x.act])) * 1.06;
+  // Y-max for monthly
+  const ymaxMon = Math.max(5, ...seriesData.flatMap(x=>[...x.monthlyPlan, ...x.monthlyFc, ...x.monthlyAct])) * 1.06;
+
+  const X = i=>padL + iw*i/(n-1);
+  const Ycum = v=>padT + ih*(1-v/ymaxCum);
+  const Ymon = v=>padT + ih*(1-v/ymaxMon);
+  const path = arr=>arr.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Ycum(v).toFixed(1)).join(" ");
+  const pathMon = arr=>arr.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Ymon(v).toFixed(1)).join(" ");
+
+  const si = ms.findIndex(m=>m.wd>state.at);
+  const sx = X(Math.max(0, (si<0?n-1:si)-0.5));
+
+  // Build cumulative SVG
+  let gCum = `<svg viewBox="0 0 ${Wc} ${Hc}" style="width:${Wc}px;min-width:100%;display:block" id="${elId}-cum-svg">`;
+  for(let t=0;t<=4;t++){const v=ymaxCum*t/4; gCum+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Ycum(v)}" y2="${Ycum(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Ycum(v)+3}" font-size="8" text-anchor="end">${Math.round(v)}%</text>`}
+  ms.forEach((m,i)=>{
+    gCum+=`<text x="${X(i)}" y="${Hc-2}" font-size="7.5" text-anchor="middle" transform="rotate(-45,${X(i)},${Hc-2})">${m.label}</text>`;
+  });
+  gCum+=`<line x1="${sx}" x2="${sx}" y1="${padT}" y2="${padT+ih}" stroke="var(--warn)" stroke-dasharray="3 3"/>`;
+  seriesData.forEach(x=>{
+    gCum+=`<path d="${path(x.plan)}" fill="none" stroke="${x.col}" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>`;
+    gCum+=`<path d="${path(x.fc)}" fill="none" stroke="${x.col}" stroke-width="1.4" stroke-dasharray="5 4" opacity=".7"/>`;
+    if(x.act.length){
+      gCum+=`<path d="${path(x.act)}" fill="none" stroke="${x.col}" stroke-width="2.2"/>`;
+      gCum+=`<circle cx="${X(x.act.length-1)}" cy="${Ycum(x.act[x.act.length-1])}" r="2.6" fill="${x.col}" stroke="var(--surface)" stroke-width="1.5"/>`;
+    }
+  });
+  gCum+=`<rect id="${elId}-cum-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+
+  // Build monthly SVG
+  let gMon = `<svg viewBox="0 0 ${Wc} ${Hc}" style="width:${Wc}px;min-width:100%;display:block" id="${elId}-mon-svg">`;
+  for(let t=0;t<=4;t++){const v=ymaxMon*t/4; gMon+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Ymon(v)}" y2="${Ymon(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Ymon(v)+3}" font-size="8" text-anchor="end">${Math.round(v)}%</text>`}
+  ms.forEach((m,i)=>{
+    gMon+=`<text x="${X(i)}" y="${Hc-2}" font-size="7.5" text-anchor="middle" transform="rotate(-45,${X(i)},${Hc-2})">${m.label}</text>`;
+  });
+  gMon+=`<line x1="${sx}" x2="${sx}" y1="${padT}" y2="${padT+ih}" stroke="var(--warn)" stroke-dasharray="3 3"/>`;
+  const bw = iw/n*0.34;
+  seriesData.forEach(x=>{
+    x.monthlyPlan.forEach((v,i)=>{gMon+=`<rect x="${X(i)-bw-1}" y="${Ymon(v)}" width="${bw}" height="${Math.max(0,padT+ih-Ymon(v))}" rx="2" fill="${x.col}" opacity=".5"/>`});
+    x.monthlyAct.forEach((v,i)=>{gMon+=`<rect x="${X(i)+1}" y="${Ymon(v)}" width="${bw}" height="${Math.max(0,padT+ih-Ymon(v))}" rx="2" fill="${x.col}"/>`});
+  });
+  gMon+=`<rect id="${elId}-mon-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+
+  // Legends
+  const legCum = `<div class="legend" style="margin-bottom:4px"><span style="font-weight:700">Cumulative</span>${seriesData.map(x=>`<span><span class="sw" style="background:${x.col}"></span>${x.name}</span>`).join("")}<span class="dim">solid=actual · dashed=forecast · dotted=plan</span></div>`;
+  const legMon = `<div class="legend" style="margin:8px 0 4px"><span style="font-weight:700">Monthly</span>${seriesData.map(x=>`<span><span class="sw" style="background:${x.col}"></span>${x.name}</span>`).join("")}<span class="dim">bars=actual · outlines=plan</span></div>`;
+
+  // Single shared scroll container
+  const html = `<div class="sc-synced" id="${elId}-synced" style="position:relative">
+    ${legCum}
+    <div class="sc-synced-row" style="display:flex;overflow-x:auto;overflow-y:hidden;scrollbar-gutter:stable">
+      <div class="sc-synced-chart" style="flex:0 0 ${Wc}px;min-width:${Wc}px">${gCum}</div>
+    </div>
+    ${legMon}
+    <div class="sc-synced-row" style="display:flex;overflow-x:auto;overflow-y:hidden;scrollbar-gutter:stable">
+      <div class="sc-synced-chart" style="flex:0 0 ${Wc}px;min-width:${Wc}px">${gMon}</div>
+    </div>
+  </div>`;
+
+  // Sync scroll between the two rows
+  setTimeout(()=>{
+    const rows = document.querySelectorAll(`#${elId}-synced .sc-synced-row`);
+    if(rows.length===2){
+      const syncScroll = (e)=>{
+        const target = e.target;
+        rows.forEach(r=>{if(r!==target) r.scrollLeft = target.scrollLeft;});
+      };
+      rows[0].addEventListener('scroll', syncScroll, {passive:true});
+      rows[1].addEventListener('scroll', syncScroll, {passive:true});
+    }
+    // Tooltips
+    ['cum','mon'].forEach(suffix=>{
+      const hit = document.getElementById(`${elId}-${suffix}-hit`);
+      const svg = document.getElementById(`${elId}-${suffix}-svg`);
+      if(!hit || !svg) return;
+      const Y = suffix==='cum' ? Ycum : Ymon;
+      const series = seriesData;
+      hit.addEventListener('mousemove', e=>{
+        const r = svg.getBoundingClientRect();
+        const fx = (e.clientX - r.left) / r.width * Wc;
+        let i = Math.round((fx - padL) / (iw/(n-1)));
+        i = Math.max(0, Math.min(n-1, i));
+        let tip = `<b>${ms[i].label}</b>`;
+        series.forEach(x=>{
+          const planVal = suffix==='cum' ? x.plan[i] : x.monthlyPlan[i];
+          const actVal = suffix==='cum' ? (i<x.act.length?x.act[i]:null) : (i<x.monthlyAct.length?x.monthlyAct[i]:null);
+          const fcVal = suffix==='cum' ? x.fc[i] : x.monthlyFc[i];
+          tip += `<br>${x.name}: ${actVal!==null?fmt1(actVal)+'%':`<span class='t2'>fc ${fmt1(fcVal)}%</span>`} <span class="t2">(plan ${fmt1(planVal)}%)</span>`;
+        });
+        showTip(e, tip);
+      });
+      hit.addEventListener('mouseleave', hideTip);
+    });
+  },0);
+
+  return html;
+}
 // ---------- milestones: card stepper ----------
 function msTimeline(){
   const ms=DATA.milestones;
@@ -1953,7 +2087,9 @@ function pageSummary(){
   h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
   h+=longLeadCard();
   const scContent = scView==="chart"
-    ? `<div id="sc-box"><div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false,scPeriod)}<div class="hint" style="margin:8px 0 2px">${scPeriod==="week"?"Weekly":"Monthly"}</div>${scurveMulti(rows,"sc2",true,scPeriod)}</div>`
+    ? (scPeriod==="week"
+        ? `<div id="sc-box">${scurveMultiSynced(rows,"sc",scPeriod)}</div>`
+        : `<div id="sc-box"><div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false,scPeriod)}<div class="hint" style="margin:8px 0 2px">${scPeriod==="week"?"Weekly":"Monthly"}</div>${scurveMulti(rows,"sc2",true,scPeriod)}</div>`)
     : `<div id="sc-box">${scurveTableMulti(rows,scPeriod)}</div>`;
   h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
     scContent,
