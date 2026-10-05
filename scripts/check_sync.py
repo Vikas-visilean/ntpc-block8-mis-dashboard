@@ -26,6 +26,7 @@ DASH = [
     ("ABREL Talaja · 83.7 MW wind", "talaja", "refresh-talaja.yml"),
     ("Adoption tracker", "adoption", "refresh-adoption.yml"),
     ("Updates", "updates", "refresh-adoption.yml"),
+    ("Portfolio (all projects)", "portfolio", "refresh-portfolio.yml"),
 ]
 
 
