@@ -1955,21 +1955,32 @@ function approvalCard(rows){
   const head=`<div class="fsumwrap">`+cats.map(([k,n])=>
     `<div class="frow"><b>${esc(k)}</b><div class="fb"><i style="width:${(100*n/items.length).toFixed(1)}%"></i></div><span>${n}</span></div>`
   ).join("")+`</div>`;
-  const body=`<div class="twrap"><table class="frz"><tr><th>Drawing</th><th>Step</th><th>Rev</th>`+
-    `<th>Approval Type</th><th>Package</th><th>Status</th><th>Finished</th></tr>`+
-    items.sort((a,b)=>cmp(a[C.appr],b[C.appr])||cmp(apprDrawing(a),apprDrawing(b)))
-      .map(r=>`<tr><td title="${esc(String(r[C.wbs]||""))}"><b>${esc(apprDrawing(r).slice(0,48))}</b></td>`+
-        `<td class="dim">${esc(String(r[C.stage]||"\u2014").slice(0,22))}</td>`+
-        `<td>${esc(String(r[C.name]||"").slice(0,10))}</td>`+
-        `<td>${chip("blue",esc(r[C.appr]))}</td>`+
-        `<td>${esc(String(r[C.pkg]||"\u2014").slice(0,22))}</td>`+
-        `<td>${rowChip(r)}</td>`+
-        `<td>${r[C.aef]!=null?wdate(r[C.aef],1):"\u2014"}</td></tr>`).join("")+
-    `</table></div>`;
+  // One block per drawing, its revisions underneath - the way the Gantt reads: the
+  // drawing is the WBS node, the revisions are the activities KP tags. Repeating the
+  // drawing name on every revision made two revisions of one drawing look like two
+  // drawings.
+  const groups=new Map();
+  items.forEach(r=>{ const d=apprDrawing(r); if(!groups.has(d)) groups.set(d,[]); groups.get(d).push(r); });
+  const ordered=[...groups.entries()].sort((a,b)=>cmp(a[0],b[0]));
+  const body=`<div class="twrap"><table class="frz"><tr><th>Drawing / revision</th>`+
+    `<th>Approval Type</th><th>Step</th><th>Status</th><th>Finished</th></tr>`+
+    ordered.map(([d,rr])=>{
+      rr.sort((a,b)=>cmp(b[C.name],a[C.name]));            // newest revision first
+      const pkg=String(rr[0][C.pkg]||"").trim();
+      return `<tr><td colspan="5" title="${esc(String(rr[0][C.wbs]||""))}" style="padding-top:9px">`+
+          `<b>${esc(d.slice(0,74))}</b>`+
+          `<span class="small dim"> \u00b7 ${esc(pkg||"\u2014")} \u00b7 `+
+          `${rr.length} revision${rr.length===1?"":"s"}</span></td></tr>`+
+        rr.map(r=>`<tr><td style="padding-left:24px">${esc(String(r[C.name]||"").slice(0,10))}</td>`+
+          `<td>${chip("blue",esc(r[C.appr]))}</td>`+
+          `<td class="dim">${esc(String(r[C.stage]||"\u2014").slice(0,22))}</td>`+
+          `<td>${rowChip(r)}</td>`+
+          `<td>${r[C.aef]!=null?wdate(r[C.aef],1):"\u2014"}</td></tr>`).join("");
+    }).join("")+`</table></div>`;
   return card("span12","Drawing approvals by Approval Type",
     `${items.length} drawing revision${items.length===1?"":"s"} tagged in VisiLean \u00b7 ${done} complete \u00b7 `+
-    `read it as drawing \u2192 step \u2192 revision: the \u201cApproval Type\u201d field sits on the revision row, `+
-    `so SLD- DC SYSTEM \u2192 Submission \u2192 R0 is CAT 2`,
+    `grouped by drawing, newest revision first \u00b7 the \u201cApproval Type\u201d field sits on the `+
+    `revision, so SLD- DC SYSTEM carries one revision, R0, approved CAT 2`,
     head+body);
 }
 function card(cls,title,hint,body,extraHdr){return `<div class="card ${cls}"><div class="hdrrow"><div><h2>${title}</h2><div class="hint">${hint}</div></div>${extraHdr||""}</div>${body}</div>`}
