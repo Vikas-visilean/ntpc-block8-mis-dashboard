@@ -7,7 +7,14 @@ tpl = open(os.path.join(SCR, "ntpc_dash_template_v2.html"), encoding="utf-8").re
 data_txt = open(os.path.join(SCR, "ntpc_dashboard_data_v2.json"), encoding="utf-8").read()
 logo = "data:image/png;base64," + open(os.path.join(SCR, "kp_logo.b64"), encoding="ascii").read().strip()
 sync_json = json.dumps({"repo": "Vikas-visilean/ntpc-block8-mis-dashboard", "workflow": "refresh-v2.yml"})
-html = tpl.replace("__LOGO__", logo).replace("__SYNC__", sync_json).replace("__DATA__", data_txt)
+# What the page is made of, hashed together: the id moves whenever either side
+# does. The page compares this against version.json to find out whether the copy
+# a browser is running is still the current one - see the BUILD_ID block in the
+# template. Left unstamped, that check reads "__BUILD__", gives up, and a stale
+# copy stays on screen until somebody clears their cache by hand.
+build_id = hashlib.sha256((tpl + "\x00" + data_txt).encode("utf-8")).hexdigest()[:16]
+html = (tpl.replace("__LOGO__", logo).replace("__SYNC__", sync_json)
+           .replace("__DATA__", data_txt).replace("__BUILD__", build_id))
 assert "accessToken" not in html, "token leak!"
 outdir = os.path.join(ROOT, "v2")
 os.makedirs(outdir, exist_ok=True)
@@ -16,6 +23,9 @@ open(os.path.join(outdir, "index.html"), "w", encoding="utf-8").write(html)
 data = json.loads(data_txt)
 meta = dict(data["meta"])
 open(os.path.join(outdir, "meta.json"), "w", encoding="utf-8").write(json.dumps(meta))
+# the page fetches this to find out whether the copy it is running is the current one
+open(os.path.join(outdir, "version.json"), "w", encoding="utf-8").write(
+    json.dumps({"build": build_id}))
 # change guard: hash of the data EXCLUDING generatedAt (so unchanged data != new commit)
 d2 = json.loads(data_txt)
 d2["meta"].pop("generatedAt", None)
@@ -25,4 +35,5 @@ open(os.path.join(outdir, ".datahash"), "w").write(h)
 # so without this a template change never reaches the published page on its own.
 th = hashlib.sha256((tpl + "\x00" + logo).encode("utf-8")).hexdigest()
 open(os.path.join(outdir, ".tplhash"), "w").write(th)
-print("built v2/index.html", os.path.getsize(os.path.join(outdir, "index.html")), "bytes | datahash", h[:12])
+print("built v2/index.html", os.path.getsize(os.path.join(outdir, "index.html")),
+      "bytes | datahash", h[:12], "| build", build_id)
