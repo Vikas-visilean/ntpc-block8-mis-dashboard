@@ -65,7 +65,7 @@ h1{font-size:14px;font-weight:700}
 .thm{display:flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden}
 .thm button{padding:2px 7px;font-size:10.5px;color:var(--ink2)}
 .thm button.on{background:var(--blue);color:#fff}
-.fbar{position:sticky;top:0;z-index:30;display:flex;gap:5px;align-items:center;flex-wrap:nowrap;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin-bottom:8px;box-shadow:0 2px 8px rgba(16,20,23,.04)}
+.fbar{position:sticky;top:0;z-index:30;display:flex;gap:5px 5px;align-items:center;flex-wrap:nowrap;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin-bottom:8px;box-shadow:0 2px 8px rgba(16,20,23,.04)}
 .fbar .tgl{display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:2.5px 7px;cursor:pointer;user-select:none}
 .fbar .tgl.on{background:var(--crit-wash);color:var(--crit-text);border-color:var(--crit)}
 .fbar .tgl.on2{background:var(--warn-wash);color:var(--warn-text);border-color:var(--warn)}
@@ -128,6 +128,9 @@ h1{font-size:14px;font-weight:700}
 /* EPC bifurcation: name | bar | actual over plan, one readable line per discipline */
 .codkv{display:grid;grid-template-columns:1fr auto;gap:4px 10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:10.5px}
 .codkv span{color:var(--mut)}
+.scwk{position:relative}
+.scwk .scaxis{position:absolute;left:0;top:0;z-index:2;pointer-events:none}
+.scscroll{overflow-x:auto;overflow-y:hidden;padding-bottom:4px}
 .epcrows{display:flex;flex-direction:column;gap:12px;margin-top:12px}
 .epcrow{display:grid;grid-template-columns:150px minmax(80px,1fr) 92px;gap:14px;align-items:center}
 .epcrow .nm{display:flex;flex-direction:column;line-height:1.25;min-width:0}
@@ -214,10 +217,10 @@ tr:hover td{background:var(--blue-wash)}
 .fside{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--mut);margin:4px 0 1px}
 /* the project's package names are longer than the seven categories these were sized for */
 .bgrid.csub{grid-template-columns:repeat(auto-fill,minmax(224px,1fr))}
-.bgrid.csub .frow{grid-template-columns:80px 1fr 84px}
-.fsumwrap.csub .frow{grid-template-columns:96px 1fr 104px}
+.bgrid.csub .frow{grid-template-columns:80px minmax(24px,1fr) minmax(84px,auto)}
+.fsumwrap.csub .frow{grid-template-columns:96px minmax(24px,1fr) minmax(104px,auto)}
 .ftile .fside:first-of-type,.fsumgrp .fside{margin-top:0}
-.fsumcats .frow{grid-template-columns:70px 1fr 116px}
+.fsumcats .frow{grid-template-columns:70px minmax(24px,1fr) minmax(116px,auto)}
 .fsumcats .frow .fn,.fsumcats .frow .fv{font-size:10.5px}
 .fsumcats .frow .fb{height:5px}
 .fsum.fclick{cursor:pointer}
@@ -231,7 +234,7 @@ tr:hover td{background:var(--blue-wash)}
 .ftile .bn{font-size:10.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
 .ftile .bp{font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums}
 .ftile .bpl{font-size:10.5px;color:var(--mut);margin-bottom:4px}
-.frow{display:grid;grid-template-columns:56px 1fr 84px;gap:4px;align-items:center;padding:1px 0}
+.frow{display:grid;grid-template-columns:56px minmax(24px,1fr) minmax(84px,auto);gap:4px;align-items:center;padding:1px 0}
 .frow .fn{font-size:10.5px;color:var(--mut)}
 .frow .fv{font-size:10.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);white-space:nowrap}
 .frow .fb{height:4px;background:var(--grid);border-radius:2px;overflow:hidden}
@@ -505,11 +508,17 @@ html{zoom:1.3}
 [data-theme=dark] .chip.vlc{color:#4ecb6a}[data-theme=dark] .chip.vls{color:#b08fe0}
 [data-theme=dark] .chip.vlnr{color:#ff8a7a}[data-theme=dark] .chip.vlnc{color:#e0c545}[data-theme=dark] .chip.vlw{color:#ffb84d}
 .fsep{width:1px;align-self:stretch;background:var(--line);margin:2px 3px}
-.fbar .dsl input[type=date]{width:auto}
-.fbar select{max-width:150px;min-width:70px;flex:0 1 auto}
+.fpwrap{position:relative;flex-shrink:0}
+.fpbtn{font-size:10.5px;color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:3px 8px;white-space:nowrap}
+.fpbtn:hover,.fpbtn.on{border-color:var(--blue);color:var(--blue);background:var(--blue-wash)}
+.fppop{position:absolute;left:0;top:calc(100% + 4px);z-index:40;display:flex;flex-direction:column;gap:7px;background:var(--surface);border:1px solid var(--line2);border-radius:8px;box-shadow:0 8px 24px rgba(16,20,23,.16);padding:10px 12px}
+.fppop[hidden]{display:none}
+.fppop label{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:10.5px;color:var(--ink2);white-space:nowrap}
+.fppop input[type=date]{font-size:10.5px;padding:2px 4px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);color:var(--ink)}
+.fbar select{max-width:128px;min-width:96px;flex:0 1 auto}
 .fbar>*{flex-shrink:0}.fbar>select{flex-shrink:1}
 @media(max-width:1150px){.fbar{flex-wrap:wrap}}
-.fbar .dsl input[type=range]{width:90px}
+.fbar .dsl input[type=range]{width:80px}
 .vlegbtn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--line2);border-radius:50%}
 .vlegbtn:hover,.vlegbtn.on{border-color:var(--blue);background:var(--blue-wash)}
 .vlegbtn .ring{width:15px;height:15px;border-radius:50%;
@@ -600,15 +609,18 @@ html{zoom:1.3}
         </div>
       </div>
     </div>
-    <!-- KP 05-Oct: Activity type and Ownership are gone - both repeat the Department
-         split - and the status legend sits behind a button instead of on the bar -->
+    <!-- KP 05-Oct: Activity type is gone - it repeats the Department split - and the
+         status legend sits behind a button instead of on the bar. Ownership stays: it is
+         VisiLean's "Owner." custom field, not the assignee -->
     <div class="fbar" id="fbar">
       <select id="f-dept"><option value="">All departments</option></select>
       <select id="f-area"><option value="">All locations</option></select>
       <select id="f-pkg"><option value="">All packages</option></select>
       <select id="f-owner"><option value="">All owners</option></select>
+      <select id="f-ownship" title="VisiLean custom field “Owner.”"><option value="">All ownership</option></select>
       <span class="fsep"></span>
-      <span class="dsl" title="Only activities whose baseline falls in this window">Period <input type="date" id="f-d1" aria-label="From"><span class="dim">–</span><input type="date" id="f-d2" aria-label="To"></span>
+      <span class="fpwrap"><button type="button" class="fpbtn" id="f-per" title="Only activities whose baseline falls in this window" aria-expanded="false" aria-controls="f-perpop">Period: all ▾</button>
+        <span class="fppop" id="f-perpop" hidden><label>From <input type="date" id="f-d1"></label><label>To <input type="date" id="f-d2"></label></span></span>
       <span class="fsep"></span>
       <span class="tgl" id="f-crit">⚠ Critical</span>
       <span class="tgl" id="f-del">⏰ Delayed</span>
@@ -651,8 +663,23 @@ html{zoom:1.3}
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 const DATA = __DATA__;
-const M = DATA.meta, L = DATA.leaves;
 const C = {}; DATA.cols.forEach((c,i)=>C[c]=i);
+// A data file built before the builders de-duplicated the task feed carries some
+// VisiLean-created revisions several times over (one row per copy the feed sent).
+// One row per task, and of the copies the one that is not superseded.
+(function(){
+  if(C.tid===undefined||C.pb===undefined)return;
+  const at=new Map(),out=[];
+  DATA.leaves.forEach(r=>{
+    if(!r[C.pb]||!r[C.tid]){out.push(r);return}
+    const k=String(r[C.tid]);
+    if(!at.has(k)){at.set(k,out.length);out.push(r);return}
+    const i=at.get(k);
+    if(C.sup!==undefined&&out[i][C.sup]&&!r[C.sup])out[i]=r;
+  });
+  DATA.leaves=out;
+})();
+const M = DATA.meta, L = DATA.leaves;
 // booked against planned. aqty is VisiLean's "Actual Quantity" custom field - what the site
 // entered - not qty*pct, which is only percent complete restated in the planned unit.
 // Only projects that book quantities get the split column; for the rest this is the plain
@@ -741,7 +768,8 @@ const actF=r=>(C.aef!==undefined&&r[C.aef]!=null)?r[C.aef]:null;
 const dStart=w=>w==null?"—":wdate(w), dFin=w=>w==null?"—":wdate(w,1);
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const fmt1=x=>(Math.round(x*10)/10).toFixed(1);
-const fq=x=>x>=1e6?(x/1e6).toFixed(1)+"M":x>=1000?(x/1000).toFixed(x>=10000?0:1)+"k":Math.round(x*10)/10;
+// KP 05-Oct: quantities in full ("45,000/156,000 nos"), never shortened to k / M
+const fq=x=>{const v=Math.round((+x||0)*10)/10;return v.toLocaleString(undefined,{maximumFractionDigits:1})};
 // ---------- state ----------
 const state = {page:"summary", unit:"%", at:SW, f:{dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false}};
 // status rules aligned with the schedule Excel 'Status' column
@@ -1445,8 +1473,8 @@ function drillRender(){
   if(_dpage>=pages)_dpage=pages-1;
   const page=rows.slice(_dpage*DPAGE,(_dpage+1)*DPAGE);
   let h="";
-  if(s.formula)h+=`<div class="tile" style="margin-top:0"><span class="ico">=</span><div>${s.formula}</div></div>`;
-  if(s.reconcile)h+=`<div style="margin-top:8px">${s.reconcile}</div>`;
+  // KP 05-Oct: no formula line or "counted live" badge above the drill - the count
+  // is already on the title, and the two lines pushed the table down
   if(s.breakdown&&s.breakdown.length){
     const bf=!!s.breakdownFilter;                 // clicking a row filters the table
     h+=`<div class="dsec"><div class="hdrrow"><div class="eyebrow">Breakdown — ${esc(s.breakdownBy||"by dimension")}</div>`;
@@ -1961,20 +1989,57 @@ function scVals(rows,ps){
 // the axis, grid, labels and today line, shared by the single and multi charts
 function scFrame(ps,ymax,elId){
   const n=ps.length;
-  const Wc=860,Hc=200,padL=36,padR=10,padT=8,padB=24,iw=Wc-padL-padR,ih=Hc-padT-padB;
+  // weekly: 28 px per week at 1:1, inside a horizontal scroller - squeezing ~90
+  // weeks into the card width left the bars a hair apart and unreadable
+  const wk=scPer==="w"&&HASWK();
+  const Wc=wk?Math.max(860,n*28):860,Hc=200,padL=36,padR=10,padT=8,padB=24,iw=Wc-padL-padR,ih=Hc-padT-padB;
   const X=i=>padL+iw*i/Math.max(1,n-1), Y=v=>padT+ih*(1-v/ymax);
-  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:100%;height:auto" id="${elId}-svg">`;
+  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="${wk?`width:${Wc}px;max-width:none;display:block`:"width:100%"};height:auto" id="${elId}-svg">`;
   for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="11" text-anchor="end">${Math.round(v)}%</text>`}
-  // about a dozen labels whichever period is chosen
-  const step=Math.max(1,Math.ceil(n/12));
+  // about a dozen labels across the card; weekly labels every third week
+  const step=wk?3:Math.max(1,Math.ceil(n/12));
   ps.forEach((p,i)=>{if(i%step===0)g+=`<text x="${X(i)}" y="${Hc-4}" font-size="11" text-anchor="middle">${esc(p.label)}</text>`});
   const sx=scXof(ps,X,state.at);
   g+=`<line x1="${sx}" x2="${sx}" y1="${padT}" y2="${padT+ih}" stroke="var(--warn)" stroke-dasharray="3 3"/>`+
      `<text x="${sx+3}" y="${padT+9}" font-size="10" fill="var(--warn-text)">${state.at===SW?"today":"as of "+wdate(state.at,1)}</text>`;
-  return {g,Wc,Hc,padL,padT,iw,ih,X,Y,n};
+  const ticks=[0,1,2,3,4].map(t=>[Y(ymax*t/4),Math.round(ymax*t/4)+"%"]);
+  return {g,Wc,Hc,padL,padT,iw,ih,X,Y,n,wk,sx,ticks};
 }
-function scHover(elId,F,n,html){
+// the weekly chart scrolls; it opens with today a third of the way in
+function scWrap(Fr,elId,svg){
+  if(!Fr.wk)return svg;
+  setTimeout(()=>{const w=document.getElementById(elId+"-wrap");
+    if(w)w.scrollLeft=Math.max(0,Fr.sx-w.clientWidth*0.35)},0);
+  const ax=`<svg class="scaxis" viewBox="0 0 ${Fr.padL} ${Fr.Hc}" style="width:${Fr.padL}px;height:${Fr.Hc}px">`+
+    `<rect x="0" y="0" width="${Fr.padL}" height="${Fr.Hc}" fill="var(--surface)"/>`+
+    Fr.ticks.map(([y,l])=>`<text x="${Fr.padL-4}" y="${y+3}" font-size="11" text-anchor="end">${l}</text>`).join("")+`</svg>`;
+  return `<div class="scwk">${ax}<div class="scscroll" id="${elId}-wrap">${svg}</div></div>`;
+}
+// The activities behind one period's bars: planned work that falls in the period,
+// actual progress booked in it, and forecast work in it - the same per-activity
+// fractions the bars are summed from, so the list and the bar always agree.
+function scPeriodDrill(rows,ps,i,which,label){
+  const w=wgt(rows), e=ps[i].wd, b=i?ps[i-1].wd:-1e9;
+  const pf=(r,at,k)=>Math.min(1,Math.max(0,(at-r[k])/Math.max(.5,r[C.dur])));
+  const af=(r,at)=>Math.min(pctOf(r)/100,elapsedOf(r,at));
+  const ae=Math.min(e,SW);
+  const plan=rows.filter(r=>w(r)>0&&pf(r,e,C.bES)-pf(r,b,C.bES)>1e-9);
+  const act=(b<SW)?rows.filter(r=>w(r)>0&&af(r,ae)-af(r,b)>1e-9):[];
+  const fc=rows.filter(r=>w(r)>0&&pf(r,e,C.fES)-pf(r,b,C.fES)>1e-9);
+  const sub=which==="act"&&act.length?"act":"plan";
+  drillOpen({eyebrow:"S-curve"+(label?" · "+label:""),title:scPerLbl(ps[i]),
+    status:pill("info",`${plan.length} planned · ${act.length} progressed`),
+    rows:plan,cols:stdCols(),rowId:r=>String(r[C.tid]),sub,
+    subsets:[{k:"plan",label:`Planned in this ${scPerName().toLowerCase()}`,rows:plan},
+             {k:"act",label:"Progressed (actual)",rows:act},
+             {k:"fc",label:"Forecast",rows:fc}]});
+}
+function scHover(elId,F,n,html,onClick){
   setTimeout(()=>{const hit=document.getElementById(elId+"-hit");if(!hit)return;
+    if(onClick){hit.style.cursor="pointer";
+      hit.addEventListener("click",e=>{const svg=document.getElementById(elId+"-svg");const r=svg.getBoundingClientRect();
+        const fx=(e.clientX-r.left)/r.width*F.Wc;const p=(fx-F.padL)/(F.iw/Math.max(1,n-1));
+        const i=Math.max(0,Math.min(n-1,Math.round(p)));hideTip();onClick(i,p>i?"act":"plan")})}
     hit.addEventListener("mousemove",e=>{const svg=document.getElementById(elId+"-svg");const r=svg.getBoundingClientRect();
       const fx=(e.clientX-r.left)/r.width*F.Wc;let i=Math.round((fx-F.padL)/(F.iw/Math.max(1,n-1)));i=Math.max(0,Math.min(n-1,i));
       showTip(e,html(i));});
@@ -2005,8 +2070,10 @@ function scurve(rows,elId,monthly,label){
   }
   g+=`<rect id="${elId}-hit" x="${Fr.padL}" y="${Fr.padT}" width="${Fr.iw}" height="${Fr.ih}" fill="transparent"/></svg>`;
   const leg=`<div class="legend">${label?`<span style="font-weight:700">${esc(label)}</span>`:""}<span><span class="sw" style="background:var(--s-act)"></span>Actual</span><span><span class="sw" style="background:var(--s-act);opacity:.5"></span>Forecast</span><span><span class="sw" style="background:var(--s-plan)"></span>Plan</span></div>`;
-  scHover(elId,Fr,n,i=>`<b>${esc(scPerLbl(ps[i]))}</b><br>Plan: ${fmt1(P[i]||0)}%${i<A.length?`<br>Actual${V.tail&&i===A.length-1?" (to "+wdate(SW,1)+")":""}: ${fmt1(A[i])}%`:""}<br><span class="t2">Forecast: ${fmt1(F[i]||0)}%</span>`);
-  return leg+g;
+  scHover(elId,Fr,n,i=>`<b>${esc(scPerLbl(ps[i]))}</b><br>Plan: ${fmt1(P[i]||0)}%${i<A.length?`<br>Actual${V.tail&&i===A.length-1?" (to "+wdate(SW,1)+")":""}: ${fmt1(A[i])}%`:""}<br><span class="t2">Forecast: ${fmt1(F[i]||0)}%</span>`
+    +(monthly?`<br><span class="t2">click for the activities</span>`:""),
+    monthly?((i,which)=>scPeriodDrill(rows,ps,i,which,label)):null);
+  return leg+scWrap(Fr,elId,g);
 }
 let scSel=["all"];
 const SC_SERIES=[["all","Overall",r=>true,"var(--blue)"],
@@ -2041,7 +2108,7 @@ function scurveMulti(rows,elId,monthly){
   g+=`<rect id="${elId}-hit" x="${Fr.padL}" y="${Fr.padT}" width="${Fr.iw}" height="${Fr.ih}" fill="transparent"/></svg>`;
   const leg=`<div class="legend">${series.map(x=>`<span><span class="sw" style="background:${x.col}"></span>${x.name}</span>`).join("")}<span class="dim">solid = actual · dashed = forecast · dotted = plan</span></div>`;
   scHover(elId,Fr,n,i=>`<b>${esc(scPerLbl(ps[i]))}</b>`+series.map(x=>`<br>${x.name}: ${i<x.act.length?fmt1(x.act[i])+"%":"<span class='t2'>fc "+fmt1(x.fc[i]||0)+"%</span>"} <span class="t2">(plan ${fmt1(x.plan[i]||0)}%)</span>`).join(""));
-  return leg+g;
+  return leg+scWrap(Fr,elId,g);
 }
 function scurveTableMulti(rows){
   if(scSel.length===1){
@@ -2185,6 +2252,7 @@ function colKey(r){
   if(r[C.dept]==="engineering")return r[C.stage]||r[C.name];
   return r[C.name];
 }
+const ENG_HIDE_COL=/^(R\s*O|R\s*\d+|DB|As[\s-]*Built.*)$/i;
 const ENG_COL_LBL={"Drafting":"Drafting & Conceptual","Int. Check":"Internal Checking","Int. Approval":"Internal Approval","Submission":"Submission to Client","Acceptance":"Final Acceptance","GFC":"GFC Issuance","As-Built":"As-Built"};
 const LONGLEAD=new RegExp(CFG.longLead,"i");
 let pipeSearch="", pipeDelOnly=false, pipeFocus="";
@@ -2222,7 +2290,11 @@ function pipeTable(rows,idp,engMode){
   // columns = schedule steps ordered by earliest baseline start
   const colMin={};
   groups.forEach(x=>x.rr.forEach(r=>{const k=colKey(r);colMin[k]=Math.min(colMin[k]??1e9,r[C.bES])}));
-  const allCols=Object.keys(colMin).sort((a,b)=>colMin[a]-colMin[b]).slice(0,32);
+  // KP 05-Oct: a revision row ("R0", "R1", "DB" ...) with no stage of its own made
+  // a column per revision, and As-Built sits years out - neither is a document stage
+  // KP tracks in this grid. The activities still count in the row and its drill.
+  const allCols=Object.keys(colMin).filter(k=>!engMode||!ENG_HIDE_COL.test(String(k).trim()))
+    .sort((a,b)=>colMin[a]-colMin[b]).slice(0,32);
   const sel=pipeColSel[idp];
   let cols=sel&&sel.size?allCols.filter(c=>sel.has(c)):allCols;
   // per-stage-column value filter (the ▾ on each header). Options are taken before
@@ -3040,100 +3112,118 @@ const SPEC_FA=()=>({key:"fa",re:CFG.acceptRe,unit:"documents",
   hint:CFG.acceptHint||`activities named “${CFG.acceptLabel}” in this view · completed vs what the baseline says should be finished by ${wdate(SW,1)}`,
   byTitle:CFG.acceptByTitle||`${CFG.acceptLabel} by design package`,
   byHint:"the same four counts per package · largest shortfall first"});
-// ---------- drawing approvals ------------------------------------------------
+// ---------- Submission to Client ---------------------------------------------
 // VisiLean carries an approval category on the drawing revision rows ("R0", "R1")
 // that hang under a drawing's Submission to Client step - CAT 1 / CAT 2 / CAT 3 and
-// the CAT-IV family, in the "Approval Type" custom field. Only the projects that tag
-// it have the column filled, so this card appears where there is something to show
-// and stays silent everywhere else.
-const HASAPPR = C.appr!==undefined && DATA.leaves.some(r=>r[C.appr]);
+// the CAT-IV family, in the "Approval Type" custom field. The card lists every
+// Submission to Client and shows the CAT counts where a project tags them.
 // the drawing is the revision's parent, so its name is the last WBS segment - a row
 // called "R0" says nothing on its own
 const apprDrawing = r => {
   const w = String(r[C.wbs]||"").split(" > ").filter(Boolean);
   return w.length ? w[w.length-1] : String(r[C.name]||"");
 };
-// the card's own filters: an approval type and a VisiLean status ("" = all)
+// the card's own filters: an approval type and a status ("" = all)
 let apprCat="", apprSt="";
 // KP's "Submission to Client" step, by activity name
 const STC_RE=/submission to client/i;
+// Every "Submission to Client" in Design & Engineering, as VisiLean's Gantt shows it.
+// It comes two ways: an activity of that name, or a WBS node of that name with the
+// drawing revisions (R0, R1 ...) under it. The feed carries only the leaves, so a
+// node is rebuilt from its revisions - grouped on their parent task where the data
+// has it, otherwise on the WBS path the revisions share.
+function stcUnits(rows){
+  const one=new Map();
+  rows.forEach(r=>{ if(r[C.dept]==="engineering"&&!one.has(r[C.tid])) one.set(r[C.tid],r) });
+  const all=[...one.values()];
+  const st=r=>{const k=vlKey(r[C.vls]);
+    return (k==="complete"||r[C.pct]>=100)?"Complete":((r[C.pct]>0||k==="started"||k==="warning")?"Started":rowStatus(r)[1])};
+  const units=[];
+  all.filter(r=>STC_RE.test(String(r[C.name]||""))).forEach(r=>units.push({
+    drawing:apprDrawing(r),pkg:String(r[C.pkg]||"").trim(),wbs:String(r[C.wbs]||""),
+    status:st(r),chip:rowChip(r),revs:[],acts:[r],
+    bs:r[C.bES],be:r[C.bEF],as:actS(r),ae:actF(r)}));
+  const grp=new Map();
+  all.filter(r=>r[C.stage]==="Submission"&&!STC_RE.test(String(r[C.name]||""))).forEach(r=>{
+    const k=(C.ptid!==undefined&&r[C.ptid])?"p:"+r[C.ptid]:"w:"+r[C.wbs];
+    if(!grp.has(k))grp.set(k,[]);
+    grp.get(k).push(r)});
+  grp.forEach(rr=>{
+    const s=rr.map(st), done=s.every(x=>x==="Complete"), any=s.some(x=>x==="Complete"||x==="Started");
+    const status=done?"Complete":(any?"Started":s[0]);
+    const as=rr.map(actS).filter(x=>x!=null), ae=rr.map(actF);
+    units.push({drawing:apprDrawing(rr[0]),pkg:String(rr[0][C.pkg]||"").trim(),wbs:String(rr[0][C.wbs]||""),
+      status,chip:done?chip("vlc",vlText("complete")):(any?chip("vls",vlText("started")):rowChip(rr[0])),
+      revs:rr,acts:rr,
+      bs:Math.min(...rr.map(r=>r[C.bES])),be:Math.max(...rr.map(r=>r[C.bEF])),
+      as:as.length?Math.min(...as):null,ae:(done&&ae.every(x=>x!=null))?Math.max(...ae):null});
+  });
+  return units;
+}
 function approvalCard(rows){
-  if(!HASAPPR) return "";
-  // the feed repeats an activity once per history event, so count activities, not rows
-  const byTid=new Map();
-  rows.forEach(r=>{ if(r[C.appr] && !byTid.has(r[C.tid])) byTid.set(r[C.tid], r); });
-  const items=[...byTid.values()];
-  if(!items.length) return "";
+  const units=stcUnits(rows);
+  if(!units.length) return "";
   const cmp=(a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:"base"});
-  const stLbl=r=>rowStatus(r)[1];
-  // the headline: activities named Submission to Client that VisiLean shows Complete
-  const stcBy=new Map();
-  rows.forEach(r=>{ if(STC_RE.test(String(r[C.name]||"")) && !stcBy.has(r[C.tid])) stcBy.set(r[C.tid], r); });
-  const stc=[...stcBy.values()], stcDone=stc.filter(r=>vlKey(r[C.vls])==="complete");
-  const cats=[...new Set(items.map(r=>r[C.appr]))].sort(cmp);
-  const sts=[...new Set(items.map(stLbl))].sort(cmp);
+  const revs=units.flatMap(u=>u.revs);
+  const cats=[...new Set(revs.map(r=>r[C.appr]).filter(Boolean))].sort(cmp);
+  const sts=[...new Set(units.map(u=>u.status))].sort(cmp);
   if(apprCat&&!cats.includes(apprCat)) apprCat="";
   if(apprSt&&!sts.includes(apprSt)) apprSt="";
-  const shown=items.filter(r=>(!apprCat||r[C.appr]===apprCat)&&(!apprSt||stLbl(r)===apprSt));
-  const done=items.filter(r=>r[C.state]==="done").length;
-  // numbers first: each approval-type tile is also its filter
-  const n=(k,v,sub,attrs,on)=>`<${attrs?"button type=\"button\"":"div"} class="apn${attrs?" click":""}${on?" on":""}"${attrs||""}>`+
-    `<div class="k">${k}</div><div class="v">${v}${sub?`<small>${sub}</small>`:""}</div></${attrs?"button":"div"}>`;
+  const nDone=units.filter(u=>u.status==="Complete").length, nStart=units.filter(u=>u.status==="Started").length;
+  const shown=units.filter(u=>(!apprSt||u.status===apprSt)&&(!apprCat||u.revs.some(r=>r[C.appr]===apprCat)));
+  // numbers first: every tile is also a filter
+  const n=(k,v,attrs,on)=>`<button type="button" class="apn click${on?" on":""}"${attrs}><div class="k">${k}</div><div class="v">${v}</div></button>`;
   let head=`<div class="apnums">`+
-    n("Submission to Client · complete",stcDone.length.toLocaleString(),` / ${stc.length.toLocaleString()}`,
-      ` id="appr-stc" title="Activities named “Submission to Client” with VisiLean status Complete — open the list"`)+
-    n("Revisions tagged",items.length.toLocaleString(),"")+
-    n("Revisions complete",done.toLocaleString(),` / ${items.length}`)+
-    cats.map(k=>{const c=items.filter(r=>r[C.appr]===k).length;
-      return n(esc(k),c,"",` data-apc="${esc(k)}" title="Show only ${esc(k)}${apprCat===k?" (click again to clear)":""}"`,apprCat===k)}).join("")+
+    n("Submission to Client",units.length.toLocaleString(),` data-aps="" title="Every Submission to Client in Design &amp; Engineering — show all"`,!apprSt&&!apprCat)+
+    n("Completed",nDone.toLocaleString(),` data-aps="Complete" title="Submission to Client with status Complete"`,apprSt==="Complete")+
+    n("Started",nStart.toLocaleString(),` data-aps="Started" title="Submission to Client with status Started"`,apprSt==="Started")+
+    cats.map(k=>n(esc(k),revs.filter(r=>r[C.appr]===k).length,
+      ` data-apc="${esc(k)}" title="Revisions approved ${esc(k)}${apprCat===k?" (click again to clear)":""}"`,apprCat===k)).join("")+
     `</div>`;
   const sel=(id,lbl,vals,cur)=>`<label class="apsel">${lbl}<select id="${id}"><option value="">All</option>`+
     vals.map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v)}</option>`).join("")+`</select></label>`;
-  head+=`<div class="apbar">${sel("appr-cat","Approval type",cats,apprCat)}${sel("appr-st","Status",sts,apprSt)}`+
-    `<span class="fnote">${shown.length} of ${items.length} revisions</span>`+
+  head+=`<div class="apbar">${sel("appr-st","Status",sts,apprSt)}${cats.length?sel("appr-cat","Approval type",cats,apprCat):""}`+
+    `<span class="fnote">${shown.length} of ${units.length}</span>`+
     ((apprCat||apprSt)?`<a href="#" id="appr-clr" style="color:var(--blue);font-size:10.5px;font-weight:600">× clear</a>`:"")+`</div>`;
-  // One block per drawing, its revisions underneath - the way the Gantt reads: the
-  // drawing is the WBS node, the revisions are the activities KP tags.
-  const groups=new Map();
-  shown.forEach(r=>{ const d=apprDrawing(r); if(!groups.has(d)) groups.set(d,[]); groups.get(d).push(r); });
-  const ordered=[...groups.entries()].sort((a,b)=>cmp(a[0],b[0]));
-  const dt=(w,f)=>w==null?`<span class="dim">\u2014</span>`:(f?dFin(w):dStart(w));
+  const dt=(w,f)=>w==null?`<span class="dim">—</span>`:(f?dFin(w):dStart(w));
+  shown.sort((a,b)=>cmp(a.drawing,b.drawing));
   const body=`<div class="twrap"><table class="frz aptbl"><tr><th>Drawing / revision</th>`+
-    `<th>Approval type</th><th>Step</th><th>Status</th><th>Baseline start</th><th>Baseline end</th><th>Actual start</th><th>Actual end</th></tr>`+
-    (ordered.length?ordered.map(([d,rr])=>{
-      rr.sort((a,b)=>cmp(b[C.name],a[C.name]));            // newest revision first
-      const pkg=String(rr[0][C.pkg]||"").trim();
-      return `<tr class="apgrp"><td colspan="8" title="${esc(String(rr[0][C.wbs]||""))}">`+
-          `<b>${esc(d.slice(0,74))}</b>`+
-          `<span class="small dim"> \u00b7 ${esc(pkg||"\u2014")} \u00b7 `+
-          `${rr.length} revision${rr.length===1?"":"s"}</span></td></tr>`+
-        rr.map(r=>`<tr><td style="padding-left:24px">${esc(String(r[C.name]||"").slice(0,10))}</td>`+
-          `<td>${chip("blue",esc(r[C.appr]))}</td>`+
-          `<td class="dim">${esc(String(r[C.stage]||"\u2014").slice(0,22))}</td>`+
-          `<td>${rowChip(r)}</td>`+
+    `<th>Status</th><th>Approval type</th><th>Baseline start</th><th>Baseline end</th><th>Actual start</th><th>Actual end</th></tr>`+
+    (shown.length?shown.map(u=>{
+      const rr=u.revs.slice().sort((a,b)=>cmp(b[C.name],a[C.name]));   // newest revision first
+      const tags=[...new Set(rr.map(r=>r[C.appr]).filter(Boolean))].sort(cmp);
+      return `<tr class="apgrp"><td title="${esc(u.wbs)}"><b>${esc(u.drawing.slice(0,74))}</b>`+
+          `<span class="small dim"> · ${esc(u.pkg||"—")}${rr.length?` · ${rr.length} revision${rr.length===1?"":"s"}`:""}</span></td>`+
+          `<td>${u.chip}</td><td>${tags.map(t=>chip("blue",esc(t))).join(" ")||`<span class="dim">—</span>`}</td>`+
+          `<td>${dt(u.bs)}</td><td>${dt(u.be,1)}</td><td>${dt(u.as)}</td><td><b>${dt(u.ae,1)}</b></td></tr>`+
+        rr.map(r=>`<tr><td style="padding-left:24px">${esc(String(r[C.name]||"").slice(0,24))}</td>`+
+          `<td>${rowChip(r)}</td><td>${r[C.appr]?chip("blue",esc(r[C.appr])):`<span class="dim">—</span>`}</td>`+
           `<td>${dt(r[C.bES])}</td><td>${dt(r[C.bEF],1)}</td>`+
-          `<td>${dt(actS(r))}</td><td><b>${dt(actF(r),1)}</b></td></tr>`).join("");
-    }).join(""):`<tr><td colspan="8" class="dim">no revision matches this filter</td></tr>`)+`</table></div>`;
+          `<td>${dt(actS(r))}</td><td>${dt(actF(r),1)}</td></tr>`).join("");
+    }).join(""):`<tr><td colspan="7" class="dim">nothing matches this filter</td></tr>`)+`</table></div>`;
+  const acts=shown.flatMap(u=>u.acts);
   setTimeout(()=>{
     const ca=document.getElementById("appr-cat"),st=document.getElementById("appr-st");
     if(ca)ca.onchange=()=>{apprCat=ca.value;render()};
     if(st)st.onchange=()=>{apprSt=st.value;render()};
     const cl=document.getElementById("appr-clr");
     if(cl)cl.onclick=e=>{e.preventDefault();apprCat="";apprSt="";render()};
+    document.querySelectorAll(".apn[data-aps]").forEach(b=>b.onclick=()=>{
+      const v=b.dataset.aps; if(!v){apprSt="";apprCat=""} else apprSt=(apprSt===v)?"":v; render()});
     document.querySelectorAll(".apn[data-apc]").forEach(b=>b.onclick=()=>{
       apprCat=(apprCat===b.dataset.apc)?"":b.dataset.apc;render()});
-    const sb=document.getElementById("appr-stc");
-    if(sb)sb.onclick=()=>drillOpen({eyebrow:"Design & Engineering",title:"Submission to Client",
-      status:pill("info",`${stcDone.length} of ${stc.length} complete`),
-      formula:`activities named <b>Submission to Client</b> in this view · <b>${stcDone.length}</b> carry VisiLean status Complete`,
-      rows:stc,cols:stdCols(),rowId:r=>String(r[C.tid]),
+    const dd=document.getElementById("appr-drill");
+    if(dd)dd.onclick=()=>drillOpen({eyebrow:"Design & Engineering",title:"Submission to Client",
+      status:pill("info",`${acts.length} activities`),
+      rows:acts,cols:stdCols(),rowId:r=>String(r[C.tid]),
       subsets:[{k:"all",label:"All"},
                {k:"done",label:"Complete",f:r=>vlKey(r[C.vls])==="complete"},
                {k:"open",label:"Not complete",f:r=>vlKey(r[C.vls])!=="complete"}]});
   },0);
   return card("span12","Submission to Client",
-    `drawing revisions KP has tagged with an Approval Type in VisiLean \u00b7 grouped by drawing, newest revision first`,
-    head+body);
+    `every Submission to Client in Design &amp; Engineering · an activity of that name, or the WBS node with its revisions underneath`,
+    head+body,
+    `<button id="appr-drill" class="rsndrill" title="Open the activities behind this table">&#9783; ${acts.length} activities</button>`);
 }
 const SPEC_PO=()=>({key:"po",steps:CFG.poStep,unit:"packages",groupLabel:"Package",
   eyebrow:"Procurement · PO placement",
@@ -4934,12 +5024,9 @@ function engOverview(rows){
 function pageDept(key){
   const rows=filtered(key);
   let h=`<div class="grid">`;
-  // KP 05-Oct: the gauge alone beside the S-curve left a block of blank card under
-  // it, so Reasons for Variance stacks beneath it and the S-curve carries both views
-  h+=`<div class="span4 stack">${gaugeCard(rows,"span12")}${reasonsCard(key,"span12")}</div>`;
-  h+=card("span8",`S-curve — ${esc(DNAME[key])}`,"plan vs actual",
-    `<div class="hint" style="margin-bottom:2px">Cumulative</div>${scurve(rows,"scd",false)}`+
-    `<div class="hint" style="margin:8px 0 2px">${scPer==="w"&&HASWK()?"Weekly":"Monthly"}</div>${scurve(rows,"scd2",true)}`,scPerToggle());
+  // KP 05-Oct: no S-curve on a department page - the Project Summary carries it. The
+  // gauge and the variance reasons share the top row instead.
+  h+=gaugeCard(rows,"span5")+reasonsCard(key,"span7");
   h+=kpiCards(rows,false);
   if(key==="engineering"){
     // KP 08-Sep: Engineering Overview - Exec View hidden. engOverview() is untouched -
@@ -5010,6 +5097,10 @@ function syncFilterUI(){
   fillSelect("f-area",[...new Set(base.map(r=>r[C.area]))].sort((a,b)=>{const na=a.match(AREA_RE),nb=b.match(AREA_RE);if(na&&nb)return +na[1]-+nb[1];if(na)return -1;if(nb)return 1;return a.localeCompare(b)}),f.area);
   fillSelect("f-pkg",[...new Set(base.filter(r=>(!f.area||r[C.area]===f.area)).map(r=>r[C.pkg]))].sort().slice(0,400),f.pkg);
   fillSelect("f-owner",[...new Set(base.map(r=>r[C.owner]).filter(Boolean))].sort(),f.owner);
+  fillSelect("f-ownship",[...new Set(base.flatMap(r=>String(r[C.ownship]||"").split(/\s*,\s*/).filter(Boolean)))].sort(),f.ownship);
+  const pb=document.getElementById("f-per");
+  if(pb){pb.textContent=(f.w1||f.w2)?`Period: ${f.w1?wdate(f.w1):"…"} – ${f.w2?wdate(f.w2,1):"…"} ▾`:"Period: all ▾";
+    pb.classList.toggle("on",!!(f.w1||f.w2))}
   document.getElementById("f-crit").classList.toggle("on",f.crit);
   document.getElementById("f-del").classList.toggle("on2",f.del);
   document.getElementById("f-count").textContent=filtered().length.toLocaleString()+" activities";
@@ -5127,17 +5218,26 @@ function render(){
   if(_keep)window.scrollTo(0,_sy);else window.scrollTo(0,0);lastPage=state.page;
   setTimeout(pinTwrapHeaders,0);
 }
-["f-dept","f-area","f-pkg","f-owner"].forEach(id=>{
+["f-dept","f-area","f-pkg","f-owner","f-ownship"].forEach(id=>{
   document.getElementById(id).addEventListener("change",e=>{
     const f=state.f;
     if(id==="f-dept"){f.dept=e.target.value;f.pkg="";f.type=""}
     if(id==="f-area")f.area=e.target.value;
     if(id==="f-pkg")f.pkg=e.target.value;
     if(id==="f-owner")f.owner=e.target.value;
+    if(id==="f-ownship")f.ownship=e.target.value;
     render();});
 });
 function wdOfIso(v){if(!v)return null;const t=new Date(v+"T00:00:00");let i=WD.findIndex(d=>d>=t);if(i<0)i=WD.length-1;return i+1}
 document.getElementById("f-d1").addEventListener("change",e=>{state.f.w1=wdOfIso(e.target.value);render()});
+// the From / To window sits behind one button, so the bar stays on one line
+(function(){
+  const b=document.getElementById("f-per"),p=document.getElementById("f-perpop");
+  const show=on=>{p.hidden=!on;b.setAttribute("aria-expanded",on?"true":"false");b.classList.toggle("on",on||!!(state.f.w1||state.f.w2))};
+  b.addEventListener("click",e=>{e.stopPropagation();show(p.hidden)});
+  document.addEventListener("click",e=>{if(!p.hidden&&!p.contains(e.target)&&e.target!==b)show(false)});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!p.hidden)show(false)});
+})();
 document.getElementById("f-d2").addEventListener("change",e=>{state.f.w2=wdOfIso(e.target.value);render()});
 document.getElementById("f-crit").addEventListener("click",()=>{state.f.crit=!state.f.crit;render()});
 document.getElementById("f-del").addEventListener("click",()=>{state.f.del=!state.f.del;render()});
@@ -5269,8 +5369,8 @@ function restoreUI(){
     if(s.unit)state.unit=s.unit;
     if(typeof s.at==="number")state.at=s.at;
     if(s.f)state.f=Object.assign(state.f,s.f);
-    // no control left for these two, so a saved value must not filter unseen
-    state.f.type="";state.f.ownship="";
+    // no control left for activity type, so a saved value must not filter unseen
+    state.f.type="";
     if(Array.isArray(s.scSel)&&s.scSel.length)scSel=s.scSel;
     pipeSearch=s.pipeSearch||"";pipeDelOnly=!!s.pipeDelOnly;
     Object.assign(pipeL1,s.pipeL1||{});Object.assign(pipeL2,s.pipeL2||{});

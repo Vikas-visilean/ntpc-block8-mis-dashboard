@@ -66,6 +66,21 @@ except Exception as e:
     print(f"SKIP this cycle - VisiLean API unreachable after retries: {e}")
     sys.exit(0)
 print("tasks:", len(TASKS), "| constraints:", len(CONS), "| history:", len(HIST))
+
+# The task feed sends some activities more than once - seen on revisions raised
+# straight in VisiLean (R0/R1, no MSP id), up to 11 copies of one task. Each copy
+# used to become its own row, so the drill lists repeated the activity and every
+# count included the copies. VisiLean's taskId is unique per task: keep one each.
+_seen_t, _dd = set(), []
+for _t in TASKS:
+    _k = str(_t.get("taskId") or "").strip() or str(_t.get("guid") or "")
+    if _k and _k in _seen_t:
+        continue
+    _seen_t.add(_k)
+    _dd.append(_t)
+if len(_dd) != len(TASKS):
+    print("tasks: dropped %d repeated rows the feed sent twice or more" % (len(TASKS) - len(_dd)))
+TASKS = _dd
 # The logic network comes from the planner''s own file (MPP/XER/XML), not from VisiLean -
 # its API carries no prerequisites. A project that has not exported one yet simply has no
 # network: float, the critical chain and "delayed by a predecessor" stay empty rather than
@@ -252,6 +267,9 @@ for t in TASKS:
          "owner": cf.get("Owner.", "") or cf.get("Owner", ""),
          "tid": str(t.get("taskId") or ""), "org": str(t.get("organisation") or "").strip(),
          "guid": t.get("guid"), "pguid": t.get("parentGUID"),
+         # the parent WBS node's task id: revisions R0/R1 hang under a "Submission to
+         # Client" node, and two such nodes can share one Level path
+         "ptid": str((GUID.get(t.get("parentGUID")) or {}).get("taskId") or ""),
          # no MSP externalId -> raised in VisiLean after the baseline was set
          "pb": 0 if str(t.get("externalId") or "").strip() else 1, "sup": 0,
          "assignee": t.get("owner") or "", "loc": t.get("location") or "Off-site / Office",
@@ -611,7 +629,7 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  r["pb"], r["sup"], r["aqty"], r["cfield"][:28], r["csub"][:34],
                  r["appr"][:16],
                  # actual start, for the drill tables' Actual start column
-                 (wd_s(r["aS"]) if r["aS"] else None)])
+                 (wd_s(r["aS"]) if r["aS"] else None), r["ptid"]])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
 ms = []
@@ -937,7 +955,7 @@ for r in sorted(milestones_raw, key=lambda x: x["uid"]):
         r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
         ("" if r["org"].lower() == "none" else r["org"])[:60], u, r["pb"], r["sup"], r["aqty"],
         r["cfield"][:28], r["csub"][:34], r["appr"][:16],
-        (wd_s(r["aS"]) if r["aS"] else None)])
+        (wd_s(r["aS"]) if r["aS"] else None), r["ptid"]])
 
 # ---------- predecessor network for the activity panel ----------
 # Shown, not calculated with: float still comes from the same links above. Only links
@@ -986,7 +1004,7 @@ DATA = {"meta": meta, "months": months, "reasons": reasons, "msLeaves": ms_rows,
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
                  "ownship", "nd", "dly", "item", "wt", "vcrit", "desc", "note", "aef",
                  "tid", "wbs", "org", "uid", "pb", "sup", "aqty", "cfield", "csub",
-                 "appr", "aes"],
+                 "appr", "aes", "ptid"],
         "leaves": rows}
 _cs_i, _cf_i = DATA["cols"].index("csub"), DATA["cols"].index("cfield")
 _cs_n = sum(1 for r in rows if r[_cs_i])
