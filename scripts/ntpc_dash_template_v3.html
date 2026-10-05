@@ -2942,6 +2942,51 @@ const SPEC_FA=()=>({key:"fa",re:CFG.acceptRe,unit:"documents",
   hint:CFG.acceptHint||`activities named “${CFG.acceptLabel}” in this view · completed vs what the baseline says should be finished by ${wdate(SW,1)}`,
   byTitle:CFG.acceptByTitle||`${CFG.acceptLabel} by design package`,
   byHint:"the same four counts per package · largest shortfall first"});
+// ---------- drawing approvals ------------------------------------------------
+// VisiLean carries an approval category on the drawing revision rows ("R0", "R1")
+// that hang under a drawing's Submission to Client step - CAT 1 / CAT 2 / CAT 3 and
+// the CAT-IV family, in the "Approval Type" custom field. Only the projects that tag
+// it have the column filled, so this card appears where there is something to show
+// and stays silent everywhere else.
+const HASAPPR = C.appr!==undefined && DATA.leaves.some(r=>r[C.appr]);
+// the drawing is the revision's parent, so its name is the last WBS segment - a row
+// called "R0" says nothing on its own
+const apprDrawing = r => {
+  const w = String(r[C.wbs]||"").split(" > ").filter(Boolean);
+  return w.length ? w[w.length-1] : String(r[C.name]||"");
+};
+function approvalCard(rows){
+  if(!HASAPPR) return "";
+  // the feed repeats an activity once per history event, so count activities, not rows
+  const byTid=new Map();
+  rows.forEach(r=>{ if(r[C.appr] && !byTid.has(r[C.tid])) byTid.set(r[C.tid], r); });
+  const items=[...byTid.values()];
+  if(!items.length) return "";
+  const cmp=(a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:"base"});
+  const by=new Map();
+  items.forEach(r=>by.set(r[C.appr],(by.get(r[C.appr])||0)+1));
+  const cats=[...by.entries()].sort((a,b)=>cmp(a[0],b[0]));
+  const done=items.filter(r=>r[C.state]==="done").length;
+  const head=`<div class="fsumwrap">`+cats.map(([k,n])=>
+    `<div class="frow"><b>${esc(k)}</b><div class="fb"><i style="width:${(100*n/items.length).toFixed(1)}%"></i></div><span>${n}</span></div>`
+  ).join("")+`</div>`;
+  const body=`<div class="twrap"><table class="frz"><tr><th>Drawing</th><th>Step</th><th>Rev</th>`+
+    `<th>Approval Type</th><th>Package</th><th>Status</th><th>Finished</th></tr>`+
+    items.sort((a,b)=>cmp(a[C.appr],b[C.appr])||cmp(apprDrawing(a),apprDrawing(b)))
+      .map(r=>`<tr><td title="${esc(String(r[C.wbs]||""))}"><b>${esc(apprDrawing(r).slice(0,48))}</b></td>`+
+        `<td class="dim">${esc(String(r[C.stage]||"\u2014").slice(0,22))}</td>`+
+        `<td>${esc(String(r[C.name]||"").slice(0,10))}</td>`+
+        `<td>${chip("blue",esc(r[C.appr]))}</td>`+
+        `<td>${esc(String(r[C.pkg]||"\u2014").slice(0,22))}</td>`+
+        `<td>${rowChip(r)}</td>`+
+        `<td>${r[C.aef]!=null?wdate(r[C.aef],1):"\u2014"}</td></tr>`).join("")+
+    `</table></div>`;
+  return card("span12","Drawing approvals by Approval Type",
+    `${items.length} drawing revision${items.length===1?"":"s"} tagged in VisiLean \u00b7 ${done} complete \u00b7 `+
+    `read it as drawing \u2192 step \u2192 revision: the \u201cApproval Type\u201d field sits on the revision row, `+
+    `so SLD- DC SYSTEM \u2192 Submission \u2192 R0 is CAT 2`,
+    head+body);
+}
 const SPEC_PO=()=>({key:"po",steps:CFG.poStep,unit:"packages",groupLabel:"Package",
   eyebrow:"Procurement · PO placement",
   title:"PO Placement — package count",
@@ -4750,6 +4795,7 @@ function pageDept(key){
     // put this line back to restore it.
     // h+=engOverview(rows);
     h+=stepSummaryCards(rows,SPEC_FA());
+    h+=approvalCard(rows);
     h+=card("span12","Engineering package pipeline","document stages per package · click a row for activities",pipeTable(rows,"pe",true));
   }else if(key==="supply"||key==="services"){
     // KP 07-Sep: the Key Procurement Dates matrix is replaced here by the pipeline
