@@ -121,16 +121,9 @@ h1{font-size:14px;font-weight:700}
 .apn.click:hover{border-color:var(--blue)}
 .apn.on{border-color:var(--blue);background:var(--blue-wash)}
 .apn.on .v{color:var(--blue)}
-.apbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
-.apsel{display:flex;gap:5px;align-items:center;font-size:10.5px;color:var(--ink2);font-weight:600}
-.aptbl td{padding-top:5px;padding-bottom:5px;font-variant-numeric:tabular-nums}
-.aptbl tr.apgrp td{padding-top:9px;background:var(--page)}
 /* EPC bifurcation: name | bar | actual over plan, one readable line per discipline */
 .codkv{display:grid;grid-template-columns:1fr auto;gap:4px 10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:10.5px}
 .codkv span{color:var(--mut)}
-.scwk{position:relative}
-.scwk .scaxis{position:absolute;left:0;top:0;z-index:2;pointer-events:none}
-.scscroll{overflow-x:auto;overflow-y:hidden;padding-bottom:4px}
 .epcrows{display:flex;flex-direction:column;gap:12px;margin-top:12px}
 .epcrow{display:grid;grid-template-columns:150px minmax(80px,1fr) 92px;gap:14px;align-items:center}
 .epcrow .nm{display:flex;flex-direction:column;line-height:1.25;min-width:0}
@@ -1989,31 +1982,29 @@ function scVals(rows,ps){
 // the axis, grid, labels and today line, shared by the single and multi charts
 function scFrame(ps,ymax,elId){
   const n=ps.length;
-  // weekly: 28 px per week at 1:1, inside a horizontal scroller - squeezing ~90
-  // weeks into the card width left the bars a hair apart and unreadable
+  // KP 05-Oct: weekly fits the card width like monthly - no scroller; the bars are
+  // made legible by overlapping plan and actual in one slot and by the axis scale
   const wk=scPer==="w"&&HASWK();
-  const Wc=wk?Math.max(860,n*28):860,Hc=200,padL=36,padR=10,padT=8,padB=24,iw=Wc-padL-padR,ih=Hc-padT-padB;
+  const Wc=860,Hc=200,padL=36,padR=10,padT=8,padB=24,iw=Wc-padL-padR,ih=Hc-padT-padB;
   const X=i=>padL+iw*i/Math.max(1,n-1), Y=v=>padT+ih*(1-v/ymax);
-  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="${wk?`width:${Wc}px;max-width:none;display:block`:"width:100%"};height:auto" id="${elId}-svg">`;
-  for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="11" text-anchor="end">${Math.round(v)}%</text>`}
-  // about a dozen labels across the card; weekly labels every third week
-  const step=wk?3:Math.max(1,Math.ceil(n/12));
+  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:100%;height:auto" id="${elId}-svg">`;
+  for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="11" text-anchor="end">${ymax<10?fmt1(v):Math.round(v)}%</text>`}
+  // about a dozen labels across the card whichever period is chosen
+  const step=Math.max(1,Math.ceil(n/12));
   ps.forEach((p,i)=>{if(i%step===0)g+=`<text x="${X(i)}" y="${Hc-4}" font-size="11" text-anchor="middle">${esc(p.label)}</text>`});
   const sx=scXof(ps,X,state.at);
   g+=`<line x1="${sx}" x2="${sx}" y1="${padT}" y2="${padT+ih}" stroke="var(--warn)" stroke-dasharray="3 3"/>`+
      `<text x="${sx+3}" y="${padT+9}" font-size="10" fill="var(--warn-text)">${state.at===SW?"today":"as of "+wdate(state.at,1)}</text>`;
-  const ticks=[0,1,2,3,4].map(t=>[Y(ymax*t/4),Math.round(ymax*t/4)+"%"]);
-  return {g,Wc,Hc,padL,padT,iw,ih,X,Y,n,wk,sx,ticks};
+  return {g,Wc,Hc,padL,padT,iw,ih,X,Y,n,wk,sx};
 }
-// the weekly chart scrolls; it opens with today a third of the way in
-function scWrap(Fr,elId,svg){
-  if(!Fr.wk)return svg;
-  setTimeout(()=>{const w=document.getElementById(elId+"-wrap");
-    if(w)w.scrollLeft=Math.max(0,Fr.sx-w.clientWidth*0.35)},0);
-  const ax=`<svg class="scaxis" viewBox="0 0 ${Fr.padL} ${Fr.Hc}" style="width:${Fr.padL}px;height:${Fr.Hc}px">`+
-    `<rect x="0" y="0" width="${Fr.padL}" height="${Fr.Hc}" fill="var(--surface)"/>`+
-    Fr.ticks.map(([y,l])=>`<text x="${Fr.padL-4}" y="${y+3}" font-size="11" text-anchor="end">${l}</text>`).join("")+`</svg>`;
-  return `<div class="scwk">${ax}<div class="scscroll" id="${elId}-wrap">${svg}</div></div>`;
+// Per-period bars: one period far taller than the rest (a 23% week among 1-2%
+// weeks) flattens every other bar to a line. The axis then scales to the
+// next-tallest bar instead, and the tall one is drawn to the top, broken, with its
+// value printed - nothing is hidden, the rest just become readable.
+function scBarMax(vals){
+  const v=vals.filter(x=>x>0).sort((a,b)=>b-a);
+  if(v.length>2&&v[0]>2.2*v[1])return {ymax:Math.max(1,v[1]*1.3),clip:true};
+  return {ymax:Math.max(5,v[0]||0)*1.06,clip:false};
 }
 // The activities behind one period's bars: planned work that falls in the period,
 // actual progress booked in it, and forecast work in it - the same per-activity
@@ -2050,16 +2041,26 @@ function scurve(rows,elId,monthly,label){
   const V=scVals(rows,ps);
   let P=V.plan,F=V.fc,A=V.act;
   if(monthly){const d=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);P=d(P);F=d(F);A=d(A)}
-  const ymax=Math.max(5,...P,...F,...A)*1.06;
+  const bm=monthly?scBarMax([...P,...A]):null;
+  const ymax=monthly?bm.ymax:Math.max(5,...P,...F,...A)*1.06;
   const Fr=scFrame(ps,ymax,elId),X=Fr.X,Y=Fr.Y;
   let g=Fr.g;
   // cumulative actual: period ends at their own x, today's value AT today
   const ax=i=>(!monthly&&V.tail&&i===A.length-1)?scXof(ps,X,SW):X(i);
   const path=(arr,xf)=>arr.map((v,i)=>(i?"L":"M")+xf(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
   if(monthly){
-    const bw=Fr.iw/n*0.34;
-    P.forEach((v,i)=>{g+=`<rect x="${X(i)-bw-1}" y="${Y(v)}" width="${bw}" height="${Math.max(0,Fr.padT+Fr.ih-Y(v))}" rx="2" fill="var(--s-plan)" opacity=".8"/>`});
-    A.forEach((v,i)=>{g+=`<rect x="${X(i)+1}" y="${Y(v)}" width="${bw}" height="${Math.max(0,Fr.padT+Fr.ih-Y(v))}" rx="2" fill="var(--s-act)"/>`});
+    const slot=Fr.iw/Math.max(1,n-1), base=Fr.padT+Fr.ih;
+    // monthly: plan and actual side by side; weekly: in one slot, actual drawn
+    // narrower over the plan, so each bar gets most of the week's width
+    const pw=Fr.wk?slot*0.78:slot*0.34, aw=Fr.wk?slot*0.44:slot*0.34;
+    const px=i=>Fr.wk?X(i)-pw/2:X(i)-pw-1, axx=i=>Fr.wk?X(i)-aw/2:X(i)+1;
+    const bar=(v,x,w,fill,op)=>{const top=Math.max(Fr.padT,Y(v)),cut=Y(v)<Fr.padT;
+      let r=`<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0,base-top).toFixed(1)}" rx="1.5" fill="${fill}"${op?` opacity="${op}"`:""}/>`;
+      if(cut)r+=`<path d="M ${(x-1).toFixed(1)} ${Fr.padT+9} l ${(w+2).toFixed(1)} -4 v 4 l ${(-w-2).toFixed(1)} 4 z" fill="var(--surface)"/>`+
+        `<text x="${(x+w+3).toFixed(1)}" y="${Fr.padT+10}" font-size="10" font-weight="700" style="fill:var(--ink)">${fmt1(v)}%</text>`;
+      return r};
+    P.forEach((v,i)=>{if(v>0)g+=bar(v,px(i),pw,"var(--s-plan)",".8")});
+    A.forEach((v,i)=>{if(v>0)g+=bar(v,axx(i),aw,"var(--s-act)","")});
   }else{
     g+=`<path d="${path(P,X)}" fill="none" stroke="var(--s-plan)" stroke-width="2"/>`;
     g+=`<path d="${path(F,X)}" fill="none" stroke="var(--s-act)" stroke-width="1.5" stroke-dasharray="5 4" opacity=".75"/>`;
@@ -2073,7 +2074,7 @@ function scurve(rows,elId,monthly,label){
   scHover(elId,Fr,n,i=>`<b>${esc(scPerLbl(ps[i]))}</b><br>Plan: ${fmt1(P[i]||0)}%${i<A.length?`<br>Actual${V.tail&&i===A.length-1?" (to "+wdate(SW,1)+")":""}: ${fmt1(A[i])}%`:""}<br><span class="t2">Forecast: ${fmt1(F[i]||0)}%</span>`
     +(monthly?`<br><span class="t2">click for the activities</span>`:""),
     monthly?((i,which)=>scPeriodDrill(rows,ps,i,which,label)):null);
-  return leg+scWrap(Fr,elId,g);
+  return leg+g;
 }
 let scSel=["all"];
 const SC_SERIES=[["all","Overall",r=>true,"var(--blue)"],
@@ -2108,7 +2109,7 @@ function scurveMulti(rows,elId,monthly){
   g+=`<rect id="${elId}-hit" x="${Fr.padL}" y="${Fr.padT}" width="${Fr.iw}" height="${Fr.ih}" fill="transparent"/></svg>`;
   const leg=`<div class="legend">${series.map(x=>`<span><span class="sw" style="background:${x.col}"></span>${x.name}</span>`).join("")}<span class="dim">solid = actual · dashed = forecast · dotted = plan</span></div>`;
   scHover(elId,Fr,n,i=>`<b>${esc(scPerLbl(ps[i]))}</b>`+series.map(x=>`<br>${x.name}: ${i<x.act.length?fmt1(x.act[i])+"%":"<span class='t2'>fc "+fmt1(x.fc[i]||0)+"%</span>"} <span class="t2">(plan ${fmt1(x.plan[i]||0)}%)</span>`).join(""));
-  return leg+scWrap(Fr,elId,g);
+  return leg+g;
 }
 function scurveTableMulti(rows){
   if(scSel.length===1){
@@ -3123,8 +3124,6 @@ const apprDrawing = r => {
   const w = String(r[C.wbs]||"").split(" > ").filter(Boolean);
   return w.length ? w[w.length-1] : String(r[C.name]||"");
 };
-// the card's own filters: an approval type and a status ("" = all)
-let apprCat="", apprSt="";
 // KP's "Submission to Client" step, by activity name
 const STC_RE=/submission to client/i;
 // Every "Submission to Client" in Design & Engineering, as VisiLean's Gantt shows it.
@@ -3160,60 +3159,75 @@ function stcUnits(rows){
   });
   return units;
 }
+// The list behind any number on the card: one row per Submission to Client, its
+// revisions and approval types alongside. `sub` opens it on the number clicked;
+// `pkg` narrows it to one design package.
+function stcDrill(units,cats,sub,pkg){
+  const cmp=(a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:"base"});
+  const rows=(pkg?units.filter(u=>(u.pkg||"—")===pkg):units).slice().sort((a,b)=>cmp(a.drawing,b.drawing));
+  const tags=u=>[...new Set(u.revs.map(r=>r[C.appr]).filter(Boolean))].sort(cmp);
+  const revTxt=u=>u.revs.slice().sort((a,b)=>cmp(b[C.name],a[C.name]))
+    .map(r=>String(r[C.name]||"")+(r[C.appr]?" ("+r[C.appr]+")":"")).join(" · ");
+  const dt=(w,f)=>w==null?"—":(f?dFin(w):dStart(w));
+  drillOpen({eyebrow:"Design & Engineering"+(pkg?" · "+pkg:""),title:"Submission to Client",
+    status:pill("info",`${rows.length} submissions`),
+    rows,rowId:u=>u.key,sub:sub||"all",
+    cols:[
+      {k:"d",label:"Drawing",w:250,get:u=>u.drawing,html:u=>`<b title="${esc(u.wbs)}">${esc(u.drawing)}</b>`},
+      {k:"p",label:"Design package",w:150,get:u=>u.pkg||"—"},
+      {k:"s",label:"Status",w:100,get:u=>u.status,html:u=>u.chip},
+      {k:"c",label:"Approval type",w:110,get:u=>tags(u).join(", ")||"—",
+       html:u=>tags(u).map(t=>chip("blue",esc(t))).join(" ")||`<span class="dim">—</span>`},
+      {k:"r",label:"Revisions",w:150,get:u=>revTxt(u)||"—"},
+      {k:"bs",label:"Baseline start",get:u=>u.bs,html:u=>dt(u.bs),txt:u=>dt(u.bs)},
+      {k:"be",label:"Baseline end",get:u=>u.be,html:u=>dt(u.be,1),txt:u=>dt(u.be,1)},
+      {k:"as",label:"Actual start",get:u=>u.as??1e9,html:u=>dt(u.as),txt:u=>dt(u.as)},
+      {k:"ae",label:"Actual end",get:u=>u.ae??1e9,html:u=>u.ae==null?`<span class="dim">—</span>`:`<b>${dt(u.ae,1)}</b>`,txt:u=>dt(u.ae,1)}],
+    subsets:[{k:"all",label:"All"},
+             {k:"done",label:"Completed",f:u=>u.status==="Complete"},
+             {k:"started",label:"Started",f:u=>u.status==="Started"},
+             {k:"open",label:"Not started",f:u=>u.status!=="Complete"&&u.status!=="Started"}]
+      .concat(cats.map(c=>({k:"cat:"+c,label:c,f:u=>u.revs.some(r=>r[C.appr]===c)})))});
+}
 function approvalCard(rows){
   const units=stcUnits(rows);
   if(!units.length) return "";
   const cmp=(a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:"base"});
+  units.forEach((u,i)=>u.key="stc"+i);
   const revs=units.flatMap(u=>u.revs);
   const cats=[...new Set(revs.map(r=>r[C.appr]).filter(Boolean))].sort(cmp);
-  const sts=[...new Set(units.map(u=>u.status))].sort(cmp);
-  if(apprCat&&!cats.includes(apprCat)) apprCat="";
-  if(apprSt&&!sts.includes(apprSt)) apprSt="";
-  const nDone=units.filter(u=>u.status==="Complete").length, nStart=units.filter(u=>u.status==="Started").length;
-  const shown=units.filter(u=>(!apprSt||u.status===apprSt)&&(!apprCat||u.revs.some(r=>r[C.appr]===apprCat)));
-  // numbers first: every tile is also a filter
-  const n=(k,v,attrs,on)=>`<button type="button" class="apn click${on?" on":""}"${attrs}><div class="k">${k}</div><div class="v">${v}</div></button>`;
-  let head=`<div class="apnums">`+
-    n("Submission to Client",units.length.toLocaleString(),` data-aps="" title="Every Submission to Client in Design &amp; Engineering — show all"`,!apprSt&&!apprCat)+
-    n("Completed",nDone.toLocaleString(),` data-aps="Complete" title="Submission to Client with status Complete"`,apprSt==="Complete")+
-    n("Started",nStart.toLocaleString(),` data-aps="Started" title="Submission to Client with status Started"`,apprSt==="Started")+
-    cats.map(k=>n(esc(k),revs.filter(r=>r[C.appr]===k).length,
-      ` data-apc="${esc(k)}" title="Revisions approved ${esc(k)}${apprCat===k?" (click again to clear)":""}"`,apprCat===k)).join("")+
+  const isDone=u=>u.status==="Complete", isStart=u=>u.status==="Started";
+  const cnt=(uu,f)=>uu.filter(f).length;
+  // the numbers, each one opening its list
+  const n=(k,v,sub,pct)=>`<button type="button" class="apn click" data-stc="${esc(sub)}" title="Open the list">`+
+    `<div class="k">${k}</div><div class="v">${v}${pct!=null?`<small>${pct}</small>`:""}</div></button>`;
+  const share=x=>units.length?fmt1(100*x/units.length)+"%":"";
+  const nD=cnt(units,isDone), nS=cnt(units,isStart);
+  const head=`<div class="apnums">`+
+    n("Submission to Client",units.length.toLocaleString(),"all")+
+    n("Completed",nD.toLocaleString(),"done",share(nD))+
+    n("Started",nS.toLocaleString(),"started",share(nS))+
+    n("Not started",(units.length-nD-nS).toLocaleString(),"open",share(units.length-nD-nS))+
+    cats.map(c=>n(esc(c),units.filter(u=>u.revs.some(r=>r[C.appr]===c)).length,"cat:"+c)).join("")+
     `</div>`;
-  const sel=(id,lbl,vals,cur)=>`<label class="apsel">${lbl}<select id="${id}"><option value="">All</option>`+
-    vals.map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v)}</option>`).join("")+`</select></label>`;
-  head+=`<div class="apbar">${sel("appr-st","Status",sts,apprSt)}${cats.length?sel("appr-cat","Approval type",cats,apprCat):""}`+
-    `<span class="fnote">${shown.length} of ${units.length}</span>`+
-    ((apprCat||apprSt)?`<a href="#" id="appr-clr" style="color:var(--blue);font-size:10.5px;font-weight:600">× clear</a>`:"")+`</div>`;
-  const dt=(w,f)=>w==null?`<span class="dim">—</span>`:(f?dFin(w):dStart(w));
-  shown.sort((a,b)=>cmp(a.drawing,b.drawing));
-  const body=`<div class="twrap"><table class="frz aptbl"><tr><th>Drawing / revision</th>`+
-    `<th>Status</th><th>Approval type</th><th>Baseline start</th><th>Baseline end</th><th>Actual start</th><th>Actual end</th></tr>`+
-    (shown.length?shown.map(u=>{
-      const rr=u.revs.slice().sort((a,b)=>cmp(b[C.name],a[C.name]));   // newest revision first
-      const tags=[...new Set(rr.map(r=>r[C.appr]).filter(Boolean))].sort(cmp);
-      return `<tr class="apgrp"><td title="${esc(u.wbs)}"><b>${esc(u.drawing.slice(0,74))}</b>`+
-          `<span class="small dim"> · ${esc(u.pkg||"—")}${rr.length?` · ${rr.length} revision${rr.length===1?"":"s"}`:""}</span></td>`+
-          `<td>${u.chip}</td><td>${tags.map(t=>chip("blue",esc(t))).join(" ")||`<span class="dim">—</span>`}</td>`+
-          `<td>${dt(u.bs)}</td><td>${dt(u.be,1)}</td><td>${dt(u.as)}</td><td><b>${dt(u.ae,1)}</b></td></tr>`+
-        rr.map(r=>`<tr><td style="padding-left:24px">${esc(String(r[C.name]||"").slice(0,24))}</td>`+
-          `<td>${rowChip(r)}</td><td>${r[C.appr]?chip("blue",esc(r[C.appr])):`<span class="dim">—</span>`}</td>`+
-          `<td>${dt(r[C.bES])}</td><td>${dt(r[C.bEF],1)}</td>`+
-          `<td>${dt(actS(r))}</td><td>${dt(actF(r),1)}</td></tr>`).join("");
-    }).join(""):`<tr><td colspan="7" class="dim">nothing matches this filter</td></tr>`)+`</table></div>`;
-  const acts=shown.flatMap(u=>u.acts);
+  // one short line per design package - the same counts, clickable
+  const by=new Map();
+  units.forEach(u=>{const k=u.pkg||"—";if(!by.has(k))by.set(k,[]);by.get(k).push(u)});
+  const pk=[...by.entries()].sort((a,b)=>b[1].length-a[1].length||cmp(a[0],b[0]));
+  const cell=(p,sub,v)=>v?`<td class="num"><button type="button" class="stepnum" data-stc="${esc(sub)}" data-pkg="${esc(p)}">${v}</button></td>`:`<td class="num"><span class="dim">0</span></td>`;
+  const tbl=`<div class="twrap"><table><tr><th>Design package</th><th class="num">Submissions</th><th class="num">Completed</th><th class="num">Started</th><th class="num">Not started</th>`+
+    cats.map(c=>`<th class="num">${esc(c)}</th>`).join("")+`<th style="width:30%">Completed</th></tr>`+
+    pk.map(([p,uu])=>{const d=cnt(uu,isDone),st=cnt(uu,isStart);
+      return `<tr><td>${esc(p)}</td>${cell(p,"all",uu.length)}${cell(p,"done",d)}${cell(p,"started",st)}${cell(p,"open",uu.length-d-st)}`+
+        cats.map(c=>cell(p,"cat:"+c,uu.filter(u=>u.revs.some(r=>r[C.appr]===c)).length)).join("")+
+        `<td><div class="pbar" title="${d} of ${uu.length} completed"><div class="fill" style="width:${uu.length?100*d/uu.length:0}%"></div></div></td></tr>`}).join("")+
+    `</table></div>`;
+  const acts=units.flatMap(u=>u.acts);
   setTimeout(()=>{
-    const ca=document.getElementById("appr-cat"),st=document.getElementById("appr-st");
-    if(ca)ca.onchange=()=>{apprCat=ca.value;render()};
-    if(st)st.onchange=()=>{apprSt=st.value;render()};
-    const cl=document.getElementById("appr-clr");
-    if(cl)cl.onclick=e=>{e.preventDefault();apprCat="";apprSt="";render()};
-    document.querySelectorAll(".apn[data-aps]").forEach(b=>b.onclick=()=>{
-      const v=b.dataset.aps; if(!v){apprSt="";apprCat=""} else apprSt=(apprSt===v)?"":v; render()});
-    document.querySelectorAll(".apn[data-apc]").forEach(b=>b.onclick=()=>{
-      apprCat=(apprCat===b.dataset.apc)?"":b.dataset.apc;render()});
+    document.querySelectorAll("[data-stc]").forEach(b=>b.onclick=e=>{e.stopPropagation();
+      stcDrill(units,cats,b.dataset.stc,b.dataset.pkg||"")});
     const dd=document.getElementById("appr-drill");
-    if(dd)dd.onclick=()=>drillOpen({eyebrow:"Design & Engineering",title:"Submission to Client",
+    if(dd)dd.onclick=()=>drillOpen({eyebrow:"Design & Engineering",title:"Submission to Client — activities",
       status:pill("info",`${acts.length} activities`),
       rows:acts,cols:stdCols(),rowId:r=>String(r[C.tid]),
       subsets:[{k:"all",label:"All"},
@@ -3221,9 +3235,9 @@ function approvalCard(rows){
                {k:"open",label:"Not complete",f:r=>vlKey(r[C.vls])!=="complete"}]});
   },0);
   return card("span12","Submission to Client",
-    `every Submission to Client in Design &amp; Engineering · an activity of that name, or the WBS node with its revisions underneath`,
-    head+body,
-    `<button id="appr-drill" class="rsndrill" title="Open the activities behind this table">&#9783; ${acts.length} activities</button>`);
+    `every Submission to Client in Design &amp; Engineering · click any number for the list`,
+    head+tbl,
+    `<button id="appr-drill" class="rsndrill" title="Every activity behind these numbers, with the standard columns">&#9783; ${acts.length} activities</button>`);
 }
 const SPEC_PO=()=>({key:"po",steps:CFG.poStep,unit:"packages",groupLabel:"Package",
   eyebrow:"Procurement · PO placement",
@@ -5241,7 +5255,7 @@ document.getElementById("f-d1").addEventListener("change",e=>{state.f.w1=wdOfIso
 document.getElementById("f-d2").addEventListener("change",e=>{state.f.w2=wdOfIso(e.target.value);render()});
 document.getElementById("f-crit").addEventListener("click",()=>{state.f.crit=!state.f.crit;render()});
 document.getElementById("f-del").addEventListener("click",()=>{state.f.del=!state.f.del;render()});
-document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false};state.at=SW;apprCat="";apprSt="";pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];for(const k in pipeCellFilt)delete pipeCellFilt[k];closeColPop();render()});
+document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false};state.at=SW;pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];for(const k in pipeCellFilt)delete pipeCellFilt[k];closeColPop();render()});
 document.getElementById("f-date").addEventListener("input",e=>{state.at=+e.target.value;render()});
 function applyTheme(t){
   document.querySelectorAll("#thm button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
