@@ -1,0 +1,97 @@
+name: Refresh portfolio page
+
+# Rebuilds portfolio/ from the project pages already in the repo - no VisiLean call,
+# no token. Runs after the project refreshes and on a schedule as a fallback.
+
+on:
+  workflow_run:
+    workflows:                # exact `name:` lines of the six feeding workflows
+      - "Refresh v2 dashboard from VisiLean"           # NTPC - builds v2 AND v3; the portfolio reads v3/
+      - "Refresh SJVN dashboard from VisiLean"
+      - "Refresh Adani S6a dashboard from VisiLean"
+      - "Refresh Adani S7 dashboard from VisiLean"
+      - "Refresh Floating Solar dashboard from VisiLean"
+      - "Refresh ABREL Talaja dashboard from VisiLean"
+    types: [completed]
+  schedule:
+    - cron: "15 5 * * *"      # 10:45 IST, after the morning project refreshes
+    - cron: "15 11 * * *"     # 16:45 IST, after the afternoon ones
+  workflow_dispatch:          # manual: Actions tab -> "Run workflow", or `gh workflow run refresh-portfolio.yml`
+    inputs:
+      refresh_projects:
+        description: "Refresh all six projects from VisiLean first, then rebuild"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write              # only used to start the project workflows when refresh_projects is ticked
+
+concurrency:
+  group: refresh-portfolio
+  cancel-in-progress: false   # let a running build finish; the next one picks up newer data
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60         # 15 is plenty for a plain rebuild; the wait below can take longer
+    steps:
+      # Manual run with "refresh projects" ticked: start the six project workflows, wait
+      # for them to finish, then fall through to the build. Waiting here, rather than
+      # relying on workflow_run, guarantees the rebuild sees all six new pages.
+      - name: Refresh the projects first (manual runs only)
+        if: github.event_name == 'workflow_dispatch' && inputs.refresh_projects
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          WFS="refresh-v2.yml refresh-sjvn.yml refresh-adani.yml refresh-adani-s7.yml refresh-floating.yml refresh-talaja.yml"
+          since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          for wf in $WFS; do gh workflow run "$wf" -R "$GITHUB_REPOSITORY" --ref master; done
+          sleep 30
+          for i in $(seq 1 90); do            # up to ~45 min
+            pending=0
+            for wf in $WFS; do
+              st=$(gh run list -R "$GITHUB_REPOSITORY" --workflow "$wf" --event workflow_dispatch --limit 5 \
+                     --json status,createdAt --jq "[.[] | select(.createdAt >= \"$since\")][0].status // \"missing\"")
+              [ "$st" = "completed" ] || pending=$((pending+1))
+            done
+            [ "$pending" -eq 0 ] && { echo "all six project refreshes finished"; break; }
+            echo "waiting on $pending project refresh(es)…"; sleep 30
+          done
+          for wf in $WFS; do
+            c=$(gh run list -R "$GITHUB_REPOSITORY" --workflow "$wf" --event workflow_dispatch --limit 5 \
+                  --json conclusion,createdAt --jq "[.[] | select(.createdAt >= \"$since\")][0].conclusion // \"none\"")
+            echo "$wf: $c"
+            [ "$c" = "success" ] || echo "::warning title=$wf::did not succeed ($c) - the portfolio uses that project's last good page"
+          done
+
+      - uses: actions/checkout@v4
+        with:
+          ref: master           # newest project pages, not the commit that triggered the run
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build and publish if changed
+        run: |
+          set -uo pipefail
+          git config user.name  "visilean-bot"
+          git config user.email "support@visilean.com"
+          python scripts/build_portfolio.py || { echo "::error title=Portfolio build failed::see log"; exit 1; }
+
+          if git diff --quiet -- portfolio/.datahash portfolio/.tplhash ; then
+            echo "no change - nothing published"; exit 0
+          fi
+
+          # Same re-cut pattern as the project workers: generated output, ours is newest.
+          for try in 1 2 3 4 5 ; do
+            git fetch -q origin master
+            git reset -q --mixed origin/master
+            git add portfolio/index.html portfolio/meta.json portfolio/.datahash portfolio/.tplhash
+            git commit -q -m "portfolio auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || { echo "nothing to publish"; exit 0; }
+            git push -q && { echo "published"; exit 0; }
+            echo "push retry $try"; sleep $((10*try))
+          done
+          echo "::error::could not push after 5 tries"; exit 1

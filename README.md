@@ -36,6 +36,14 @@ The two user-activity reports reuse those projects' tokens; neither has one of i
 | Adoption tracker | NTPC | [/adoption/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/adoption/) | `refresh-adoption.yml` |
 | User Updates | NTPC, Adani S6a, Adani S7, Floating, Talaja | [/updates/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/updates/) | `refresh-updates.yml` |
 
+The portfolio page rolls the six project pages up into one view. It has no token: `scripts/build_portfolio.py`
+recalculates from the project pages already in the repo, and rebuilds after each project refresh.
+Review draft, not yet shared - see [portfolio/PORTFOLIO_README.md](portfolio/PORTFOLIO_README.md).
+
+| Report | Reads | Page | Workflow |
+|---|---|---|---|
+| Portfolio | the six project pages (`scripts/projects/portfolio.json`) | [/portfolio/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/portfolio/) | `refresh-portfolio.yml` |
+
 ---
 
 ## VisiLean API and parameters
