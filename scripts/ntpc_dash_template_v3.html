@@ -6,7 +6,7 @@
 <title>KPIGEL-NTPC Bikaner Block 8 (200MW) — MIS Dashboard v2 (Live)</title>
 <style>
 :root{
-  --page:#f7f9fc; --surface:#ffffff; --ink:#002d62; --ink2:#2a3a55; --mut:#5b6b82;
+  --page:#f7f9fc; --surface:#ffffff; --ink:#002d62; --ink2:#111111; --mut:#1f1f1f;
   --grid:#e3e8f0; --line:#e3e8f0; --line2:#e5eaf0;
   --blue:#00a3e0; --blue-hov:#0091c9; --blue-lt:#7fd1f0; --blue-wash:rgba(0,163,224,.10); --focus:#00a3e0;
   --good:#00a455; --good-text:#00713a; --good-fade:#cff6de; --good-wash:#e6f6ee;
@@ -24,7 +24,7 @@
   --s-act:#00a3e0; --s-plan:#9d4f8c;
 }
 :root[data-theme="dark"]{
-  --page:#0a1220; --surface:#101a2b; --ink:#eef3fa; --ink2:#c3d0e2; --mut:#8fa3bd;
+  --page:#0a1220; --surface:#101a2b; --ink:#eef3fa; --ink2:#eef3fa; --mut:#e2e9f3;
   --grid:#1e2a3d; --line:#1e2a3d; --line2:#27364d;
   --blue:#38b6ea; --blue-hov:#6bcbf2; --blue-lt:#0b5d80; --blue-wash:rgba(0,163,224,.18); --focus:#38b6ea;
   --good-text:#5fd39b; --good-fade:#12613a; --good-wash:rgba(0,164,85,.18);
@@ -50,28 +50,28 @@ select,input[type=search]{font:inherit;color:var(--ink);background:var(--surface
 .brand{display:flex;gap:7px;align-items:center;padding:2px 5px 8px}
 .brand .kplogo{width:30px;height:30px;border-radius:6px;background:#fff;object-fit:contain;padding:2px;border:1px solid var(--line2)}
 .brand .t1{font-weight:700;font-size:11.5px}
-.brand .t2{color:var(--mut);font-size:9px}
-.navhdr{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);padding:7px 6px 3px}
+.brand .t2{color:var(--mut);font-size:10.5px}
+.navhdr{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);padding:7px 6px 3px}
 .nav a{display:block;padding:4.5px 7px;border-radius:5px;color:var(--ink2);font-weight:500;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav a:hover{background:var(--blue-wash);color:var(--ink)}
 .nav a.on{background:var(--blue-wash);color:var(--blue);font-weight:600}
 .main{flex:1;min-width:0;padding:8px 12px 32px}
 .topbar{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:6px}
 h1{font-size:14px;font-weight:700}
-.sub{color:var(--mut);font-size:9.5px;margin-top:1px}
+.sub{color:var(--mut);font-size:10.5px;margin-top:1px}
 .meta{display:flex;gap:10px;align-items:center}
-.meta .k{font-size:8px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
-.meta .v{font-weight:700;font-size:11px}
+.meta .k{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.meta .v{font-weight:700;font-size:11.5px}
 .thm{display:flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden}
-.thm button{padding:2px 7px;font-size:9.5px;color:var(--ink2)}
+.thm button{padding:2px 7px;font-size:10.5px;color:var(--ink2)}
 .thm button.on{background:var(--blue);color:#fff}
-.fbar{position:sticky;top:0;z-index:30;display:flex;gap:5px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin-bottom:8px;box-shadow:0 2px 8px rgba(16,20,23,.04)}
-.fbar .tgl{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:2.5px 7px;cursor:pointer;user-select:none}
+.fbar{position:sticky;top:0;z-index:30;display:flex;gap:5px;align-items:center;flex-wrap:nowrap;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin-bottom:8px;box-shadow:0 2px 8px rgba(16,20,23,.04)}
+.fbar .tgl{display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:2.5px 7px;cursor:pointer;user-select:none}
 .fbar .tgl.on{background:var(--crit-wash);color:var(--crit-text);border-color:var(--crit)}
 .fbar .tgl.on2{background:var(--warn-wash);color:var(--warn-text);border-color:var(--warn)}
-.fbar .reset{color:var(--blue);font-weight:600;font-size:10px}
-.fnote{font-size:9.5px;color:var(--mut)}
-.dsl{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--ink2)}
+.fbar .reset{color:var(--blue);font-weight:600;font-size:10.5px}
+.fnote{font-size:10.5px;color:var(--mut)}
+.dsl{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink2)}
 .dsl input{accent-color:var(--blue);width:110px}
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:13px 15px;
@@ -81,10 +81,10 @@ h1{font-size:14px;font-weight:700}
 .card.clickable:hover{box-shadow:var(--shadow-lift);transform:translateY(-1px)}
 .card.clickable:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 /* small caps label above a title - metric id, phase, section */
-.eyebrow{text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-size:9.5px;font-weight:700}
+.eyebrow{text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-size:10.5px;font-weight:700}
 /* status pill */
 .pill{display:inline-flex;align-items:center;gap:4px;text-transform:uppercase;border-radius:999px;
- padding:2px 8px;font-size:9.5px;font-weight:700;white-space:nowrap}
+ padding:2px 8px;font-size:10.5px;font-weight:700;white-space:nowrap}
 .pill.good{background:var(--good-wash);color:var(--good-text)}
 .pill.warn{background:var(--warn-wash);color:var(--warn-text)}
 .pill.crit{background:var(--crit-wash);color:var(--crit-text)}
@@ -96,7 +96,7 @@ h1{font-size:14px;font-weight:700}
 .tile .ico{color:var(--cyan-info);flex:0 0 auto;font-weight:700}
 /* segmented pill filters */
 .seg{display:inline-flex;gap:4px;flex-wrap:wrap}
-.segbtn{border:0;border-radius:999px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;
+.segbtn{border:0;border-radius:999px;padding:3px 10px;font-size:10.5px;font-weight:600;cursor:pointer;
  background:var(--line2);color:var(--mut)}
 .segbtn.on{background:var(--blue);color:#fff}
 .segbtn:hover:not(.on){background:var(--blue-wash);color:var(--blue)}
@@ -107,19 +107,45 @@ h1{font-size:14px;font-weight:700}
    Cumulative / Monthly, definition footnotes) are content, so they stay. */
 .card>.hdrrow .hint,.card>h2+.hint{display:none}
 .hdrrow{display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap}
+.stack{display:flex;flex-direction:column;gap:12px;min-width:0}.stack>.card{flex:1 1 auto}
 .span2{grid-column:span 2}.span3{grid-column:span 3}.span4{grid-column:span 4}.span5{grid-column:span 5}.span6{grid-column:span 6}.span7{grid-column:span 7}.span8{grid-column:span 8}.span10{grid-column:span 10}.span12{grid-column:span 12}
 @media(max-width:1150px){.span2{grid-column:span 4}.span3,.span4{grid-column:span 6}.span5,.span6,.span7,.span8,.span10{grid-column:span 12}}
-.kpi .big{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.05;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi .big{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.05;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* Submission to Client: a row of numbers, then the filters, then the table */
+.apnums{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0 10px}
+.apn{text-align:left;border:1px solid var(--line2);border-radius:8px;padding:8px 11px;background:var(--surface)}
+.apn .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);font-weight:700;line-height:1.25;min-height:2.5em}
+.apn .v{font-size:22px;font-weight:800;line-height:1.15;color:var(--ink);font-variant-numeric:tabular-nums}
+.apn .v small{font-size:11.5px;font-weight:600;color:var(--mut);margin-left:2px}
+.apn.click{cursor:pointer}
+.apn.click:hover{border-color:var(--blue)}
+.apn.on{border-color:var(--blue);background:var(--blue-wash)}
+.apn.on .v{color:var(--blue)}
+.apbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.apsel{display:flex;gap:5px;align-items:center;font-size:10.5px;color:var(--ink2);font-weight:600}
+.aptbl td{padding-top:5px;padding-bottom:5px;font-variant-numeric:tabular-nums}
+.aptbl tr.apgrp td{padding-top:9px;background:var(--page)}
+/* EPC bifurcation: name | bar | actual over plan, one readable line per discipline */
+.codkv{display:grid;grid-template-columns:1fr auto;gap:4px 10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:10.5px}
+.codkv span{color:var(--mut)}
+.epcrows{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.epcrow{display:grid;grid-template-columns:150px minmax(80px,1fr) 92px;gap:14px;align-items:center}
+.epcrow .nm{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.epcrow .nm b{font-size:11.5px;color:var(--ink)}
+.epcrow .nm span,.epcrow .nv span{font-size:10.5px;color:var(--mut)}
+.epcrow .nv{display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;font-variant-numeric:tabular-nums}
+.epcrow .nv b{font-size:15px;font-weight:800;color:var(--ink)}
+.epcrow .pbar{height:12px}
 .kpi .big .u{font-size:14px;font-weight:700;color:var(--mut);margin-left:2px}
 .kpi .cmp{color:var(--mut);font-size:10.5px;margin-top:5px;line-height:1.4}
-.kpi h2{font-size:8.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
-.chip{display:inline-flex;align-items:center;gap:3px;font-size:8.5px;font-weight:700;border-radius:14px;padding:1px 6px;white-space:nowrap}
+.kpi h2{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;border-radius:14px;padding:1px 6px;white-space:nowrap}
 .chip.good{background:var(--good-wash);color:var(--good-text)}
 .chip.warn{background:var(--warn-wash);color:var(--warn-text)}
 .chip.crit{background:var(--crit-wash);color:var(--crit-text)}
 .chip.blue{background:var(--blue-wash);color:var(--blue)}
 .chip.mut{background:var(--grid);color:var(--ink2)}
-table{width:100%;border-collapse:collapse;font-size:11px}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
 /* header rows stay put while the body scrolls - both for tables that scroll
    inside their own box and for tables that scroll with the page */
 /* the table body scrolls inside the card so the header can stay pinned to it */
@@ -137,7 +163,7 @@ th{background:var(--surface);box-shadow:inset 0 -1px 0 var(--line2)}
 /* opaque, never the translucent wash: a see-through frozen cell lets the
    horizontally scrolled columns render through it (text on text) */
 .twrap table.frz tr:hover td:first-child{background:var(--surface-hov)}
-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line2);white-space:nowrap}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line2);white-space:nowrap}
 th.sortable{cursor:pointer;user-select:none}
 th.sortable:hover{color:var(--blue)}
 td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -152,13 +178,13 @@ tr:hover td{background:var(--blue-wash)}
 .detrow>td{padding:0!important;background:var(--surface)}
 .detpin{position:sticky;left:0;padding:6px 8px 9px}
 .detpin .dethd{display:flex;align-items:center;gap:9px;margin-bottom:5px;font-size:10.5px}
-.detpin .dethd b{font-size:11px}
+.detpin .dethd b{font-size:11.5px}
 .detpin .dethd .dim{flex:1}
 .detpin .detscroll{overflow:auto;max-height:340px}
 .detpin .detscroll table{min-width:820px}
 .stickycol tr:hover td:first-child{background:var(--surface-hov)}
 .pcell{min-width:86px}
-.pcell .d{font-size:8.5px;color:var(--mut);margin-top:1px}
+.pcell .d{font-size:10.5px;color:var(--mut);margin-top:1px}
 .pcell .d.red{color:var(--crit-text);font-weight:600}
 .pbar{position:relative;height:10px;background:var(--grid);border-radius:3px;overflow:hidden;min-width:56px}
 .pbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--s-act);border-radius:3px 0 0 3px}
@@ -167,9 +193,9 @@ tr:hover td{background:var(--blue-wash)}
 .prow{display:grid;grid-template-columns:185px 96px 1fr;gap:8px;align-items:center;padding:4px 0}
 .prow.pw{grid-template-columns:minmax(140px,200px) minmax(140px,235px) minmax(70px,1fr)}
 .prow.pw .val{white-space:normal;overflow:visible}
-.prow .nm{font-size:10px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.prow .val{font-size:9.5px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
-.legend{display:flex;gap:9px;font-size:9px;color:var(--ink2);margin:2px 0 5px;flex-wrap:wrap}
+.prow .nm{font-size:10.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.prow .val{font-size:10.5px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.legend{display:flex;gap:9px;font-size:10.5px;color:var(--ink2);margin:2px 0 5px;flex-wrap:wrap}
 .legend .sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px;vertical-align:-1px}
 /* legend entries that take you there; they look like the plain ones until you point at them */
 .legend .lgb{font:inherit;color:inherit;background:none;border:0;padding:0 2px;margin:0;cursor:pointer;border-radius:3px}
@@ -180,19 +206,19 @@ tr:hover td{background:var(--blue-wash)}
 .fsum{display:grid;grid-template-columns:minmax(150px,190px) 1fr;gap:14px;align-items:center;
   border:1px solid var(--line2);border-radius:7px;padding:9px 12px;margin-bottom:9px;background:var(--surface)}
 .fsum .fsumbig{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.12}
-.fsum .fsumsub{font-size:8.5px;color:var(--mut);margin-top:1px}
+.fsum .fsumsub{font-size:10.5px;color:var(--mut);margin-top:1px}
 .fsumwrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:2px 20px;align-items:start}
 .fsumcats{display:grid;grid-template-columns:repeat(auto-fit,minmax(236px,1fr));gap:1px 18px}
 .fsumgrp .fsumcats{grid-template-columns:1fr}
 /* which side of the plant a package belongs to */
-.fside{font-size:7.5px;font-weight:800;letter-spacing:.05em;color:var(--mut);margin:4px 0 1px}
+.fside{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--mut);margin:4px 0 1px}
 /* the project's package names are longer than the seven categories these were sized for */
 .bgrid.csub{grid-template-columns:repeat(auto-fill,minmax(224px,1fr))}
 .bgrid.csub .frow{grid-template-columns:80px 1fr 84px}
 .fsumwrap.csub .frow{grid-template-columns:96px 1fr 104px}
 .ftile .fside:first-of-type,.fsumgrp .fside{margin-top:0}
 .fsumcats .frow{grid-template-columns:70px 1fr 116px}
-.fsumcats .frow .fn,.fsumcats .frow .fv{font-size:9px}
+.fsumcats .frow .fn,.fsumcats .frow .fv{font-size:10.5px}
 .fsumcats .frow .fb{height:5px}
 .fsum.fclick{cursor:pointer}
 .fsum.fclick:hover{border-color:var(--blue)}
@@ -202,19 +228,19 @@ tr:hover td{background:var(--blue-wash)}
 .ftile{border:1px solid var(--line2);border-radius:7px;padding:7px 9px;cursor:pointer;background:var(--surface)}
 .ftile:hover{border-color:var(--blue)}
 .ftile.sel{outline:2px solid var(--blue)}
-.ftile .bn{font-size:10px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.ftile .bn{font-size:10.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
 .ftile .bp{font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums}
-.ftile .bpl{font-size:8.5px;color:var(--mut);margin-bottom:4px}
+.ftile .bpl{font-size:10.5px;color:var(--mut);margin-bottom:4px}
 .frow{display:grid;grid-template-columns:56px 1fr 84px;gap:4px;align-items:center;padding:1px 0}
-.frow .fn{font-size:8.5px;color:var(--mut)}
-.frow .fv{font-size:8.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);white-space:nowrap}
+.frow .fn{font-size:10.5px;color:var(--mut)}
+.frow .fv{font-size:10.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);white-space:nowrap}
 .frow .fb{height:4px;background:var(--grid);border-radius:2px;overflow:hidden}
 .frow .fb i{display:block;height:100%;background:var(--s-act);border-radius:2px}
-.stgcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:5px;margin-bottom:7px}
+.stgcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:5px;margin-bottom:7px}
 .stgc{border:1px solid var(--line2);border-radius:6px;padding:5px 7px}
-.stgc .n{font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stgc .v{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums}
-.stgc .v small{font-size:8.5px;color:var(--mut);font-weight:600}
+.stgc .n{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mut);line-height:1.25;min-height:2.5em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.stgc .v{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.stgc .v small{font-size:10.5px;color:var(--mut);font-weight:600}
 .stgc .fb{height:3px;background:var(--grid);border-radius:2px;margin-top:3px;overflow:hidden}
 .stgc .fb i{display:block;height:100%;background:var(--blue);border-radius:2px}
 .mswrap{overflow-x:auto}
@@ -226,12 +252,12 @@ tr:hover td{background:var(--blue-wash)}
 .pmap .plot{fill:none;stroke:var(--line2);stroke-width:3;stroke-dasharray:14 10}
 .pmap .icr{fill:var(--surface);stroke:var(--mut);stroke-width:2;cursor:help}
 .pmap text{pointer-events:none}
-.pmaplg{display:flex;gap:11px;flex-wrap:wrap;font-size:9.5px;color:var(--ink2);margin:1px 0 6px}
+.pmaplg{display:flex;gap:11px;flex-wrap:wrap;font-size:10.5px;color:var(--ink2);margin:1px 0 6px}
 .pmaplg .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px;border:1px solid rgba(0,45,98,.18)}
 /* critical points laid out across the card width, wrapping on smaller screens */
 .critgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:9px;margin-top:6px}
 .critpt{border:1px solid var(--line2);border-radius:var(--r-tile);padding:8px 10px;background:var(--surface);min-width:0}
-.critpt .cph{font-size:11px;line-height:1.35;margin-bottom:3px}
+.critpt .cph{font-size:11.5px;line-height:1.35;margin-bottom:3px}
 /* count-summary cards: every number is a button that opens its activity list and
    filters the package table beside it */
 .stepgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -244,7 +270,8 @@ tr:hover td{background:var(--blue-wash)}
 /* the summary card fills its half of the row: tiles on top, the bar and chips at the
    foot, so the pair ends level instead of leaving a gap under the numbers */
 .card.stepsum{display:flex;flex-direction:column}
-.card.stepsum .stepfoot{margin-top:auto;padding-top:11px}
+.card.stepsum .stepgrid{flex:1 1 auto;grid-auto-rows:1fr}
+.card.stepsum .stepfoot{padding-top:11px}
 table th.selcol,table td.selcol{background:var(--blue-wash)}
 /* a count in the package table is a link into the activities behind it */
 .stepnum{font:inherit;color:var(--blue);font-weight:600;font-variant-numeric:tabular-nums;
@@ -267,26 +294,26 @@ table th.selcol,table td.selcol{background:var(--blue-wash)}
 .mstdot{position:absolute;top:8px;width:12px;height:12px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line2);transform:translateX(-50%);cursor:pointer}
 .mstdot:hover{transform:translateX(-50%) scale(1.25)}
 .msttoday{position:absolute;top:0;bottom:0;width:2px;background:var(--warn);transform:translateX(-50%)}
-.msttoday span{position:absolute;top:-2px;left:5px;font-size:7.5px;color:var(--warn-text);white-space:nowrap}
+.msttoday span{position:absolute;top:-2px;left:5px;font-size:10.5px;color:var(--warn-text);white-space:nowrap}
 .mscards{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:6px}
 .msc{border:1px solid var(--line2);border-radius:7px;padding:7px 9px;background:var(--surface)}
 .msc:hover{border-color:var(--blue)}
-.mscn{font-size:10px;font-weight:700;line-height:1.3;min-height:26px;display:flex;gap:5px;align-items:flex-start}
+.mscn{font-size:10.5px;font-weight:700;line-height:1.3;min-height:26px;display:flex;gap:5px;align-items:flex-start}
 .mscdot{flex:0 0 8px;width:8px;height:8px;border-radius:50%;margin-top:2px}
 .mscch{display:flex;gap:4px;margin:4px 0 5px;flex-wrap:wrap}
-.mscd{display:flex;justify-content:space-between;font-size:9px;padding:1px 0}
+.mscd{display:flex;justify-content:space-between;font-size:10.5px;padding:1px 0}
 .mscd .k{color:var(--mut)}
 .mscd b{font-variant-numeric:tabular-nums}
 /* column selector */
 .colsel{position:relative;display:inline-block}
-.colsel summary{list-style:none;cursor:pointer;font-size:10px;color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:2.5px 8px;user-select:none}
+.colsel summary{list-style:none;cursor:pointer;font-size:10.5px;color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:2.5px 8px;user-select:none}
 .colsel summary::-webkit-details-marker{display:none}
 .colsel[open] summary{background:var(--blue-wash);color:var(--blue);border-color:var(--blue)}
 .colpop{position:absolute;z-index:50;top:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--line2);border-radius:7px;box-shadow:var(--shadow-popover);padding:8px 10px;min-width:230px;max-height:300px;overflow:auto}
-.colpop label{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--ink2);padding:2px 0;cursor:pointer;white-space:nowrap}
+.colpop label{display:flex;gap:6px;align-items:center;font-size:10.5px;color:var(--ink2);padding:2px 0;cursor:pointer;white-space:nowrap}
 .colpop input{accent-color:var(--blue)}
 .colpop .cact{display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:5px}
-.colpop .cact button{color:var(--blue);font-size:10px;font-weight:600}
+.colpop .cact button{color:var(--blue);font-size:10.5px;font-weight:600}
 :root{--vph:calc(100vh - 52px)}
 #rsnmodal{position:fixed;inset:0;z-index:120;display:none;align-items:flex-start;justify-content:center;
  background:rgba(0,45,98,.42);backdrop-filter:blur(1px);padding:26px 14px;overflow:auto}
@@ -307,7 +334,7 @@ table th.selcol,table td.selcol{background:var(--blue-wash)}
 @keyframes panelin{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
 #actpanel-hd{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;
  border-bottom:1px solid var(--line);background:var(--surface)}
-#actpanel-t{flex:1;font-size:12px;font-weight:800;line-height:1.35;min-width:0}
+#actpanel-t{flex:1;font-size:13px;font-weight:800;line-height:1.35;min-width:0}
 #actpanel-hd button{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);
  border-radius:8px;width:24px;height:24px;cursor:pointer;flex:0 0 auto;line-height:1;font-size:14px}
 #actpanel-hd button:hover{background:var(--blue-wash);color:var(--blue)}
@@ -316,7 +343,7 @@ table th.selcol,table td.selcol{background:var(--blue-wash)}
 /* grouped property rows - KP asked for the flat stat list to be readable */
 .pgrp{margin-top:10px}
 .pgrp:first-child{margin-top:0}
-.pgrp>.gh{font-size:8.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+.pgrp>.gh{font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
  color:var(--mut);padding-bottom:3px;border-bottom:1px solid var(--line);margin-bottom:5px}
 /* property rows in the activity panel (renamed from .prow: that class is the
    progress-bar row and the two collided, stacking every bar row onto two lines) */
@@ -326,10 +353,10 @@ table th.selcol,table td.selcol{background:var(--blue-wash)}
 .pprow .v.wrap{font-weight:600;line-height:1.45}
 /* the note was a faint label above red text and got lost - give it a card */
 .notecard{margin-top:10px;border:1px solid var(--line2);border-radius:var(--r-tile);padding:8px 10px;background:var(--page)}
-.notecard .nh{font-size:8.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+.notecard .nh{font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
  color:var(--mut);margin-bottom:4px}
-.notecard .nb{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
-.notecard .nf{font-size:9.5px;color:var(--mut);margin-top:5px;line-height:1.45}
+.notecard .nb{font-size:11.5px;line-height:1.5;overflow-wrap:anywhere}
+.notecard .nf{font-size:10.5px;color:var(--mut);margin-top:5px;line-height:1.45}
 .notecard.derived{background:var(--crit-wash)}
 .notecard.derived .nb{color:var(--crit-text)}
 /* a delayed row whose cause is an unfinished predecessor */
@@ -361,25 +388,25 @@ tr.predrow td:first-child{box-shadow:inset 3px 0 0 var(--crit)}
 .dfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;
  margin-top:8px;font-size:10.5px;color:var(--mut)}
 .dfoot button{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);border-radius:7px;
- padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer}
+ padding:3px 9px;font-size:10.5px;font-weight:600;cursor:pointer}
 .dfoot button:hover:not(:disabled){background:var(--blue-wash);color:var(--blue);border-color:var(--blue-lt)}
 .dfoot button:disabled{opacity:.4;cursor:default}
 .dfilt{width:100%;border:1px solid var(--line2);border-radius:6px;padding:2px 5px;font:inherit;
- font-size:9.5px;background:var(--surface);color:var(--ink)}
+ font-size:10.5px;background:var(--surface);color:var(--ink)}
 /* per-column value filter: a ▾ button next to the header opens a checkbox list
    of the values actually present in that column */
 .dfwrap{display:flex;gap:3px;align-items:center}
 .dfbtn{border:1px solid var(--line2);background:var(--surface);color:var(--mut);border-radius:5px;
- padding:0 4px;cursor:pointer;font-size:9px;line-height:15px;flex:0 0 auto}
+ padding:0 4px;cursor:pointer;font-size:10.5px;line-height:15px;flex:0 0 auto}
 .dfbtn:hover{background:var(--blue-wash);color:var(--blue);border-color:var(--blue-lt)}
 .dfbtn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
 th .thf{margin-left:4px;vertical-align:middle}
 #colpopover{position:fixed;z-index:600;display:none;background:var(--surface);border:1px solid var(--line2);
  border-radius:8px;box-shadow:var(--shadow-popover);padding:7px 8px;min-width:215px;max-width:310px;font-size:10.5px}
-#colpopover .cfhd{font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+#colpopover .cfhd{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
  color:var(--mut);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #colpopover .cfq{width:100%;border:1px solid var(--line2);border-radius:6px;padding:3px 6px;font:inherit;
- font-size:10px;background:var(--page);color:var(--ink);margin-bottom:5px}
+ font-size:10.5px;background:var(--page);color:var(--ink);margin-bottom:5px}
 #colpopover .cflist{max-height:232px;overflow:auto}
 #colpopover label{display:flex;gap:6px;align-items:center;padding:2px;cursor:pointer;border-radius:4px}
 #colpopover label:hover{background:var(--blue-wash)}
@@ -390,7 +417,7 @@ th .thf{margin-left:4px;vertical-align:middle}
 #colpopover .cfft{display:flex;gap:6px;justify-content:space-between;border-top:1px solid var(--line);
  margin-top:5px;padding-top:5px}
 #colpopover .cfft button{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);
- border-radius:6px;padding:2px 8px;font-size:10px;font-weight:600;cursor:pointer}
+ border-radius:6px;padding:2px 8px;font-size:10.5px;font-weight:600;cursor:pointer}
 #colpopover .cfft button:hover{background:var(--blue-wash);color:var(--blue);border-color:var(--blue-lt)}
 #colpopover .cfnone{color:var(--mut);padding:6px 2px}
 /* a breakdown row that filters the table below it */
@@ -401,18 +428,18 @@ th .thf{margin-left:4px;vertical-align:middle}
 #rsnmodal-back{border:1px solid var(--line2);background:var(--surface);color:var(--blue);font-size:14px;line-height:1;
  border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto;display:none}
 #rsnmodal-back:hover{background:var(--blue-wash)}
-.rsndrill{border:1px solid var(--blue);background:var(--blue-wash);color:var(--blue);font-weight:700;font-size:10px;
+.rsndrill{border:1px solid var(--blue);background:var(--blue-wash);color:var(--blue);font-weight:700;font-size:10.5px;
  border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap}
 .rsndrill:hover{background:var(--blue);color:#fff}
 #rsnmodal-x{border:1px solid var(--line2);background:var(--surface);color:var(--dim);font-size:16px;line-height:1;
  border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto}
 #rsnmodal-x:hover{background:var(--blue-wash);color:var(--blue)}
 #rsnmodal-bd{padding:10px 14px 14px;overflow:auto;flex:1 1 auto;min-height:0}
-#tip{position:fixed;z-index:400;background:var(--tip-bg);color:var(--tip-fg);border-radius:6px;padding:6px 9px;font-size:10px;pointer-events:none;box-shadow:var(--shadow-popover);display:none;max-width:290px;line-height:1.45}
+#tip{position:fixed;z-index:400;background:var(--tip-bg);color:var(--tip-fg);border-radius:6px;padding:6px 9px;font-size:10.5px;pointer-events:none;box-shadow:var(--shadow-popover);display:none;max-width:290px;line-height:1.45}
 #tip .t2{color:var(--tip-fg2)}
 /* only rendered when the build is old enough to question - see checkSyncHealth() */
 #syncwarn{display:flex;gap:10px;align-items:flex-start;margin:0 0 9px;padding:9px 12px;
- border:1px solid var(--line2);border-radius:var(--r-tile,10px);background:var(--warn-wash);font-size:11px;line-height:1.5}
+ border:1px solid var(--line2);border-radius:var(--r-tile,10px);background:var(--warn-wash);font-size:11.5px;line-height:1.5}
 #syncwarn[hidden]{display:none}
 #syncwarn.bad{background:var(--crit-wash)}
 #syncwarn .ico{font-size:14px;line-height:1.2}
@@ -424,16 +451,16 @@ th .thf{margin-left:4px;vertical-align:middle}
 #vport{position:fixed;inset:0;pointer-events:none;visibility:hidden;z-index:-1}
 #copyfall{display:none;position:fixed;z-index:500;right:16px;bottom:16px;width:min(520px,88vw);
  background:var(--surface);border:1px solid var(--line2);border-radius:9px;box-shadow:var(--shadow-popover);padding:9px 11px}
-#copyfall .cfhd{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px}
+#copyfall .cfhd{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11.5px}
 #copyfall .cfhd b{flex:1}
 #copyfall .cfhd button{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);
  border-radius:6px;width:22px;height:22px;cursor:pointer;line-height:1}
 #copyfall textarea{width:100%;height:120px;font:10px/1.4 ui-monospace,Consolas,monospace;
  border:1px solid var(--line2);border-radius:6px;padding:6px;background:var(--page);color:var(--ink)}
-.toggle2{display:flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden;font-size:9.5px}
+.toggle2{display:flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden;font-size:10.5px}
 .toggle2 button{padding:2.5px 7px;color:var(--ink2)}
 .toggle2 button.on{background:var(--blue);color:#fff}
-.small{font-size:9px}
+.small{font-size:10.5px}
 svg text{fill:var(--ink2);font-family:inherit}
 .gwrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .lnkbox{border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-top:4px}
@@ -446,7 +473,7 @@ svg text{fill:var(--ink2);font-family:inherit}
 .lnkrow.open{background:var(--crit-wash)}
 .lnkrow.open:hover{background:var(--blue-wash)}
 .lnkrow .lnkpc,.lnkrow .lnkdt{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2)}
-.gstats{display:grid;grid-template-columns:auto auto;gap:6px 16px;font-size:11px}
+.gstats{display:grid;grid-template-columns:auto auto;gap:6px 16px;font-size:11.5px}
 .gstats .k{color:var(--mut)}
 .gstats .v{font-weight:700;font-variant-numeric:tabular-nums}
 .detrow td{background:var(--page)!important}
@@ -477,8 +504,24 @@ html{zoom:1.3}
 @media print{.glbox{display:none!important}.glbox.gl-on ~ svg{visibility:visible!important}}
 [data-theme=dark] .chip.vlc{color:#4ecb6a}[data-theme=dark] .chip.vls{color:#b08fe0}
 [data-theme=dark] .chip.vlnr{color:#ff8a7a}[data-theme=dark] .chip.vlnc{color:#e0c545}[data-theme=dark] .chip.vlw{color:#ffb84d}
-.vleg{display:inline-flex;gap:5px;align-items:center;font-size:9.5px;color:var(--mut);flex-wrap:wrap}
-.fbar input[type=date]{font-size:10px;padding:2px 4px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);color:var(--ink)}
+.fsep{width:1px;align-self:stretch;background:var(--line);margin:2px 3px}
+.fbar .dsl input[type=date]{width:auto}
+.fbar select{max-width:150px;min-width:70px;flex:0 1 auto}
+.fbar>*{flex-shrink:0}.fbar>select{flex-shrink:1}
+@media(max-width:1150px){.fbar{flex-wrap:wrap}}
+.fbar .dsl input[type=range]{width:90px}
+.vlegbtn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--line2);border-radius:50%}
+.vlegbtn:hover,.vlegbtn.on{border-color:var(--blue);background:var(--blue-wash)}
+.vlegbtn .ring{width:15px;height:15px;border-radius:50%;
+ background:conic-gradient(#e5484d 0 60deg,#f5a524 60deg 120deg,#f2d01c 120deg 180deg,#30a46c 180deg 240deg,#0091ff 240deg 300deg,#8e4ec6 300deg 360deg);
+ -webkit-mask:radial-gradient(circle,transparent 3.5px,#000 4px);mask:radial-gradient(circle,transparent 3.5px,#000 4px)}
+.vlegpop{position:absolute;right:6px;top:calc(100% + 4px);z-index:40;background:var(--surface);border:1px solid var(--line2);border-radius:8px;
+ box-shadow:0 8px 24px rgba(16,20,23,.16);padding:9px 11px;min-width:190px}
+.vlegpop[hidden]{display:none}
+.vlegpop .vlh{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;margin-bottom:6px}
+.vlegpop .vlchips{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.vlegpop .chip{font-size:10.5px;padding:2px 9px}
+.fbar input[type=date]{font-size:10.5px;padding:2px 4px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);color:var(--ink)}
 
 .chip.vlr{background:rgba(56,212,48,.16);color:#1f9e18}
 .chip.vlfr{background:rgba(164,198,57,.2);color:#7a8f14}
@@ -497,7 +540,7 @@ html{zoom:1.3}
 .chip.vlc,[data-theme=dark] .chip.vlc{background:#57A344;color:#fff}
 .chip.vlrq,[data-theme=dark] .chip.vlrq{background:#7B85C9;color:#fff}
 .chip.vlqc,[data-theme=dark] .chip.vlqc{background:#1C2050;color:#fff}
-#h-new{margin-left:6px;border:1px solid var(--blue);background:var(--blue-wash);color:var(--blue);font-weight:700;font-size:9.5px;border-radius:5px;padding:1px 6px;cursor:pointer}
+#h-new{margin-left:6px;border:1px solid var(--blue);background:var(--blue-wash);color:var(--blue);font-weight:700;font-size:10.5px;border-radius:5px;padding:1px 6px;cursor:pointer}
 #btn-refresh{border:1px solid var(--line2);background:var(--surface);color:var(--blue);font-weight:700;font-size:10.5px;border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap}
 #btn-refresh:hover{background:var(--blue-wash)}
 #btn-pdf{border:1px solid var(--line2);background:var(--surface);color:var(--blue);font-weight:700;font-size:10.5px;border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap}
@@ -507,7 +550,7 @@ html{zoom:1.3}
 .prhd{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
  font-size:13px;font-weight:800;color:var(--ink);padding-bottom:5px;margin-bottom:9px;
  border-bottom:2px solid var(--ink)}
-.prhd span{font-size:10px;font-weight:600;color:var(--mut)}
+.prhd span{font-size:10.5px;font-weight:600;color:var(--mut)}
 @media print{
   /* A3 landscape is the format this project's PDF snapshots have always used */
   @page{size:A3 landscape;margin:9mm}
@@ -557,20 +600,24 @@ html{zoom:1.3}
         </div>
       </div>
     </div>
+    <!-- KP 05-Oct: Activity type and Ownership are gone - both repeat the Department
+         split - and the status legend sits behind a button instead of on the bar -->
     <div class="fbar" id="fbar">
       <select id="f-dept"><option value="">All departments</option></select>
-      <select id="f-type"><option value="">All activity types</option></select>
       <select id="f-area"><option value="">All locations</option></select>
       <select id="f-pkg"><option value="">All packages</option></select>
       <select id="f-owner"><option value="">All owners</option></select>
-      <select id="f-ownship"><option value="">All ownership</option></select>
-      <span class="dsl">From <input type="date" id="f-d1"></span><span class="dsl">To <input type="date" id="f-d2"></span>
+      <span class="fsep"></span>
+      <span class="dsl" title="Only activities whose baseline falls in this window">Period <input type="date" id="f-d1" aria-label="From"><span class="dim">–</span><input type="date" id="f-d2" aria-label="To"></span>
+      <span class="fsep"></span>
       <span class="tgl" id="f-crit">⚠ Critical</span>
       <span class="tgl" id="f-del">⏰ Delayed</span>
-      <span class="dsl">Date <input type="range" id="f-date" min="0" max="0" step="1"><b id="f-datev"></b></span>
+      <span class="fsep"></span>
+      <span class="dsl" title="Move the status date to see the project as it stood">As of <input type="range" id="f-date" min="0" max="0" step="1"><b id="f-datev"></b></span>
       <button class="reset" id="f-reset">Reset</button>
-      <span class="vleg" id="vleg" style="margin-left:auto">VisiLean status (live):</span>
-      <span class="fnote" id="f-count"></span>
+      <span class="fnote" id="f-count" style="margin-left:auto"></span>
+      <button type="button" id="vleg-btn" class="vlegbtn" title="Status legend" aria-label="Status legend" aria-expanded="false" aria-controls="vleg"><span class="ring"></span></button>
+      <div id="vleg" class="vlegpop" role="dialog" aria-label="VisiLean status legend" hidden><div class="vlh">VisiLean status (live)</div></div>
     </div>
     <div id="syncwarn" hidden></div>
     <div id="page"></div>
@@ -687,6 +734,11 @@ const WD=[]; {const _sd=String(_CAL.startDate||"2026-05-07").split("-").map(Numb
   while(WD.length<1200){ if(!_off.has((d.getDay()+6)%7)) WD.push(new Date(d)); d.setDate(d.getDate()+1);} }
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function wdate(w,fin){ const i=Math.min(WD.length-1,Math.max(0,Math.round(w)-(fin?1:0))); const d=WD[i]; return d.getDate().toString().padStart(2,"0")+"-"+MON[d.getMonth()]+"-"+String(d.getFullYear()).slice(2); }
+// VisiLean's actual dates, null until recorded. "aes" is newer than the rest of the
+// contract, so a data file built before it simply shows a dash.
+const actS=r=>(C.aes!==undefined&&r[C.aes]!=null)?r[C.aes]:null;
+const actF=r=>(C.aef!==undefined&&r[C.aef]!=null)?r[C.aef]:null;
+const dStart=w=>w==null?"—":wdate(w), dFin=w=>w==null?"—":wdate(w,1);
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const fmt1=x=>(Math.round(x*10)/10).toFixed(1);
 const fq=x=>x>=1e6?(x/1e6).toFixed(1)+"M":x>=1000?(x/1000).toFixed(x>=10000?0:1)+"k":Math.round(x*10)/10;
@@ -867,8 +919,13 @@ const BUILD_ID="__BUILD__";
 // hiding a state hides it from the legend only - a row that carries one still shows it
 (function(){
   const el=document.getElementById("vleg"); if(!el) return;
-  el.insertAdjacentHTML("beforeend", VLORDER.filter(k=>VLMAP[k]&&!VLHIDE.has(k))
-    .map(k=>`<span class="chip ${VLMAP[k][0]}">${esc(vlText(k))}</span>`).join(""));
+  el.insertAdjacentHTML("beforeend", `<div class="vlchips">`+VLORDER.filter(k=>VLMAP[k]&&!VLHIDE.has(k))
+    .map(k=>`<span class="chip ${VLMAP[k][0]}">${esc(vlText(k))}</span>`).join("")+`</div>`);
+  const btn=document.getElementById("vleg-btn"); if(!btn) return;
+  const show=on=>{el.hidden=!on;btn.setAttribute("aria-expanded",on?"true":"false");btn.classList.toggle("on",on)};
+  btn.addEventListener("click",e=>{e.stopPropagation();show(el.hidden)});
+  document.addEventListener("click",e=>{if(!el.hidden&&!el.contains(e.target))show(false)});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!el.hidden)show(false)});
 })();
 // the display name for a raw VisiLean value, so nothing prints the feed's own wording
 function vlName(v){const k=vlKey(v); return VLMAP[k]?vlText(k):String(v||"\u2014")}
@@ -942,12 +999,12 @@ function statusLegend(rows){
 }
 // ---------- speedometer gauge (semicircle, correct sweep) ----------
 function gauge(a,p){
-  const Wc=170,Hc=104,cx=85,cy=90,R=62;
+  const Wc=170,Hc=124,cx=85,cy=90,R=62;
   const ang=v=>Math.PI*(1-Math.min(100,Math.max(0,v))/100);
   const pt=(v,r)=>[cx+r*Math.cos(ang(v)),cy-r*Math.sin(ang(v))];
   const arc=(v0,v1,col)=>{const[x0,y0]=pt(v0,R),[x1,y1]=pt(v1,R);
     return `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round"/>`};
-  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:170px;height:auto">`;
+  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:200px;height:auto">`;
   g+=arc(0,100,"var(--grid)");
   if(a>0.5)g+=arc(0,Math.min(100,a),a>=p?"var(--good)":a>=p*.85?"var(--warn)":"var(--crit)");
   const[t0,t1]=pt(p,R-8),[t2,t3]=pt(p,R+8);
@@ -955,8 +1012,8 @@ function gauge(a,p){
   const[n0,n1]=pt(a,R-17);
   g+=`<line x1="${cx}" y1="${cy}" x2="${n0.toFixed(1)}" y2="${n1.toFixed(1)}" stroke="var(--ink)" stroke-width="2"/><circle cx="${cx}" cy="${cy}" r="3.5" fill="var(--ink)"/>`;
   g+=`<text x="${cx}" y="${cy-24}" font-size="16" font-weight="800" text-anchor="middle" style="fill:var(--ink)">${fmt1(a)}%</text>`;
-  g+=`<text x="${cx}" y="${cy-11}" font-size="8" text-anchor="middle">plan ${fmt1(p)}%</text>`;
-  g+=`<text x="${cx-R}" y="${cy+11}" font-size="7.5" text-anchor="middle">0%</text><text x="${cx+R}" y="${cy+11}" font-size="7.5" text-anchor="middle">100%</text>`;
+  g+=`<text x="${cx}" y="${cy+30}" font-size="11" font-weight="600" text-anchor="middle">plan ${fmt1(p)}%</text>`;
+  g+=`<text x="${cx-R}" y="${cy+16}" font-size="10" text-anchor="middle">0%</text><text x="${cx+R}" y="${cy+16}" font-size="10" text-anchor="middle">100%</text>`;
   return g+"</svg>";
 }
 function gaugeCard(rows,span){
@@ -981,17 +1038,16 @@ function epcCard(span){
   const segs=[["Engineering",L.filter(isEng)],
    ["Procurement",L.filter(isProc)],
    ["Construction",L.filter(isCon)]];
-  let h=`<div class="card ${span||"span4"}"><h2>EPC bifurcation</h2><div class="hint">counted on VisiLean's <b>Activity Type</b> · Actual % vs Baseline Plan % · Δ = progress variation (Actual − Plan)</div>`;
-  segs.forEach(([n,rr])=>{const a=actPct(rr),p=planPct(rr),spi=p>0.05?a/p:0,dv=a-p;
-    h+=`<div class="prow pw"><div class="nm" title="${n} — ${rr.length} activities"><b>${n}</b> <span class="dim">${rr.length} activities</span></div>
-     <div class="val"><b>${fmt1(a)}%</b> <span class="dim">/ ${fmt1(p)}%</span> <span style="color:${dv>=0?"var(--good-text)":"var(--crit-text)"};font-weight:600">Δ ${dv>=0?"+":""}${fmt1(dv)}%</span> ${spi?`<span class="chip ${spi>=0.95?"vlc":spi>=0.8?"vlw":"vlnr"}">SPI ${spi.toFixed(2)}</span>`:""}</div>
-     <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div></div>`});
-  // everything that is not E / P / C, so the three rows above reconcile to the total
-  const cov={[AT.ENG]:1,[AT.SUP]:1,[AT.SVC]:1,[AT.CON]:1},oth={};
-  L.forEach(r=>{if(!cov[r[C.type]]){const k=r[C.type]||"Unclassified";oth[k]=(oth[k]||0)+1}});
-  const ks=Object.keys(oth).sort((a,b)=>oth[b]-oth[a]);
-  if(ks.length)h+=`<div class="hint" style="margin-top:7px;padding-top:6px;border-top:1px solid var(--line)">Other activity types — ${ks.map(k=>`${esc(k)} <b>${oth[k].toLocaleString()}</b>`).join(" · ")}</div>`;
-  return h+`</div>`;
+  // one line per discipline, read left to right: name, the bar, then Actual against
+  // Plan. KP 05-Oct: the variance and SPI chips made the row hard to read - the
+  // tick on the bar already shows where plan stands.
+  let h=`<div class="card ${span||"span4"}"><h2>EPC bifurcation</h2><div class="hint">counted on VisiLean's <b>Activity Type</b> · bar = actual · tick = baseline plan</div><div class="epcrows">`;
+  segs.forEach(([n,rr])=>{const a=actPct(rr),p=planPct(rr);
+    h+=`<div class="epcrow" title="${n} — ${rr.length.toLocaleString()} activities · actual ${fmt1(a)}% · plan ${fmt1(p)}%">
+     <div class="nm"><b>${n}</b><span>${rr.length.toLocaleString()} activities</span></div>
+     <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div>
+     <div class="nv"><b>${fmt1(a)}%</b><span>plan ${fmt1(p)}%</span></div></div>`});
+  return h+`</div></div>`;
 }
 function costCard(){
   const rows=filtered();
@@ -1041,7 +1097,7 @@ function donut(items,total,sel){
       a0=a1;});
   }
   g+=`<text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="17" font-weight="800" fill="var(--text)">${total}</text>`;
-  g+=`<text x="${cx}" y="${cy+11}" text-anchor="middle" font-size="7.5" fill="var(--dim)">reasons</text></svg>`;
+  g+=`<text x="${cx}" y="${cy+11}" text-anchor="middle" font-size="10" fill="var(--ink2)">reasons</text></svg>`;
   return g;
 }
 let rsnDept="";
@@ -1320,6 +1376,9 @@ function stdCols(){
     {k:"pct",label:"% complete",w:78,num:true,get:r=>r[C.pct]},
     {k:"bef",label:"Baseline finish",get:r=>r[C.bEF],html:r=>wdate(r[C.bEF],1),txt:r=>wdate(r[C.bEF],1)},
     {k:"fef",label:"Planned finish",get:r=>r[C.fEF],html:r=>wdate(r[C.fEF],1),txt:r=>wdate(r[C.fEF],1)},
+    // what VisiLean recorded, blank until it happens - every drill carries both
+    {k:"aes",label:"Actual start",get:r=>actS(r)??1e9,html:r=>dStart(actS(r)),txt:r=>dStart(actS(r))},
+    {k:"aef",label:"Actual finish",get:r=>actF(r)??1e9,html:r=>dFin(actF(r)),txt:r=>dFin(actF(r))},
     {k:"note",label:"Notes / Comments",w:215,get:r=>noteFor(r),
      html:r=>{const n=noteFor(r);return n?`<span title="${esc(n)}">${esc(n.slice(0,70))}${n.length>70?"…":""}</span>`:`<span class="dim">—</span>`}},
   ];
@@ -1392,9 +1451,9 @@ function drillRender(){
     const bf=!!s.breakdownFilter;                 // clicking a row filters the table
     h+=`<div class="dsec"><div class="hdrrow"><div class="eyebrow">Breakdown — ${esc(s.breakdownBy||"by dimension")}</div>`;
     if(bf)h+=_dbsel
-      ? `<div style="font-size:10px">${chip("blue","Showing: "+esc(_dbsel))}
+      ? `<div style="font-size:10.5px">${chip("blue","Showing: "+esc(_dbsel))}
          <a href="#" id="db-clear" style="color:var(--blue);font-weight:600;margin-left:4px">× show all</a></div>`
-      : `<span style="font-size:10px;color:var(--mut)">click a row to list only its activities</span>`;
+      : `<span style="font-size:10.5px;color:var(--mut)">click a row to list only its activities</span>`;
     h+=`</div><div class="dbox" style="max-height:190px"><table><tr><th>Scope</th><th class="num">Count</th><th class="num">Share</th></tr>`;
     const bt=s.breakdown.reduce((a,x)=>a+x.n,0)||1;
     s.breakdown.forEach(x=>{
@@ -1410,7 +1469,7 @@ function drillRender(){
     const src=x.rows||s.rows||[];
     const n=(x.f?src.filter(x.f):src).length;
     h+=`<button class="segbtn ${_dsub===x.k?"on":""}" data-sub="${esc(x.k)}">${esc(x.label)} ${n}</button>`});
-  h+=`</div><span style="margin-left:auto;font-size:10px;color:var(--mut)">click a header to sort · type or pick <b>▾</b> under any column to filter</span></div>`;
+  h+=`</div><span style="margin-left:auto;font-size:10.5px;color:var(--mut)">click a header to sort · type or pick <b>▾</b> under any column to filter</span></div>`;
   h+=`<div class="dbox" style="max-height:calc(var(--vph) * .62);margin-top:6px"><table><tr>`;
   cols.forEach(c=>{const ar=_dsort.k===c.k?(_dsort.dir>0?" ▲":" ▼"):"";
     h+=`<th data-sk="${esc(c.k)}" class="${c.num?"num":""}" style="min-width:${c.w||110}px">${esc(c.label)}${ar}</th>`});
@@ -1739,7 +1798,6 @@ function reasonsCard(deptKey,span){
   recs.forEach(x=>{catN[x.c.cat]=(catN[x.c.cat]||0)+1});
   const items=Object.keys(catN).map(k=>({k,n:catN[k]})).sort((a,b)=>b.n-a.n);
   const total=items.reduce((a,x)=>a+x.n,0);
-  const late=filtered(deptKey).filter(r=>r[C.dly]).length;
   // counts for the switch are taken before it is applied, so both sides stay visible
   const nAll={"":0,"Late Started":0,"Late Completed":0};
   all.forEach(r=>(r.cats||[]).forEach(c=>{if(c.rc){nAll[c.rc]++;nAll[""]++}}));
@@ -1760,18 +1818,13 @@ function reasonsCard(deptKey,span){
       <span style="width:10px;height:10px;border-radius:3px;background:${rsnColor(x.k,i)};flex:0 0 auto"></span>
       <span style="font-size:10.5px;flex:1">${esc(x.k)}</span>
       <span style="font-size:10.5px;font-weight:700">${x.n}</span>
-      <span class="dim" style="font-size:9.5px;width:34px;text-align:right">${fmt1(pc)}%</span></div>`});
+      <span class="dim" style="font-size:10.5px;width:34px;text-align:right">${fmt1(pc)}%</span></div>`});
   h+=`</div></div>`;
-  const nActs=new Set();
-  all.forEach(r=>(r.cats||[]).forEach(c=>{if(c.rc)nActs.add(r.uid)}));
   h+=`<div style="min-width:180px;display:flex;flex-direction:column;gap:6px">${sw}
-    <div class="small dim">${nAll["Late Started"]} late starts · ${nAll["Late Completed"]} late completions
-      across ${nActs.size} ${nActs.size===1?"activity":"activities"}<br>${late} activities currently delayed`
-   +(M.naReasonRecords?`<br><span title="KP rule: activities with trade = Not Applicable are out of scope for this dashboard">VisiLean's export also lists ${M.naReasonRecords} on Not Applicable activities, excluded here</span>`:``)
-   +`</div></div>`;
+    ${M.naReasonRecords?`<div class="small dim"><span title="KP rule: activities with trade = Not Applicable are out of scope for this dashboard">VisiLean's export also lists ${M.naReasonRecords} on Not Applicable activities, excluded here</span></div>`:``}</div>`;
   h+=`</div>`;
   if(rsnCat)h+=`<div style="margin:7px 0 3px">${chip("blue","Filtered: "+esc(rsnCat))}
-    <a href="#" onclick="rsnCat='';rsnSel=null;render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear</a></div>`;
+    <a href="#" onclick="rsnCat='';rsnSel=null;render();return false" style="color:var(--blue);font-size:10.5px;font-weight:600">× clear</a></div>`;
   setTimeout(()=>{
     document.querySelectorAll(".rsnslice,.rsnleg").forEach(el=>{
       el.addEventListener("click",()=>{const c=el.dataset.cat;rsnCat=(rsnCat===c?"":c);rsnSel=null;render()})});
@@ -1833,6 +1886,12 @@ function kpiDrill(kind,rows,deptKey){
     cols,
   });
 }
+function codCard(rows){
+  const d2cod=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
+  return `<div class="card span2 kpi"><div class="eyebrow">Days to COD</div><div class="big">${d2cod}<span class="u">days</span></div>
+    <div class="codkv"><span>Forecast COD</span><b>${M.forecastFinish}</b><span>Baseline COD</span><b>${M.baselineFinish}</b>
+      <span>Data as of</span><b>${M.statusDate}</b></div></div>`;
+}
 function kpiCards(rows,projectLevel){
   const inprog=rows.filter(isWip).length, stopped=rows.filter(isStopped).length;
   const total=rows.length,done=rows.filter(isDone).length,dl=rows.filter(isDelayed).length,
@@ -1863,50 +1922,90 @@ function kpiCards(rows,projectLevel){
    + c("Stopped",stopped.toLocaleString(),stopped?`work halted in VisiLean`:`none halted`,
        stopped?chip("vlst","needs attention"):null,"stp")
    // the forecast is the live number, so it leads; the baseline is the comparison
-   + c("Forecast vs Baseline",`<span style="font-size:12px">${wdate(ffin,1)}</span>`,`baseline ${wdate(bfin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):((ffin-bfin)<=-4?chip("vlc",(ffin-bfin)+" days"):chip("vlc","on plan")))
+   + c("Forecast vs Baseline",wdate(ffin,1),`baseline ${wdate(bfin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):((ffin-bfin)<=-4?chip("vlc",(ffin-bfin)+" days"):null))
    // KP 07-Sep: Days to COD belongs on the Project Summary only - a department page
    // shows the same project-wide number, which reads as if it were that department's
-   + (projectLevel?c("Days to COD",d2cod+" days","forecast "+M.forecastFinish):"");
+   + (projectLevel===true?c("Days to COD",`${d2cod}<span class="u">days</span>`,"forecast "+M.forecastFinish):"");
 }
 // ---------- S-curve ----------
 let scMode="cum";
-function scurve(rows,elId,monthly,label){
-  const ms=DATA.months, n=ms.length;
-  const plan=ms.map(m=>planPct(rows,m.wd)), fc=ms.map(m=>fcPct(rows,m.wd));
-  // Months are month-ENDS, so the last one that has passed is the previous month -
-  // stopping there left the curve below the gauge. Carry it to the status date.
-  const actMs=ms.filter(m=>m.wd<=SW);
-  const act=actMs.map(m=>actPctAt(rows,m.wd));
-  if(actMs.length<ms.length&&(!actMs.length||actMs[actMs.length-1].wd<SW))act.push(actPctAt(rows,SW));
-  let P=plan,F=fc,A=act;
-  if(monthly){const d=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);P=d(plan);F=d(fc);A=d(act)}
-  const Wc=860,Hc=190,padL=32,padR=10,padT=8,padB=20,iw=Wc-padL-padR,ih=Hc-padT-padB;
-  const ymax=Math.max(5,...P,...F,...A)*1.06;
-  const X=i=>padL+iw*i/(n-1), Y=v=>padT+ih*(1-v/ymax);
-  const path=arr=>arr.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+// Monthly or weekly buckets for every S-curve. Each period is a point at its END
+// (month-end / week-end working day), so the curves read the same either way.
+let scPer="m";
+const HASWK=()=>(DATA.weeks||[]).length>0;
+function scPeriods(){return (scPer==="w"&&HASWK())?DATA.weeks:DATA.months}
+function scPerName(){return (scPer==="w"&&HASWK())?"Week":"Month"}
+function scPerLbl(p){return (scPer==="w"&&HASWK())?"Week of "+p.label:p.label}
+const scPerToggle=()=>HASWK()?`<div class="toggle2 scper" title="Period for the S-curve">`+
+  [["m","Monthly"],["w","Weekly"]].map(x=>`<button data-per="${x[0]}" class="${scPer===x[0]?"on":""}">${x[1]}</button>`).join("")+`</div>`:"";
+// The x of any working day on an axis whose points sit at period ends. Today falls
+// INSIDE a period, so it is placed by how far through that period it is - not half
+// way between two period ends, which is where the line used to land.
+function scXof(ps,X,wd){
+  const n=ps.length;if(!n)return X(0);
+  if(wd<=ps[0].wd)return X(0);
+  for(let i=1;i<n;i++)if(wd<=ps[i].wd)
+    return X(i-1+(wd-ps[i-1].wd)/Math.max(1,ps[i].wd-ps[i-1].wd));
+  return X(n-1);
+}
+// plan / forecast at every period end; actual at every period end already passed,
+// plus today when today is not itself a period end
+function scVals(rows,ps){
+  const plan=ps.map(p=>planPct(rows,p.wd)),fc=ps.map(p=>fcPct(rows,p.wd));
+  const aPs=ps.filter(p=>p.wd<=SW);
+  const act=aPs.map(p=>actPctAt(rows,p.wd));
+  const tail=aPs.length<ps.length&&(!aPs.length||aPs[aPs.length-1].wd<SW);
+  if(tail)act.push(actPctAt(rows,SW));
+  return {plan,fc,act,tail,nPast:aPs.length};
+}
+// the axis, grid, labels and today line, shared by the single and multi charts
+function scFrame(ps,ymax,elId){
+  const n=ps.length;
+  const Wc=860,Hc=200,padL=36,padR=10,padT=8,padB=24,iw=Wc-padL-padR,ih=Hc-padT-padB;
+  const X=i=>padL+iw*i/Math.max(1,n-1), Y=v=>padT+ih*(1-v/ymax);
   let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:100%;height:auto" id="${elId}-svg">`;
-  for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="8" text-anchor="end">${Math.round(v)}%</text>`}
-  ms.forEach((m,i)=>{if(i%2===0)g+=`<text x="${X(i)}" y="${Hc-5}" font-size="8" text-anchor="middle">${m.label}</text>`});
-  let si=ms.findIndex(m=>m.wd>state.at); if(si<0)si=n-1;
-  const sx=X(Math.max(0,si-0.5));
-  g+=`<line x1="${sx}" x2="${sx}" y1="${padT}" y2="${padT+ih}" stroke="var(--warn)" stroke-dasharray="3 3"/>`;
-  if(monthly){
-    const bw=iw/n*0.34;
-    P.forEach((v,i)=>{g+=`<rect x="${X(i)-bw-1}" y="${Y(v)}" width="${bw}" height="${Math.max(0,padT+ih-Y(v))}" rx="2" fill="var(--s-plan)" opacity=".8"/>`});
-    A.forEach((v,i)=>{g+=`<rect x="${X(i)+1}" y="${Y(v)}" width="${bw}" height="${Math.max(0,padT+ih-Y(v))}" rx="2" fill="var(--s-act)"/>`});
-  }else{
-    g+=`<path d="${path(P)}" fill="none" stroke="var(--s-plan)" stroke-width="2"/>`;
-    g+=`<path d="${path(F)}" fill="none" stroke="var(--s-act)" stroke-width="1.5" stroke-dasharray="5 4" opacity=".75"/>`;
-    if(A.length){g+=`<path d="${path(A)} L ${X(A.length-1)} ${Y(0)} L ${X(0)} ${Y(0)} Z" fill="var(--s-act)" opacity=".10"/>`;
-      g+=`<path d="${path(A)}" fill="none" stroke="var(--s-act)" stroke-width="2.2"/>`;
-      g+=`<circle cx="${X(A.length-1)}" cy="${Y(A[A.length-1])}" r="3" fill="var(--s-act)" stroke="var(--surface)" stroke-width="2"/>`;}
-  }
-  g+=`<rect id="${elId}-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
-  const leg=`<div class="legend">${label?`<span style="font-weight:700">${esc(label)}</span>`:""}<span><span class="sw" style="background:var(--s-act)"></span>Actual</span><span><span class="sw" style="background:var(--s-act);opacity:.5"></span>Forecast</span><span><span class="sw" style="background:var(--s-plan)"></span>Plan</span></div>`;
+  for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="11" text-anchor="end">${Math.round(v)}%</text>`}
+  // about a dozen labels whichever period is chosen
+  const step=Math.max(1,Math.ceil(n/12));
+  ps.forEach((p,i)=>{if(i%step===0)g+=`<text x="${X(i)}" y="${Hc-4}" font-size="11" text-anchor="middle">${esc(p.label)}</text>`});
+  const sx=scXof(ps,X,state.at);
+  g+=`<line x1="${sx}" x2="${sx}" y1="${padT}" y2="${padT+ih}" stroke="var(--warn)" stroke-dasharray="3 3"/>`+
+     `<text x="${sx+3}" y="${padT+9}" font-size="10" fill="var(--warn-text)">${state.at===SW?"today":"as of "+wdate(state.at,1)}</text>`;
+  return {g,Wc,Hc,padL,padT,iw,ih,X,Y,n};
+}
+function scHover(elId,F,n,html){
   setTimeout(()=>{const hit=document.getElementById(elId+"-hit");if(!hit)return;
-    hit.addEventListener("mousemove",e=>{const svg=document.getElementById(elId+"-svg");const r=svg.getBoundingClientRect();const fx=(e.clientX-r.left)/r.width*Wc;let i=Math.round((fx-padL)/(iw/(n-1)));i=Math.max(0,Math.min(n-1,i));
-      showTip(e,`<b>${ms[i].label}</b><br>Plan: ${fmt1(P[i]||0)}%${i<A.length?`<br>Actual: ${fmt1(A[i])}%`:""}<br><span class="t2">Forecast: ${fmt1(F[i]||0)}%</span>`);});
+    hit.addEventListener("mousemove",e=>{const svg=document.getElementById(elId+"-svg");const r=svg.getBoundingClientRect();
+      const fx=(e.clientX-r.left)/r.width*F.Wc;let i=Math.round((fx-F.padL)/(F.iw/Math.max(1,n-1)));i=Math.max(0,Math.min(n-1,i));
+      showTip(e,html(i));});
     hit.addEventListener("mouseleave",hideTip);},0);
+}
+function scurve(rows,elId,monthly,label){
+  const ps=scPeriods(), n=ps.length;
+  const V=scVals(rows,ps);
+  let P=V.plan,F=V.fc,A=V.act;
+  if(monthly){const d=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);P=d(P);F=d(F);A=d(A)}
+  const ymax=Math.max(5,...P,...F,...A)*1.06;
+  const Fr=scFrame(ps,ymax,elId),X=Fr.X,Y=Fr.Y;
+  let g=Fr.g;
+  // cumulative actual: period ends at their own x, today's value AT today
+  const ax=i=>(!monthly&&V.tail&&i===A.length-1)?scXof(ps,X,SW):X(i);
+  const path=(arr,xf)=>arr.map((v,i)=>(i?"L":"M")+xf(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  if(monthly){
+    const bw=Fr.iw/n*0.34;
+    P.forEach((v,i)=>{g+=`<rect x="${X(i)-bw-1}" y="${Y(v)}" width="${bw}" height="${Math.max(0,Fr.padT+Fr.ih-Y(v))}" rx="2" fill="var(--s-plan)" opacity=".8"/>`});
+    A.forEach((v,i)=>{g+=`<rect x="${X(i)+1}" y="${Y(v)}" width="${bw}" height="${Math.max(0,Fr.padT+Fr.ih-Y(v))}" rx="2" fill="var(--s-act)"/>`});
+  }else{
+    g+=`<path d="${path(P,X)}" fill="none" stroke="var(--s-plan)" stroke-width="2"/>`;
+    g+=`<path d="${path(F,X)}" fill="none" stroke="var(--s-act)" stroke-width="1.5" stroke-dasharray="5 4" opacity=".75"/>`;
+    if(A.length){const xe=ax(A.length-1);
+      g+=`<path d="${path(A,ax)} L ${xe} ${Y(0)} L ${X(0)} ${Y(0)} Z" fill="var(--s-act)" opacity=".10"/>`;
+      g+=`<path d="${path(A,ax)}" fill="none" stroke="var(--s-act)" stroke-width="2.2"/>`;
+      g+=`<circle cx="${xe}" cy="${Y(A[A.length-1])}" r="3" fill="var(--s-act)" stroke="var(--surface)" stroke-width="2"/>`;}
+  }
+  g+=`<rect id="${elId}-hit" x="${Fr.padL}" y="${Fr.padT}" width="${Fr.iw}" height="${Fr.ih}" fill="transparent"/></svg>`;
+  const leg=`<div class="legend">${label?`<span style="font-weight:700">${esc(label)}</span>`:""}<span><span class="sw" style="background:var(--s-act)"></span>Actual</span><span><span class="sw" style="background:var(--s-act);opacity:.5"></span>Forecast</span><span><span class="sw" style="background:var(--s-plan)"></span>Plan</span></div>`;
+  scHover(elId,Fr,n,i=>`<b>${esc(scPerLbl(ps[i]))}</b><br>Plan: ${fmt1(P[i]||0)}%${i<A.length?`<br>Actual${V.tail&&i===A.length-1?" (to "+wdate(SW,1)+")":""}: ${fmt1(A[i])}%`:""}<br><span class="t2">Forecast: ${fmt1(F[i]||0)}%</span>`);
   return leg+g;
 }
 let scSel=["all"];
@@ -1923,35 +2022,25 @@ function scurveMulti(rows,elId,monthly){
     return scurve(s?rows.filter(s[2]):rows,elId,monthly,(s&&s[0]!=="all")?s[1]:"");
   }
   const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
-  const ms=DATA.months,n=ms.length;
+  const ps=scPeriods(),n=ps.length;
   const D=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v);
-  const series=sels.map(x=>{const rs=rows.filter(x[2]);
-    const aMs=ms.filter(m=>m.wd<=SW);
-    let plan=ms.map(m=>planPct(rs,m.wd)),fc=ms.map(m=>fcPct(rs,m.wd)),act=aMs.map(m=>actPctAt(rs,m.wd));
-    if(aMs.length<ms.length&&(!aMs.length||aMs[aMs.length-1].wd<SW))act.push(actPctAt(rs,SW));
+  const series=sels.map(x=>{const rs=rows.filter(x[2]);const V=scVals(rs,ps);
+    let plan=V.plan,fc=V.fc,act=V.act;
     if(monthly){plan=D(plan);fc=D(fc);act=D(act)}
-    return {name:x[1],col:x[3],plan,fc,act,cnt:rs.length}});
-  const Wc=860,Hc=190,padL=32,padR=10,padT=8,padB=20,iw=Wc-padL-padR,ih=Hc-padT-padB;
+    return {name:x[1],col:x[3],plan,fc,act,tail:V.tail,cnt:rs.length}});
   const ymax=Math.max(5,...series.flatMap(x=>[...x.plan,...x.fc,...x.act]))*1.06;
-  const X=i=>padL+iw*i/(n-1),Y=v=>padT+ih*(1-v/ymax);
-  const path=arr=>arr.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
-  let g=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:100%;height:auto" id="${elId}-svg">`;
-  for(let t=0;t<=4;t++){const v=ymax*t/4;g+=`<line x1="${padL}" x2="${Wc-padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${padL-4}" y="${Y(v)+3}" font-size="8" text-anchor="end">${Math.round(v)}%</text>`}
-  ms.forEach((m,i)=>{if(i%2===0)g+=`<text x="${X(i)}" y="${Hc-5}" font-size="8" text-anchor="middle">${m.label}</text>`});
-  let si=ms.findIndex(m=>m.wd>state.at); if(si<0)si=n-1;
-  const sx=X(Math.max(0,si-0.5));
-  g+=`<line x1="${sx}" x2="${sx}" y1="${padT}" y2="${padT+ih}" stroke="var(--warn)" stroke-dasharray="3 3"/>`;
+  const Fr=scFrame(ps,ymax,elId),X=Fr.X,Y=Fr.Y;
+  let g=Fr.g;
+  const path=(arr,xf)=>arr.map((v,i)=>(i?"L":"M")+xf(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
   series.forEach(x=>{
-    g+=`<path d="${path(x.plan)}" fill="none" stroke="${x.col}" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>`;
-    g+=`<path d="${path(x.fc)}" fill="none" stroke="${x.col}" stroke-width="1.4" stroke-dasharray="5 4" opacity=".7"/>`;
-    if(x.act.length){g+=`<path d="${path(x.act)}" fill="none" stroke="${x.col}" stroke-width="2.2"/>`;
-      g+=`<circle cx="${X(x.act.length-1)}" cy="${Y(x.act[x.act.length-1])}" r="2.6" fill="${x.col}" stroke="var(--surface)" stroke-width="1.5"/>`}});
-  g+=`<rect id="${elId}-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+    const ax=i=>(!monthly&&x.tail&&i===x.act.length-1)?scXof(ps,X,SW):X(i);
+    g+=`<path d="${path(x.plan,X)}" fill="none" stroke="${x.col}" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>`;
+    g+=`<path d="${path(x.fc,X)}" fill="none" stroke="${x.col}" stroke-width="1.4" stroke-dasharray="5 4" opacity=".7"/>`;
+    if(x.act.length){g+=`<path d="${path(x.act,ax)}" fill="none" stroke="${x.col}" stroke-width="2.2"/>`;
+      g+=`<circle cx="${ax(x.act.length-1)}" cy="${Y(x.act[x.act.length-1])}" r="2.6" fill="${x.col}" stroke="var(--surface)" stroke-width="1.5"/>`}});
+  g+=`<rect id="${elId}-hit" x="${Fr.padL}" y="${Fr.padT}" width="${Fr.iw}" height="${Fr.ih}" fill="transparent"/></svg>`;
   const leg=`<div class="legend">${series.map(x=>`<span><span class="sw" style="background:${x.col}"></span>${x.name}</span>`).join("")}<span class="dim">solid = actual · dashed = forecast · dotted = plan</span></div>`;
-  setTimeout(()=>{const hit=document.getElementById(elId+"-hit");if(!hit)return;
-    hit.addEventListener("mousemove",e=>{const svg=document.getElementById(elId+"-svg");const r=svg.getBoundingClientRect();const fx=(e.clientX-r.left)/r.width*Wc;let i=Math.round((fx-padL)/(iw/(n-1)));i=Math.max(0,Math.min(n-1,i));
-      showTip(e,`<b>${ms[i].label}</b>`+series.map(x=>`<br>${x.name}: ${i<x.act.length?fmt1(x.act[i])+"%":"<span class='t2'>fc "+fmt1(x.fc[i]||0)+"%</span>"} <span class="t2">(plan ${fmt1(x.plan[i]||0)}%)</span>`).join(""));});
-    hit.addEventListener("mouseleave",hideTip);},0);
+  scHover(elId,Fr,n,i=>`<b>${esc(scPerLbl(ps[i]))}</b>`+series.map(x=>`<br>${x.name}: ${i<x.act.length?fmt1(x.act[i])+"%":"<span class='t2'>fc "+fmt1(x.fc[i]||0)+"%</span>"} <span class="t2">(plan ${fmt1(x.plan[i]||0)}%)</span>`).join(""));
   return leg+g;
 }
 function scurveTableMulti(rows){
@@ -1960,21 +2049,25 @@ function scurveTableMulti(rows){
     return scurveTable(s?rows.filter(s[2]):rows);
   }
   const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
-  let h=`<div class="twrap"><table><tr><th>Month</th>${sels.map(x=>`<th class="num">${x[1]} Plan %</th><th class="num">${x[1]} Act/Fc %</th>`).join("")}</tr>`;
-  DATA.months.forEach(m=>{h+=`<tr><td>${m.label}</td>`;
+  let h=`<div class="twrap"><table><tr><th>${scPerName()}</th>${sels.map(x=>`<th class="num">${x[1]} Plan %</th><th class="num">${x[1]} Act/Fc %</th>`).join("")}</tr>`;
+  scPeriods().forEach(m=>{h+=`<tr><td>${esc(m.label)}</td>`;
     sels.forEach(x=>{const rs=rows.filter(x[2]);
       h+=`<td class="num">${fmt1(planPct(rs,m.wd))}</td><td class="num">${m.wd<=SW?fmt1(actPctAt(rs,m.wd)):fmt1(fcPct(rs,m.wd))+" fc"}</td>`});
     h+=`</tr>`});
   return h+"</table></div>";
 }
 function scurveTable(rows){
-  let h=`<div class="twrap"><table><tr><th>Month</th><th class="num">Plan %</th><th class="num">Actual %</th><th class="num">Forecast %</th></tr>`;
-  DATA.months.forEach(m=>{h+=`<tr><td>${m.label}</td><td class="num">${fmt1(planPct(rows,m.wd))}</td><td class="num">${m.wd<=SW?fmt1(actPctAt(rows,m.wd)):"—"}</td><td class="num">${fmt1(fcPct(rows,m.wd))}</td></tr>`});
+  let h=`<div class="twrap"><table><tr><th>${scPerName()}</th><th class="num">Plan %</th><th class="num">Actual %</th><th class="num">Forecast %</th></tr>`;
+  scPeriods().forEach(m=>{h+=`<tr><td>${esc(m.label)}</td><td class="num">${fmt1(planPct(rows,m.wd))}</td><td class="num">${m.wd<=SW?fmt1(actPctAt(rows,m.wd)):"—"}</td><td class="num">${fmt1(fcPct(rows,m.wd))}</td></tr>`});
   return h+"</table></div>";
 }
+// the summary card's two charts, cumulative and per period
+const scBoxHtml=rows=>`<div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">${scPer==="w"&&HASWK()?"Weekly":"Monthly"}</div>${scurveMulti(rows,"sc2",true)}`;
 // ---------- milestones: card stepper ----------
 function msTimeline(){
-  const ms=DATA.milestones;
+  // the feed lists milestones by name ("MS-1", "MS-2" ...), which is not the order
+  // they fall in - read them left to right by date, as the track above them does
+  const ms=(DATA.milestones||[]).slice().sort((a,b)=>(a.f-b.f)||(a.b-b.b));
   const CH={done:["good","Achieved"],ontrack:["good","On track"],watch:["warn","Watch"],late:["crit","Late"]};
   const DOT={done:"var(--good)",ontrack:"var(--good)",watch:"var(--warn)",late:"var(--crit)"};
   // progress along project duration for the mini track
@@ -2151,7 +2244,7 @@ function pipeTable(rows,idp,engMode){
     const doneN=withCol.filter(x=>cellState(x.rr.filter(r=>colKey(r)===cn))==="done").length;
     const liveN=withCol.filter(x=>cellState(x.rr.filter(r=>colKey(r)===cn))==="inprog").length;
     const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
-    sc+=`<div class="stgc"><div class="n" title="${esc(lbl)}">${esc(lbl.length>15?lbl.slice(0,14)+"…":lbl)}</div><div class="v">${doneN}<small>/${withCol.length}${liveN?" · "+liveN+" in progress":""}</small></div>
+    sc+=`<div class="stgc"><div class="n" title="${esc(lbl)}">${esc(lbl)}</div><div class="v">${doneN}<small>/${withCol.length}${liveN?" · "+liveN+" in progress":""}</small></div>
      <div class="fb"><i style="width:${withCol.length?100*doneN/withCol.length:0}%"></i></div></div>`;
   });
   sc+="</div>";
@@ -2192,12 +2285,17 @@ function pipeTable(rows,idp,engMode){
         let t=`<div class="dethd"><b>${esc(x.pkg)}</b>
           <span class="dim">${rr.length} ${rr.length===1?"activity":"activities"}</span>
           <button type="button" class="rsndrill detmore" data-g="${idp}-${gi}">&#9783; Full list · standard columns</button></div>`;
-        t+=`<div class="detscroll"><table><tr><th>Activity</th><th>Status</th><th class="num">%</th><th class="num">${HASAQ?"Qty booked / planned":"Qty"}</th><th>Owner</th><th>Baseline end</th><th>Forecast end</th><th class="num">Var</th></tr>`;
-        rr.forEach(r=>{const v=r[C.fEF]-r[C.bEF];
+        // Var = Baseline end − Actual end, in working days: negative = finished late.
+        // Until an activity finishes there is no actual, so its forecast stands in,
+        // greyed and italic so the two kinds of number are never read as one.
+        t+=`<div class="detscroll"><table><tr><th>Activity</th><th>Status</th><th class="num">%</th><th class="num">${HASAQ?"Qty booked / planned":"Qty"}</th><th>Owner</th><th>Baseline end</th><th>Forecast end</th><th>Actual end</th><th class="num" title="Baseline end − Actual end, working days · negative = late · greyed = not finished yet, measured against the forecast end">Var</th></tr>`;
+        rr.forEach(r=>{const af=actF(r),v=r[C.bEF]-(af!=null?af:r[C.fEF]);
+          const vs=af!=null?(v<=-4?'color:var(--crit-text);font-weight:700':(v>0?'color:var(--good-text);font-weight:700':''))
+                           :'color:var(--mut);font-style:italic';
           t+=`<tr><td>${esc(r[C.name])}</td><td>${rowChip(r)}</td><td class="num">${r[C.pct]}</td>
            <td class="num">${qtyCell(r,1)}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")}</td>
-           <td>${wdate(r[C.bEF],1)}</td><td>${wdate(r[C.fEF],1)}</td>
-           <td class="num" ${v>=4?'style="color:var(--crit-text);font-weight:700"':""}>${v>0?"+":""}${v}</td></tr>`});
+           <td>${wdate(r[C.bEF],1)}</td><td>${wdate(r[C.fEF],1)}</td><td>${af!=null?`<b>${dFin(af)}</b>`:`<span class="dim">—</span>`}</td>
+           <td class="num" style="${vs}" title="${af!=null?"against the actual end":"not finished — against the forecast end"}">${v>0?"+":""}${v}</td></tr>`});
         pin.innerHTML=t+"</table></div>";
         pin.querySelector(".detmore").addEventListener("click",ev=>{
           ev.stopPropagation();
@@ -2587,7 +2685,7 @@ function engExtras(rows){
     if(a.length&&a.every(isDone))accDone++;
   });
   let h=`<div class="card span4 kpi"><h2>Drawings — submitted vs approved</h2>
-   <div class="big">${subDone} <small style="font-size:10px;color:var(--mut)">submitted</small> · ${accDone} <small style="font-size:10px;color:var(--mut)">approved</small></div>
+   <div class="big">${subDone} <small style="font-size:10.5px;color:var(--mut)">submitted</small> · ${accDone} <small style="font-size:10.5px;color:var(--mut)">approved</small></div>
    <div class="cmp">of ${sub} documents · ${subDone-accDone} awaiting approval</div>
    <div style="margin-top:4px">${chip(accDone/Math.max(1,subDone)>0.7?"good":"warn","approval ratio "+Math.round(100*accDone/Math.max(1,subDone))+"%")}</div></div>`;
   const ms=DATA.months.slice(0,14);
@@ -2600,7 +2698,7 @@ function engExtras(rows){
   const ymax=Math.max(2,...planM,...actM)*1.1;
   const X=i=>padL+iw*i/ms.length,Y=v=>8+ih*(1-v/ymax),bw=iw/ms.length*0.32;
   let g2=`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:100%;height:auto">`;
-  ms.forEach((m2,i)=>{g2+=`<text x="${X(i)+bw}" y="${Hc-5}" font-size="7.5" text-anchor="middle">${m2.label}</text>`;
+  ms.forEach((m2,i)=>{g2+=`<text x="${X(i)+bw}" y="${Hc-5}" font-size="10" text-anchor="middle">${m2.label}</text>`;
     g2+=`<rect x="${X(i)}" y="${Y(planM[i])}" width="${bw}" height="${Math.max(0,8+ih-Y(planM[i]))}" rx="2" fill="var(--s-plan)" opacity=".8"/>`;
     g2+=`<rect x="${X(i)+bw+1}" y="${Y(actM[i])}" width="${bw}" height="${Math.max(0,8+ih-Y(actM[i]))}" rx="2" fill="var(--s-act)"/>`;});
   g2+=`</svg>`;
@@ -2715,7 +2813,7 @@ function longLeadItems(){
     return {p:k,b,f,d:f-b,pc:r[C.pct],w:w[k]||0,wp:100*(w[k]||0)/TOTW};
   }).sort((a,b)=>b.w-a.w);
 }
-function longLeadCard(){
+function longLeadCard(span){
   const items=longLeadItems();
   const late=items.filter(x=>x.d>0), ahead=items.filter(x=>x.d<0), ontime=items.filter(x=>!x.d);
   const dlv=items.filter(x=>x.pc>=100);
@@ -2738,7 +2836,7 @@ function longLeadCard(){
     </div></div>`;
   setTimeout(()=>{const b=document.getElementById("ll-drill");
     if(b)b.addEventListener("click",openLongLead)},0);
-  return card("span12","Long Lead Item Delivery Status",
+  return card(span||"span12","Long Lead Item Delivery Status",
     "all Procurement - Supply packages · baseline / forecast delivery as per VisiLean package summary",h,
     `<button id="ll-drill" class="rsndrill" title="Open the package-by-package table">&#9783; ${items.length} packages</button>`);
 }
@@ -2781,13 +2879,13 @@ function epcScurves(){
   const defs=[["Engineering",isEng],["Procurement",isProc],["Construction",isCon],["Overall",r=>true]];
   let h=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px">`;
   defs.forEach((d,i)=>{const rs=L.filter(d[1]);
-    h+=`<div><div style="font-size:11px;font-weight:700;margin-bottom:2px">${d[0]} S-Curve <span class="dim" style="font-weight:500">(${rs.length} activities)</span></div>${scurve(rs,"sc-epc"+i,false).replaceAll('font-size="8"','font-size="11"')}</div>`});
+    h+=`<div><div style="font-size:11.5px;font-weight:700;margin-bottom:2px">${d[0]} S-Curve <span class="dim" style="font-weight:500">(${rs.length} activities)</span></div>${scurve(rs,"sc-epc"+i,false).replaceAll('font-size="10"','font-size="12"')}</div>`});
   return h+"</div>";
 }
 function msL2Table(){
   const CH={done:["good","Achieved"],ontrack:["good","On track"],watch:["warn","Watch"],late:["crit","Late"]};
   let h=`<div class="twrap"><table><tr><th>#</th><th>Milestone</th><th>Baseline</th><th>Forecast</th><th class="num">Lead / Lag</th><th>Status</th></tr>`;
-  DATA.milestones.forEach((m,i)=>{const sp=m.slip;
+  DATA.milestones.slice().sort((a,b)=>(a.f-b.f)||(a.b-b.b)).forEach((m,i)=>{const sp=m.slip;
     const sl=sp>0?`<span style="color:var(--crit-text);font-weight:700">+${sp} days lag</span>`:(sp<0?`<span style="color:var(--good);font-weight:700">${-sp} days lead</span>`:`<span class="dim">on plan</span>`);
     h+=`<tr><td>${i+1}</td><td><b>${esc(m.name)}</b></td><td>${wdate(m.b,1)}</td><td>${wdate(m.f,1)}</td><td class="num">${sl}</td><td>${chip(CH[m.status][0],CH[m.status][1])}</td></tr>`});
   return h+"</table></div>";
@@ -2899,7 +2997,7 @@ function stepSummaryCards(rows,spec){
   const cc=k=>fk===k?' class="num selcol"':' class="num"';
   const bar=sel?`<div style="margin-bottom:6px;display:flex;gap:7px;align-items:center;flex-wrap:wrap">
       ${chip("blue","Filtered: "+esc(selLbl))}
-      <a href="#" onclick="stepSel['${spec.key}']='';render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear</a>
+      <a href="#" onclick="stepSel['${spec.key}']='';render();return false" style="color:var(--blue);font-size:10.5px;font-weight:600">× clear</a>
       <span class="fnote">${shown.length} of ${items.length} ${esc(String(spec.groupLabel).toLowerCase())}${items.length===1?"":"s"}${fk?` · ${esc(selLbl)} sums to ${N[fk]}`:""}</span></div>`:"";
   // every count in the table opens the activities behind it, for that package alone
   const numCell=(x,k,bold)=>{
@@ -2955,6 +3053,10 @@ const apprDrawing = r => {
   const w = String(r[C.wbs]||"").split(" > ").filter(Boolean);
   return w.length ? w[w.length-1] : String(r[C.name]||"");
 };
+// the card's own filters: an approval type and a VisiLean status ("" = all)
+let apprCat="", apprSt="";
+// KP's "Submission to Client" step, by activity name
+const STC_RE=/submission to client/i;
 function approvalCard(rows){
   if(!HASAPPR) return "";
   // the feed repeats an activity once per history event, so count activities, not rows
@@ -2963,26 +3065,45 @@ function approvalCard(rows){
   const items=[...byTid.values()];
   if(!items.length) return "";
   const cmp=(a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:"base"});
-  const by=new Map();
-  items.forEach(r=>by.set(r[C.appr],(by.get(r[C.appr])||0)+1));
-  const cats=[...by.entries()].sort((a,b)=>cmp(a[0],b[0]));
+  const stLbl=r=>rowStatus(r)[1];
+  // the headline: activities named Submission to Client that VisiLean shows Complete
+  const stcBy=new Map();
+  rows.forEach(r=>{ if(STC_RE.test(String(r[C.name]||"")) && !stcBy.has(r[C.tid])) stcBy.set(r[C.tid], r); });
+  const stc=[...stcBy.values()], stcDone=stc.filter(r=>vlKey(r[C.vls])==="complete");
+  const cats=[...new Set(items.map(r=>r[C.appr]))].sort(cmp);
+  const sts=[...new Set(items.map(stLbl))].sort(cmp);
+  if(apprCat&&!cats.includes(apprCat)) apprCat="";
+  if(apprSt&&!sts.includes(apprSt)) apprSt="";
+  const shown=items.filter(r=>(!apprCat||r[C.appr]===apprCat)&&(!apprSt||stLbl(r)===apprSt));
   const done=items.filter(r=>r[C.state]==="done").length;
-  const head=`<div class="fsumwrap">`+cats.map(([k,n])=>
-    `<div class="frow"><b>${esc(k)}</b><div class="fb"><i style="width:${(100*n/items.length).toFixed(1)}%"></i></div><span>${n}</span></div>`
-  ).join("")+`</div>`;
+  // numbers first: each approval-type tile is also its filter
+  const n=(k,v,sub,attrs,on)=>`<${attrs?"button type=\"button\"":"div"} class="apn${attrs?" click":""}${on?" on":""}"${attrs||""}>`+
+    `<div class="k">${k}</div><div class="v">${v}${sub?`<small>${sub}</small>`:""}</div></${attrs?"button":"div"}>`;
+  let head=`<div class="apnums">`+
+    n("Submission to Client · complete",stcDone.length.toLocaleString(),` / ${stc.length.toLocaleString()}`,
+      ` id="appr-stc" title="Activities named “Submission to Client” with VisiLean status Complete — open the list"`)+
+    n("Revisions tagged",items.length.toLocaleString(),"")+
+    n("Revisions complete",done.toLocaleString(),` / ${items.length}`)+
+    cats.map(k=>{const c=items.filter(r=>r[C.appr]===k).length;
+      return n(esc(k),c,"",` data-apc="${esc(k)}" title="Show only ${esc(k)}${apprCat===k?" (click again to clear)":""}"`,apprCat===k)}).join("")+
+    `</div>`;
+  const sel=(id,lbl,vals,cur)=>`<label class="apsel">${lbl}<select id="${id}"><option value="">All</option>`+
+    vals.map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v)}</option>`).join("")+`</select></label>`;
+  head+=`<div class="apbar">${sel("appr-cat","Approval type",cats,apprCat)}${sel("appr-st","Status",sts,apprSt)}`+
+    `<span class="fnote">${shown.length} of ${items.length} revisions</span>`+
+    ((apprCat||apprSt)?`<a href="#" id="appr-clr" style="color:var(--blue);font-size:10.5px;font-weight:600">× clear</a>`:"")+`</div>`;
   // One block per drawing, its revisions underneath - the way the Gantt reads: the
-  // drawing is the WBS node, the revisions are the activities KP tags. Repeating the
-  // drawing name on every revision made two revisions of one drawing look like two
-  // drawings.
+  // drawing is the WBS node, the revisions are the activities KP tags.
   const groups=new Map();
-  items.forEach(r=>{ const d=apprDrawing(r); if(!groups.has(d)) groups.set(d,[]); groups.get(d).push(r); });
+  shown.forEach(r=>{ const d=apprDrawing(r); if(!groups.has(d)) groups.set(d,[]); groups.get(d).push(r); });
   const ordered=[...groups.entries()].sort((a,b)=>cmp(a[0],b[0]));
-  const body=`<div class="twrap"><table class="frz"><tr><th>Drawing / revision</th>`+
-    `<th>Approval Type</th><th>Step</th><th>Status</th><th>Finished</th></tr>`+
-    ordered.map(([d,rr])=>{
+  const dt=(w,f)=>w==null?`<span class="dim">\u2014</span>`:(f?dFin(w):dStart(w));
+  const body=`<div class="twrap"><table class="frz aptbl"><tr><th>Drawing / revision</th>`+
+    `<th>Approval type</th><th>Step</th><th>Status</th><th>Baseline start</th><th>Baseline end</th><th>Actual start</th><th>Actual end</th></tr>`+
+    (ordered.length?ordered.map(([d,rr])=>{
       rr.sort((a,b)=>cmp(b[C.name],a[C.name]));            // newest revision first
       const pkg=String(rr[0][C.pkg]||"").trim();
-      return `<tr><td colspan="5" title="${esc(String(rr[0][C.wbs]||""))}" style="padding-top:9px">`+
+      return `<tr class="apgrp"><td colspan="8" title="${esc(String(rr[0][C.wbs]||""))}">`+
           `<b>${esc(d.slice(0,74))}</b>`+
           `<span class="small dim"> \u00b7 ${esc(pkg||"\u2014")} \u00b7 `+
           `${rr.length} revision${rr.length===1?"":"s"}</span></td></tr>`+
@@ -2990,12 +3111,28 @@ function approvalCard(rows){
           `<td>${chip("blue",esc(r[C.appr]))}</td>`+
           `<td class="dim">${esc(String(r[C.stage]||"\u2014").slice(0,22))}</td>`+
           `<td>${rowChip(r)}</td>`+
-          `<td>${r[C.aef]!=null?wdate(r[C.aef],1):"\u2014"}</td></tr>`).join("");
-    }).join("")+`</table></div>`;
-  return card("span12","Drawing approvals by Approval Type",
-    `${items.length} drawing revision${items.length===1?"":"s"} tagged in VisiLean \u00b7 ${done} complete \u00b7 `+
-    `grouped by drawing, newest revision first \u00b7 the \u201cApproval Type\u201d field sits on the `+
-    `revision, so SLD- DC SYSTEM carries one revision, R0, approved CAT 2`,
+          `<td>${dt(r[C.bES])}</td><td>${dt(r[C.bEF],1)}</td>`+
+          `<td>${dt(actS(r))}</td><td><b>${dt(actF(r),1)}</b></td></tr>`).join("");
+    }).join(""):`<tr><td colspan="8" class="dim">no revision matches this filter</td></tr>`)+`</table></div>`;
+  setTimeout(()=>{
+    const ca=document.getElementById("appr-cat"),st=document.getElementById("appr-st");
+    if(ca)ca.onchange=()=>{apprCat=ca.value;render()};
+    if(st)st.onchange=()=>{apprSt=st.value;render()};
+    const cl=document.getElementById("appr-clr");
+    if(cl)cl.onclick=e=>{e.preventDefault();apprCat="";apprSt="";render()};
+    document.querySelectorAll(".apn[data-apc]").forEach(b=>b.onclick=()=>{
+      apprCat=(apprCat===b.dataset.apc)?"":b.dataset.apc;render()});
+    const sb=document.getElementById("appr-stc");
+    if(sb)sb.onclick=()=>drillOpen({eyebrow:"Design & Engineering",title:"Submission to Client",
+      status:pill("info",`${stcDone.length} of ${stc.length} complete`),
+      formula:`activities named <b>Submission to Client</b> in this view · <b>${stcDone.length}</b> carry VisiLean status Complete`,
+      rows:stc,cols:stdCols(),rowId:r=>String(r[C.tid]),
+      subsets:[{k:"all",label:"All"},
+               {k:"done",label:"Complete",f:r=>vlKey(r[C.vls])==="complete"},
+               {k:"open",label:"Not complete",f:r=>vlKey(r[C.vls])!=="complete"}]});
+  },0);
+  return card("span12","Submission to Client",
+    `drawing revisions KP has tagged with an Approval Type in VisiLean \u00b7 grouped by drawing, newest revision first`,
     head+body);
 }
 const SPEC_PO=()=>({key:"po",steps:CFG.poStep,unit:"packages",groupLabel:"Package",
@@ -3205,7 +3342,7 @@ function site3d(rows,idp){
       el.addEventListener("mouseleave",hideTip);
     });},0);
   setTimeout(()=>siteGLInit(rows,idp),0);
-  const chipSel=sel?`${chip("blue","Filtered: "+esc(sel))} <a href="#" onclick="state.f.area='';render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear</a>`:"";
+  const chipSel=sel?`${chip("blue","Filtered: "+esc(sel))} <a href="#" onclick="state.f.area='';render();return false" style="color:var(--blue);font-size:10.5px;font-weight:600">× clear</a>`:"";
   return `<div class="legend" style="margin-bottom:4px">
       <span><span class="sw" style="background:#24507f"></span>arrays built (tint + installed rows = actual %)</span>
       <span><span class="sw" style="background:#c4bba3"></span>graded pad, piles only</span>
@@ -4533,17 +4670,18 @@ function pageSummary(){
   // KP 07-Sep: Cost card hidden for now (costCard() is kept intact - put it back on
   // this line to restore it). Overall progress and EPC split the full row instead of
   // leaving the 2 columns the Cost card used to occupy.
-  h+=gaugeCard(rows,"span6")+epcCard("span6");
-  h+=kpiCards(rows,true);
+  // KP 05-Oct: no half-empty cards - Days to COD closes the top row, and Reasons for
+  // Variance shares its row with Long Lead instead of stretching across a blank span
+  h+=gaugeCard(rows,"span5")+epcCard("span5")+codCard(rows);
+  h+=kpiCards(rows,"nocod");
   // Reasons for Variance sits directly beside the KPI cards (next to Days to COD),
   // filling what used to be an empty second row
-  h+=reasonsCard("","span10");
+  h+=reasonsCard("","span6")+longLeadCard("span6");
   // a project with no milestone rows in VisiLean gets no empty card
   if((DATA.milestones||[]).length)h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
-  h+=longLeadCard();
   h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
-    `<div id="sc-box"><div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">Monthly</div>${scurveMulti(rows,"sc2",true)}</div>`,
-    `<div style="display:flex;gap:5px;flex-wrap:wrap"><div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
+    `<div id="sc-box">${scBoxHtml(rows)}</div>`,
+    `<div style="display:flex;gap:5px;flex-wrap:wrap">${scPerToggle()}<div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
   h+=card("span5","Stage progress","Actual % vs Baseline Plan %",stageBars(rows));
   // KP 07-Sep: Critical points card hidden for now (critPoints() is kept intact -
   // put this line back to restore it).
@@ -4768,7 +4906,7 @@ function statSheet(rows){
   let use=[...rows].sort((a,b)=>a[C.seq]-b[C.seq]);
   let selbar="";
   if(statSel){use=use.filter(r=>r[C.pkg]===statSel);
-    selbar=`<div style="margin-bottom:5px">${chip("blue","Filtered: "+esc(statSel.slice(0,60)))} <a href="#" onclick="statSel='';render();return false" style="color:var(--blue);font-size:10px;font-weight:600">× clear filter</a></div>`}
+    selbar=`<div style="margin-bottom:5px">${chip("blue","Filtered: "+esc(statSel.slice(0,60)))} <a href="#" onclick="statSel='';render();return false" style="color:var(--blue);font-size:10.5px;font-weight:600">× clear filter</a></div>`}
   let h=selbar+`<div class="twrap" style="max-height:420px;overflow:auto"><table><tr><th>Sr</th><th>Document / Activity</th><th>Group</th><th class="num">Timeline (d)</th><th>Scope / Owner</th><th>Target date</th><th>Revised target</th><th>Status</th></tr>`;
   use.forEach((r,i)=>{const late=r[C.pct]<100&&r[C.fEF]>r[C.bEF];
     h+=`<tr><td>${i+1}</td><td>${esc(r[C.name])}</td><td class="dim" title="${esc(String(r[C.pkg]))}">${esc(String(r[C.pkg]).slice(0,34))}</td><td class="num">${r[C.dur]}</td><td>${esc(r[C.owner]||r[C.ownship]||"KPI")}</td><td>${wdate(r[C.bEF],1)}</td><td style="${late?"color:var(--crit-text);font-weight:600":""}">${wdate(r[C.fEF],1)}</td><td>${rowChip(r)}</td></tr>`});
@@ -4796,11 +4934,13 @@ function engOverview(rows){
 function pageDept(key){
   const rows=filtered(key);
   let h=`<div class="grid">`;
-  h+=gaugeCard(rows);
-  h+=`<div class="card span8"><h2>S-curve — ${esc(DNAME[key])}</h2><div class="hint">cumulative plan vs actual</div>${scurve(rows,"scd",false)}</div>`;
+  // KP 05-Oct: the gauge alone beside the S-curve left a block of blank card under
+  // it, so Reasons for Variance stacks beneath it and the S-curve carries both views
+  h+=`<div class="span4 stack">${gaugeCard(rows,"span12")}${reasonsCard(key,"span12")}</div>`;
+  h+=card("span8",`S-curve — ${esc(DNAME[key])}`,"plan vs actual",
+    `<div class="hint" style="margin-bottom:2px">Cumulative</div>${scurve(rows,"scd",false)}`+
+    `<div class="hint" style="margin:8px 0 2px">${scPer==="w"&&HASWK()?"Weekly":"Monthly"}</div>${scurve(rows,"scd2",true)}`,scPerToggle());
   h+=kpiCards(rows,false);
-  // same layout as the summary page: variance reasons sit beside the KPI cards
-  h+=reasonsCard(key,"span12");   // 6 KPI cards fill the row exactly once Days to COD is summary-only
   if(key==="engineering"){
     // KP 08-Sep: Engineering Overview - Exec View hidden. engOverview() is untouched -
     // put this line back to restore it.
@@ -4867,11 +5007,9 @@ function syncFilterUI(){
   const dsel=document.getElementById("f-dept");
   dsel.innerHTML=`<option value="">All departments</option>`+DEPTS.map(d=>`<option value="${d.key}" ${f.dept===d.key?"selected":""}>${esc(d.name)}</option>`).join("");
   const base=L.filter(r=>!f.dept||r[C.dept]===f.dept);
-  fillSelect("f-type",[...new Set(base.map(r=>r[C.type]).filter(Boolean))].sort(),f.type);
   fillSelect("f-area",[...new Set(base.map(r=>r[C.area]))].sort((a,b)=>{const na=a.match(AREA_RE),nb=b.match(AREA_RE);if(na&&nb)return +na[1]-+nb[1];if(na)return -1;if(nb)return 1;return a.localeCompare(b)}),f.area);
   fillSelect("f-pkg",[...new Set(base.filter(r=>(!f.area||r[C.area]===f.area)).map(r=>r[C.pkg]))].sort().slice(0,400),f.pkg);
   fillSelect("f-owner",[...new Set(base.map(r=>r[C.owner]).filter(Boolean))].sort(),f.owner);
-  fillSelect("f-ownship",[...new Set(base.flatMap(r=>String(r[C.ownship]||"").split(/\s*,\s*/).filter(Boolean)))].sort(),f.ownship);
   document.getElementById("f-crit").classList.toggle("on",f.crit);
   document.getElementById("f-del").classList.toggle("on2",f.del);
   document.getElementById("f-count").textContent=filtered().length.toLocaleString()+" activities";
@@ -4954,10 +5092,12 @@ function render(){
   const rows=filtered();
   const cht=document.getElementById("sc-chart"),tbl=document.getElementById("sc-table");
   if(cht){
-    cht.onclick=()=>{document.getElementById("sc-box").innerHTML=`<div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">Monthly</div>${scurveMulti(rows,"sc2",true)}`;cht.classList.add("on");tbl.classList.remove("on")};
+    cht.onclick=()=>{document.getElementById("sc-box").innerHTML=scBoxHtml(rows);cht.classList.add("on");tbl.classList.remove("on")};
     tbl.onclick=()=>{document.getElementById("sc-box").innerHTML=scurveTableMulti(rows);tbl.classList.add("on");cht.classList.remove("on")};
     document.querySelectorAll("#sc-series button").forEach(b=>{b.onclick=()=>{const k=b.dataset.s;
       if(scSel.includes(k)){if(scSel.length>1)scSel=scSel.filter(x=>x!==k)}else scSel.push(k);render()}});}
+  // Monthly / Weekly: one choice for every S-curve on every page
+  document.querySelectorAll(".scper button").forEach(b=>{b.onclick=()=>{scPer=b.dataset.per;render()}});
   const up=document.getElementById("u-pct"),um=document.getElementById("u-mw");
   if(up){up.onclick=()=>{state.unit="%";render()}}
   if(um){um.onclick=()=>{state.unit="MW";render()}}
@@ -4987,15 +5127,13 @@ function render(){
   if(_keep)window.scrollTo(0,_sy);else window.scrollTo(0,0);lastPage=state.page;
   setTimeout(pinTwrapHeaders,0);
 }
-["f-dept","f-type","f-area","f-pkg","f-owner","f-ownship"].forEach(id=>{
+["f-dept","f-area","f-pkg","f-owner"].forEach(id=>{
   document.getElementById(id).addEventListener("change",e=>{
     const f=state.f;
     if(id==="f-dept"){f.dept=e.target.value;f.pkg="";f.type=""}
-    if(id==="f-type")f.type=e.target.value;
     if(id==="f-area")f.area=e.target.value;
     if(id==="f-pkg")f.pkg=e.target.value;
     if(id==="f-owner")f.owner=e.target.value;
-    if(id==="f-ownship")f.ownship=e.target.value;
     render();});
 });
 function wdOfIso(v){if(!v)return null;const t=new Date(v+"T00:00:00");let i=WD.findIndex(d=>d>=t);if(i<0)i=WD.length-1;return i+1}
@@ -5003,7 +5141,7 @@ document.getElementById("f-d1").addEventListener("change",e=>{state.f.w1=wdOfIso
 document.getElementById("f-d2").addEventListener("change",e=>{state.f.w2=wdOfIso(e.target.value);render()});
 document.getElementById("f-crit").addEventListener("click",()=>{state.f.crit=!state.f.crit;render()});
 document.getElementById("f-del").addEventListener("click",()=>{state.f.del=!state.f.del;render()});
-document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false};state.at=SW;pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];for(const k in pipeCellFilt)delete pipeCellFilt[k];closeColPop();render()});
+document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false};state.at=SW;apprCat="";apprSt="";pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];for(const k in pipeCellFilt)delete pipeCellFilt[k];closeColPop();render()});
 document.getElementById("f-date").addEventListener("input",e=>{state.at=+e.target.value;render()});
 function applyTheme(t){
   document.querySelectorAll("#thm button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
@@ -5131,6 +5269,8 @@ function restoreUI(){
     if(s.unit)state.unit=s.unit;
     if(typeof s.at==="number")state.at=s.at;
     if(s.f)state.f=Object.assign(state.f,s.f);
+    // no control left for these two, so a saved value must not filter unseen
+    state.f.type="";state.f.ownship="";
     if(Array.isArray(s.scSel)&&s.scSel.length)scSel=s.scSel;
     pipeSearch=s.pipeSearch||"";pipeDelOnly=!!s.pipeDelOnly;
     Object.assign(pipeL1,s.pipeL1||{});Object.assign(pipeL2,s.pipeL2||{});
@@ -5178,7 +5318,7 @@ setInterval(async()=>{
   _pollBusy=false;
 },60000);
 {const d2=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
- document.getElementById("h-cod").innerHTML=`${d2} days <span style="font-size:8.5px;color:${M.delayDays>0?"var(--crit-text)":"var(--good-text)"}">(${M.delayDays>=0?"+":""}${M.delayDays}d)</span>`;}
+ document.getElementById("h-cod").innerHTML=`${d2} days <span style="font-size:10.5px;color:${M.delayDays>0?"var(--crit-text)":"var(--good-text)"}">(${M.delayDays>=0?"+":""}${M.delayDays}d)</span>`;}
 render();
 if(_restored&&_restored.y)setTimeout(()=>window.scrollTo(0,_restored.y),60);
 </script>

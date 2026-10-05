@@ -420,7 +420,9 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  (wd_f(r["aF"]) if r["aF"] else None),
                  r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
                  ("" if r["org"].lower() == "none" else r["org"])[:60], u,
-                 r["pb"], r["sup"], r["appr"][:16]])
+                 r["pb"], r["sup"], r["appr"][:16],
+                 # actual start, for the drill tables' Actual start column
+                 (wd_s(r["aS"]) if r["aS"] else None)])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
 ms = []
@@ -737,7 +739,8 @@ for r in sorted(milestones_raw, key=lambda x: x["uid"]):
         strip_html(r["desc"])[:120], strip_html(r["note"])[:220],
         (wd_f(r["aF"]) if r["aF"] else None),
         r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
-        ("" if r["org"].lower() == "none" else r["org"])[:60], u, r["pb"], r["sup"], r["appr"][:16]])
+        ("" if r["org"].lower() == "none" else r["org"])[:60], u, r["pb"], r["sup"], r["appr"][:16],
+        (wd_s(r["aS"]) if r["aS"] else None)])
 
 # ---------- predecessor network for the activity panel ----------
 # Shown, not calculated with: float still comes from the same links above. Only links
@@ -789,7 +792,7 @@ DATA = {"meta": meta, "months": months, "weeks": weeks, "reasons": reasons, "msL
         "cols": ["dept", "type", "area", "pkg", "sec", "stage", "name", "bES", "bEF", "fES", "fEF",
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
                  "ownship", "nd", "dly", "item", "wt", "vcrit", "desc", "note", "aef",
-                 "tid", "wbs", "org", "uid", "pb", "sup", "appr"],
+                 "tid", "wbs", "org", "uid", "pb", "sup", "appr", "aes"],
         "leaves": rows}
 assert DATA["cols"][WT_I] == "wt", f"WT_I points at {DATA['cols'][WT_I]!r}, not 'wt'"
 assert DATA["cols"][AEF_I] == "aef", f"AEF_I points at {DATA['cols'][AEF_I]!r}, not 'aef'"

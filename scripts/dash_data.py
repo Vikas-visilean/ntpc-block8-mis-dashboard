@@ -609,7 +609,9 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
                  ("" if r["org"].lower() == "none" else r["org"])[:60], u,
                  r["pb"], r["sup"], r["aqty"], r["cfield"][:28], r["csub"][:34],
-                 r["appr"][:16]])
+                 r["appr"][:16],
+                 # actual start, for the drill tables' Actual start column
+                 (wd_s(r["aS"]) if r["aS"] else None)])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
 ms = []
@@ -934,7 +936,8 @@ for r in sorted(milestones_raw, key=lambda x: x["uid"]):
         (wd_f(r["aF"]) if r["aF"] else None),
         r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
         ("" if r["org"].lower() == "none" else r["org"])[:60], u, r["pb"], r["sup"], r["aqty"],
-        r["cfield"][:28], r["csub"][:34], r["appr"][:16]])
+        r["cfield"][:28], r["csub"][:34], r["appr"][:16],
+        (wd_s(r["aS"]) if r["aS"] else None)])
 
 # ---------- predecessor network for the activity panel ----------
 # Shown, not calculated with: float still comes from the same links above. Only links
@@ -983,7 +986,7 @@ DATA = {"meta": meta, "months": months, "reasons": reasons, "msLeaves": ms_rows,
                  "pct", "dur", "qty", "uom", "tf", "state", "owner", "sub", "cost", "seq", "vls",
                  "ownship", "nd", "dly", "item", "wt", "vcrit", "desc", "note", "aef",
                  "tid", "wbs", "org", "uid", "pb", "sup", "aqty", "cfield", "csub",
-                 "appr"],
+                 "appr", "aes"],
         "leaves": rows}
 _cs_i, _cf_i = DATA["cols"].index("csub"), DATA["cols"].index("cfield")
 _cs_n = sum(1 for r in rows if r[_cs_i])
