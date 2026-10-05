@@ -213,7 +213,9 @@ jobs:
           git config user.email "support@visilean.com"
           python scripts/build_portfolio.py || { echo "::error title=Portfolio build failed::see log"; exit 1; }
 
-          if git diff --quiet -- portfolio/.datahash portfolio/.tplhash ; then
+          # status, not diff: on the first build these files are new (untracked), and
+          # git diff ignores untracked files - it would report "no change" for ever
+          if [ -z "$(git status --porcelain -- portfolio/.datahash portfolio/.tplhash)" ]; then
             echo "no change - nothing published"; exit 0
           fi
 
