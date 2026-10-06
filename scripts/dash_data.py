@@ -175,6 +175,8 @@ milestones_raw = []
 NA_SKIPPED = []
 NA_UIDS = set()
 NOWBS_SKIPPED = []
+UNDATED_SKIPPED = []
+NA_KEPT = []
 # A schedule may carry rows that are not scope at all. Talaja's has 43: "Manpower",
 # "60/70MT crane", "Low Bed Trailer (Hub And TP Shifting)" - VisiLean resource records
 # with no WBS, no department and no weightage, all sharing one placeholder month. Left in,
@@ -294,10 +296,15 @@ for t in TASKS:
         # planned-as-baseline projects: nothing is flagged un-baselined for that reason alone
         if BASELINE_PLANNED and bs is not None and bf is not None:
             nodate = 0
+    if (bs is None or bf is None) and not t.get("parent"):
+        # Undated activity (no full baseline or planned window of its own). VisiLean leaves
+        # these out of All Tasks, Completed and Delayed alike - checked 06-Oct-2026:
+        # S6a 2,300 - 33 undated = 2,267 and S7 2,770 - 37 = 2,733, VisiLean's counts.
+        # They carry no weightage, so dropping them leaves progress unchanged.
+        UNDATED_SKIPPED.append(str(t.get("taskName") or ""))
+        continue
     if bs is None or bf is None:
-        # Undated row: inherit the parent's window so it can be placed, and flag it
-        # so every date-driven metric skips it. VisiLean does the same - such rows
-        # appear in All Tasks but not in Completed / Delayed.
+        # undated WBS node: borrow its parent's window so it can still be placed
         p = GUID.get(t.get("parentGUID"))
         pbs = pbf = None
         if p is not None:
@@ -360,13 +367,14 @@ for t in TASKS:
     if (L[0] or "").startswith("Key Milestones") or re.match(r"^MS-\d", r["name"]):
         if not r["parent"]: milestones_raw.append(r)
         continue
-    # KP rule 26-Aug: an activity whose trade is "Not Applicable" is out of scope for
-    # this project. Dropping it here removes it from every count, every progress and
-    # weightage calculation, and every table - not just from the views.
+    # Trade "Not Applicable": VisiLean still counts these in All Tasks and Delayed, so
+    # the activity counts do too (06-Oct-2026, to match VisiLean). They stay out of
+    # scope for progress and budget: no weightage, no cost.
     if norm(t.get("trade")) in ("notapplicable", "na"):
-        NA_SKIPPED.append(r["name"])
+        NA_KEPT.append(r["name"])
         NA_UIDS.add(uid)
-        continue
+        r["wt"] = 0.0
+        r["cost"] = 0.0
     if SCOPE_NEEDS_WBS and not (L[0] or "").strip() and not str(r["deptcf"] or "").strip() \
             and not str(cf.get("Weightage") or "").strip():
         NOWBS_SKIPPED.append(r["name"])
@@ -413,7 +421,9 @@ if EXT_DUP:
           ", ".join("%s(ext %s)" % x for x in EXT_DUP))
 print("usable leaves:", len(leafs), "| milestones:", len(milestones_raw),
       "| excluded (trade = Not Applicable):", len(NA_SKIPPED),
-      ("| excluded (no WBS, no weightage): %d" % len(NOWBS_SKIPPED)) if NOWBS_SKIPPED else "")
+      ("| excluded (no WBS, no weightage): %d" % len(NOWBS_SKIPPED)) if NOWBS_SKIPPED else "",
+      "| undated, left out as VisiLean does: %d" % len(UNDATED_SKIPPED),
+      "| Not Applicable trade, counted with no weightage: %d" % len(NA_KEPT))
 if INHERITED:
     print("classification inherited from the parent for %d rows with no custom fields:"
           % len(INHERITED), ", ".join("%s %s<-%s" % x for x in INHERITED[:4]),
@@ -658,7 +668,9 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     # planned dates equal the baseline until the schedule is actually rescheduled.
     # VisiLean counts an activity whether or not it is baselined, so we do too.
     dly = vl_delayed(vs, r["vps"], r["vpe"], r["aS"])
-    if r["pct"] >= 100 or vs == "Complete": state = "done"
+    # Completed is VisiLean's status, as its own counter reads it - an activity at 100%
+    # still marked Started is not complete yet
+    if vs in VL_DONE: state = "done"
     elif r["pct"] > 0 or vs in ("Started", "Warning", "Stopped"): state = "inprog"
     elif r["bES"] < STATUS_WD: state = "late"
     else: state = "future"
@@ -1021,7 +1033,7 @@ for r in sorted(milestones_raw, key=lambda x: x["uid"]):
         int(r["pES"] if r["pES"] is not None else r["bES"]),
         int(r["pEF"] if r["pEF"] is not None else r["bEF"]),
         round(r["pct"]), round(r["dur"], 1), r["qty"], r["uom"][:14], 0,
-        ("done" if r["pct"] >= 100 else "future"),
+        ("done" if r["vls"] in VL_DONE else "future"),
         (r["assignee"] or "")[:30], "", round(r["cost"]), len(ms_rows), r["vls"],
         (r["owner"] or "")[:40], r["nd"], vl_delayed(r["vls"], r["vps"], r["vpe"], r["aS"]),
         r["name"][:80], round(r["wt"], 6),

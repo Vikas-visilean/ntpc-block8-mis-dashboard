@@ -1870,7 +1870,7 @@ function kpiDrill(kind,rows,deptKey){
   if(!S)return;
   // the Total card counts milestones too, so the drill behind it lists them as well;
   // the Delayed card counts delayed milestones when nothing is filtered, and so does its drill
-  const withMs=(((kind==="all"&&!deptKey)||(kind==="dly"&&!deptKey&&rows.length===L.length))
+  const withMs=(((kind==="all"&&!deptKey)||((kind==="dly"||kind==="done")&&!deptKey&&rows.length===L.length))
                 &&(DATA.msLeaves||[]).length)?rows.concat(DATA.msLeaves):rows;
   const base=withMs,sel=S.f?withMs.filter(S.f):withMs;
   const by={};sel.forEach(r=>{const k=DNAME[r[C.dept]]||"—";by[k]=(by[k]||0)+1});
@@ -1932,13 +1932,15 @@ function kpiCards(rows,projectLevel){
   // VisiLean's Delayed counter includes milestone tasks, so the card does wherever the
   // Total card counts them
   const dlAll=(projectLevel&&unfiltered)? dl + (DATA.msLeaves||[]).filter(isDelayed).length : dl;
+  // ...and its Completed counter counts completed milestones the same way
+  const doneAll=(projectLevel&&unfiltered)? done + (DATA.msLeaves||[]).filter(isDone).length : done;
   // KP 31-Aug: post-baseline revisions are counted, but stated - so the total never
   // creeps upward without an explanation as the client raises new revision activities
   const pbN=(C.pb!==undefined)?rows.filter(r=>r[C.pb]).length:0;
   return c("Total activities",totalAll.toLocaleString(),
        (projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones${M.naExcluded?` · ${M.naExcluded} Not Applicable excluded`:""}${pbN?` · ${pbN} post-baseline revisions`:""}`
          :(pbN?`in scope · ${pbN} post-baseline`:"in scope"),null,"all")
-   + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count",null,"done")
+   + c("Completed",doneAll.toLocaleString(),fmt1(100*doneAll/Math.max(1,totalAll))+"% of count",null,"done")
    // how many of the delays are inherited from an unfinished predecessor — the
    // drill marks exactly these rows and can list them on their own
    + c("Delayed",dlAll.toLocaleString(),`past planned start or finish, not complete`,
