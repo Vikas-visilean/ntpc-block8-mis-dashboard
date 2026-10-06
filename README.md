@@ -9,6 +9,10 @@ Published at **https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/**. Th
 page (`index.html`) is the locked v1.0 baseline, tag `v1.0-baseline-2026-08-17`, and is
 not edited.
 
+**Portfolio, all six projects on one page:**
+**https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/portfolio/** (review draft, see
+[below](#portfolio)).
+
 This README condenses the other documents in the repo; each section links to the full
 file. For day-to-day working rules, conflicts and pitfalls, read
 **[ONBOARDING.md](ONBOARDING.md)**.
@@ -36,9 +40,19 @@ The two user-activity reports reuse those projects' tokens; neither has one of i
 | Adoption tracker | NTPC | [/adoption/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/adoption/) | `refresh-adoption.yml` |
 | User Updates | NTPC, Adani S6a, Adani S7, Floating, Talaja | [/updates/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/updates/) | `refresh-updates.yml` |
 
-The portfolio page rolls the six project pages up into one view. It has no token: `scripts/build_portfolio.py`
-recalculates from the project pages already in the repo, and rebuilds after each project refresh.
-Review draft, not yet shared - see [portfolio/PORTFOLIO_README.md](portfolio/PORTFOLIO_README.md).
+### Portfolio
+
+**[/portfolio/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/portfolio/)** rolls
+the six project pages up into one view: progress, EPC split, and a monthly or weekly S-curve,
+weighted by MW.
+
+- **No token needed.** `scripts/build_portfolio.py` recalculates everything from the project
+  pages already in the repo.
+- **Rebuilds automatically** after each project refresh, and at 10:45 and 16:45 IST as a fallback.
+- **Review draft.** Not linked from the root page; share it only once KP has approved it.
+- **Docs:** what the page shows and how it is calculated is in
+  [portfolio/PORTFOLIO_README.md](portfolio/PORTFOLIO_README.md); the wiring and manual-refresh
+  steps are in [portfolio/HOW_TO_INTEGRATE.md](portfolio/HOW_TO_INTEGRATE.md).
 
 | Report | Reads | Page | Workflow |
 |---|---|---|---|
