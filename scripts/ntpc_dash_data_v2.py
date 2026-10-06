@@ -446,11 +446,38 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  (wd_s(r["aS"]) if r["aS"] else None), r["ptid"]])
 n_crit = sum(1 for x in rows if x[15] <= 5 and x[16] != "done" and not x[23])
 
+# VisiLean schedules a milestone one working day AFTER its last predecessor finishes
+# (finish-to-start), while the MSP baseline puts it ON that finish date - so its own
+# planned date reads a day later than the COD card (HOTO 12-Nov vs 11-Nov-27). The
+# milestone forecast therefore comes from its predecessors' planned finish.
+_PF = {}
+for _t in TASKS:
+    _u, _pe = (int(_t["externalId"]) if str(_t.get("externalId") or "").strip().isdigit() else None), pdate(_t.get("plannedEndDate"))
+    if _u is not None and _pe: _PF[_u] = wd_f(_pe)
+_MS_PRED = defaultdict(list)
+for pu, su, code, lag in RELS:
+    if pu in _PF: _MS_PRED[su].append(_PF[pu])
+
 ms = []
 for m in sorted(milestones_raw, key=lambda x: x["name"]):
-    bw = m["bEF"]; fw = bw + max(0, STATUS_WD - 78)
+    # forecast = VisiLean planned dates (KP rule 17-Aug), not a formula: the old
+    # "baseline + (status wd - 78)" moved every milestone by the same number of days.
+    # Read from the predecessors' planned finish, the same way the baseline and the
+    # COD card read; the milestone's own planned date is the fallback.
+    bw = m["bEF"]
+    fw = (max(_MS_PRED[m["uid"]]) if _MS_PRED.get(m["uid"])
+          else (m["pEF"] if m["pEF"] is not None else bw))
     ms.append({"name": m["name"], "b": bw, "f": fw, "slip": fw - bw,
                "status": "done" if m["pct"] >= 100 else ("ontrack" if fw - bw <= 6 else ("watch" if fw - bw <= 15 else "late"))})
+# The project-completion milestone (HOTO, the latest by baseline) IS the COD: it must
+# read the same baseline and forecast as the "Forecast vs Baseline" and COD cards,
+# which take the latest activity finish. Tie it to them so the two can never differ.
+if ms and rows:
+    _last = max(ms, key=lambda x: x["b"])
+    if _last["status"] != "done":
+        _cb, _cf = max(x[8] for x in rows), max(x[10] for x in rows)
+        _last.update({"b": _cb, "f": _cf, "slip": _cf - _cb,
+                      "status": "ontrack" if _cf - _cb <= 6 else ("watch" if _cf - _cb <= 15 else "late")})
 
 months = []
 m0 = datetime.date(2026, 5, 31)
