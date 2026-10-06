@@ -68,7 +68,10 @@ RELS = json.load(open(os.path.join(SCR, "vl_relations.json"), encoding="utf-8"))
 
 # ---------- calendar ----------
 START = datetime.date(2026, 5, 7)
-TODAY = datetime.date.today()
+# VisiLean counts Delayed against the IST calendar day; the Actions runner is on UTC,
+# so a run between 00:00 and 05:30 IST would otherwise still use yesterday.
+TODAY = (datetime.datetime.now(datetime.timezone.utc)
+         + datetime.timedelta(hours=5, minutes=30)).date()
 TARGET_WD = 470
 wdates = []
 d = START

@@ -96,7 +96,10 @@ else:
 # ---------- calendar ----------
 _cal = CFG.get("calendar") or {}
 START = datetime.date.fromisoformat(_cal.get("startDate", "2026-05-07"))
-TODAY = datetime.date.today()
+# VisiLean counts Delayed against the IST calendar day; the Actions runner is on UTC,
+# so a run between 00:00 and 05:30 IST would otherwise still use yesterday.
+TODAY = (datetime.datetime.now(datetime.timezone.utc)
+         + datetime.timedelta(hours=5, minutes=30)).date()
 WEEKLY_OFF = set(_cal.get("weeklyOff", [6]))          # python weekday(): Monday=0 .. Sunday=6
 # a project with no baseline set in VisiLean reads its planned dates AS the baseline
 BASELINE_PLANNED = (CFG.get("baselineMode", "visilean") == "planned")
