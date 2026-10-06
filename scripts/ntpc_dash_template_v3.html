@@ -1934,12 +1934,9 @@ function kpiCards(rows,projectLevel){
   const dlAll=(projectLevel&&unfiltered)? dl + (DATA.msLeaves||[]).filter(isDelayed).length : dl;
   // ...and its Completed counter counts completed milestones the same way
   const doneAll=(projectLevel&&unfiltered)? done + (DATA.msLeaves||[]).filter(isDone).length : done;
-  // KP 31-Aug: post-baseline revisions are counted, but stated - so the total never
-  // creeps upward without an explanation as the client raises new revision activities
-  const pbN=(C.pb!==undefined)?rows.filter(r=>r[C.pb]).length:0;
   return c("Total activities",totalAll.toLocaleString(),
-       (projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones${M.naExcluded?` · ${M.naExcluded} Not Applicable excluded`:""}${pbN?` · ${pbN} post-baseline revisions`:""}`
-         :(pbN?`in scope · ${pbN} post-baseline`:"in scope"),null,"all")
+       (projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones${M.naExcluded?` · ${M.naExcluded} Not Applicable excluded`:""}`
+         :"in scope",null,"all")
    + c("Completed",doneAll.toLocaleString(),fmt1(100*doneAll/Math.max(1,totalAll))+"% of count",null,"done")
    // how many of the delays are inherited from an unfinished predecessor — the
    // drill marks exactly these rows and can list them on their own
