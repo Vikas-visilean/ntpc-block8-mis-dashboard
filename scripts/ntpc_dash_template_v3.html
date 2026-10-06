@@ -1868,8 +1868,10 @@ function kpiDrill(kind,rows,deptKey){
            wip:{t:"Activities in progress",f:isWip},
            stp:{t:"Stopped activities",f:isStopped}}[kind];
   if(!S)return;
-  // the Total card counts milestones too, so the drill behind it lists them as well
-  const withMs=(kind==="all"&&!deptKey&&(DATA.msLeaves||[]).length)?rows.concat(DATA.msLeaves):rows;
+  // the Total card counts milestones too, so the drill behind it lists them as well;
+  // the Delayed card counts delayed milestones when nothing is filtered, and so does its drill
+  const withMs=(((kind==="all"&&!deptKey)||(kind==="dly"&&!deptKey&&rows.length===L.length))
+                &&(DATA.msLeaves||[]).length)?rows.concat(DATA.msLeaves):rows;
   const base=withMs,sel=S.f?withMs.filter(S.f):withMs;
   const by={};sel.forEach(r=>{const k=DNAME[r[C.dept]]||"—";by[k]=(by[k]||0)+1});
   // Delayed drill: name the cause of each delay, mark the inherited ones, and let
@@ -1927,6 +1929,9 @@ function kpiCards(rows,projectLevel){
   // Construction) would read 9 too high against VisiLean.
   const unfiltered=rows.length===L.length;
   const totalAll=(projectLevel&&unfiltered)? total + DATA.milestones.length : total;
+  // VisiLean's Delayed counter includes milestone tasks, so the card does wherever the
+  // Total card counts them
+  const dlAll=(projectLevel&&unfiltered)? dl + (DATA.msLeaves||[]).filter(isDelayed).length : dl;
   // KP 31-Aug: post-baseline revisions are counted, but stated - so the total never
   // creeps upward without an explanation as the client raises new revision activities
   const pbN=(C.pb!==undefined)?rows.filter(r=>r[C.pb]).length:0;
@@ -1936,7 +1941,7 @@ function kpiCards(rows,projectLevel){
    + c("Completed",done.toLocaleString(),fmt1(100*done/Math.max(1,total))+"% of count",null,"done")
    // how many of the delays are inherited from an unfinished predecessor — the
    // drill marks exactly these rows and can list them on their own
-   + c("Delayed",dl.toLocaleString(),`past planned start or finish, not complete`,
+   + c("Delayed",dlAll.toLocaleString(),`past planned start or finish, not complete`,
        (cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"))
        +` <span title="Delayed activities with at least one predecessor still unfinished — the delay is inherited from upstream. Open the card to see them marked.">${chip("blue",pdl+" due to predecessor")}</span>`,"dly")
    + c("In progress",inprog.toLocaleString(),`started, not yet complete`,null,"wip")

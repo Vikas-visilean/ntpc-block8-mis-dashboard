@@ -100,20 +100,21 @@ START = datetime.date.fromisoformat(_cal.get("startDate", "2026-05-07"))
 # so a run between 00:00 and 05:30 IST would otherwise still use yesterday.
 TODAY = (datetime.datetime.now(datetime.timezone.utc)
          + datetime.timedelta(hours=5, minutes=30)).date()
-# VisiLean's "Delayed Tasks" only counts a date once the whole following day is
-# reached: on 06-Oct an activity planned to start or finish on 05-Oct is not yet
-# delayed (checked against VisiLean's own export, 06-Oct: 571 = 571). So the test is
-# against yesterday, not today.
-DLY_CUTOFF = TODAY - datetime.timedelta(days=1)
+# VisiLean's "Delayed Tasks" rule, checked task by task against its own export for
+# all six projects (06-Oct-2026, SJVN 584 = 584). A planned date counts once it is
+# before today (IST). VisiLean recalculates once a day, so for part of the morning its
+# counter can still read yesterday's figure.
+DLY_CUTOFF = TODAY
 VL_STARTED = ("Started", "Warning", "Stopped")
+VL_DONE = ("Complete", "Quality checked", "Quality Checked", "Milestone Completed")
 
-def vl_delayed(pct, status, ps, pe, astart):
-    """VisiLean's "Delayed Tasks" rule, checked task by task against its export
-    (06-Oct-2026). Complete is never delayed. A started task is delayed only once
-    its planned finish has passed; a task not yet started is delayed once its
-    planned start has passed. "Started" is VisiLean's status, not % complete - a
-    task marked Started at 0% is waiting on its finish date, not its start."""
-    if pct >= 100 or status == "Complete":
+def vl_delayed(status, ps, pe, astart):
+    """Complete is VisiLean's status, never % complete: a task at 100% still marked
+    Started is delayed once its planned finish passes. A started task is delayed once
+    its planned finish has passed; one not yet started, once its planned start has
+    passed. ps / pe are the task's OWN planned dates - a row without them (its window
+    borrowed from the parent for drawing) is never delayed, as in VisiLean."""
+    if status in VL_DONE:
         return 0
     if pe and pe < DLY_CUTOFF:
         return 1
@@ -343,7 +344,9 @@ for t in TASKS:
          # a revision row is named "R1"; its schedule stage is its parent's
          "stagename": inherited_from,
          "psd": (pdate(t.get("plannedStartDate")) or bs),
-         "ped": (pdate(t.get("plannedEndDate")) or bf), }
+         "ped": (pdate(t.get("plannedEndDate")) or bf),
+         # the task's own planned dates, unfilled - what VisiLean's Delayed reads
+         "vps": pdate(t.get("plannedStartDate")), "vpe": pdate(t.get("plannedEndDate")), }
     try: r["dur"] = max(0.0, float(t.get("baselineDuration") or t.get("plannedDuration") or 0))
     except Exception: r["dur"] = max(0.0, float(r["bEF"] - r["bES"]))
     if r["dur"] == 0 and not r["parent"]:
@@ -654,7 +657,7 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     # (forecast finish >= 4 days past baseline) always read 0, because VisiLean's
     # planned dates equal the baseline until the schedule is actually rescheduled.
     # VisiLean counts an activity whether or not it is baselined, so we do too.
-    dly = vl_delayed(r["pct"], vs, r["psd"], r["ped"], r["aS"])
+    dly = vl_delayed(vs, r["vps"], r["vpe"], r["aS"])
     if r["pct"] >= 100 or vs == "Complete": state = "done"
     elif r["pct"] > 0 or vs in ("Started", "Warning", "Stopped"): state = "inprog"
     elif r["bES"] < STATUS_WD: state = "late"
@@ -1020,7 +1023,8 @@ for r in sorted(milestones_raw, key=lambda x: x["uid"]):
         round(r["pct"]), round(r["dur"], 1), r["qty"], r["uom"][:14], 0,
         ("done" if r["pct"] >= 100 else "future"),
         (r["assignee"] or "")[:30], "", round(r["cost"]), len(ms_rows), r["vls"],
-        (r["owner"] or "")[:40], r["nd"], 0, r["name"][:80], round(r["wt"], 6),
+        (r["owner"] or "")[:40], r["nd"], vl_delayed(r["vls"], r["vps"], r["vpe"], r["aS"]),
+        r["name"][:80], round(r["wt"], 6),
         1 if str(r.get("crit") or "").strip().lower().startswith("y") else 0,
         strip_html(r["desc"])[:120], strip_html(r["note"])[:220],
         (wd_f(r["aF"]) if r["aF"] else None),
@@ -1056,7 +1060,8 @@ for pu in {p[0] for v in preds.values() for p in v}:
     pc = float(t.get("percentComplete") or 0)
     pe = pdate(t.get("plannedEndDate")) or pdate(t.get("baselineEndDate"))
     ps = pdate(t.get("plannedStartDate")) or pdate(t.get("baselineStartDate"))
-    dl = vl_delayed(pc, str(t.get("status") or ""), ps, pe, pdate(t.get("actualStartDate")))
+    dl = vl_delayed(str(t.get("status") or ""), pdate(t.get("plannedStartDate")),
+                    pdate(t.get("plannedEndDate")), pdate(t.get("actualStartDate")))
     pred_meta[pu] = [str(t.get("taskName") or "")[:70], round(pc),
                      str(t.get("status") or ""),
                      (wd_f(pdate(t.get("baselineEndDate"))) if pdate(t.get("baselineEndDate")) else None),
