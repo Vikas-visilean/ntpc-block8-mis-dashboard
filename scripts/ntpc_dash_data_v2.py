@@ -72,6 +72,25 @@ START = datetime.date(2026, 5, 7)
 # so a run between 00:00 and 05:30 IST would otherwise still use yesterday.
 TODAY = (datetime.datetime.now(datetime.timezone.utc)
          + datetime.timedelta(hours=5, minutes=30)).date()
+# VisiLean's "Delayed Tasks" only counts a date once the whole following day is
+# reached: on 06-Oct an activity planned to start or finish on 05-Oct is not yet
+# delayed (checked against VisiLean's own export, 06-Oct: 571 = 571). So the test is
+# against yesterday, not today.
+DLY_CUTOFF = TODAY - datetime.timedelta(days=1)
+VL_STARTED = ("Started", "Warning", "Stopped")
+
+def vl_delayed(pct, status, ps, pe, astart):
+    """VisiLean's "Delayed Tasks" rule, checked task by task against its export
+    (06-Oct-2026). Complete is never delayed. A started task is delayed only once
+    its planned finish has passed; a task not yet started is delayed once its
+    planned start has passed. "Started" is VisiLean's status, not % complete - a
+    task marked Started at 0% is waiting on its finish date, not its start."""
+    if pct >= 100 or status == "Complete":
+        return 0
+    if pe and pe < DLY_CUTOFF:
+        return 1
+    started = status in VL_STARTED or astart is not None
+    return 1 if (not started and ps and ps < DLY_CUTOFF) else 0
 TARGET_WD = 470
 wdates = []
 d = START
@@ -124,6 +143,21 @@ def classify_cf(t, depth=0):
     out.update({k: v for k, v in cf.items() if v not in (None, "")})
     return out, str(p.get("taskName") or "")
 
+# A task copied inside VisiLean keeps the original's MSP UniqueID, so two tasks can
+# share one externalId (45878 and 52506 both carry 12789). Keyed by that id, the copy
+# silently overwrote the original, so VisiLean counted tasks the dashboard never saw.
+# The lowest task id keeps the MSP id - and with it the logic links - and every copy
+# gets a synthetic uid of its own.
+def _tid_key(t):
+    s = str(t.get("taskId") or "")
+    return (0, int(s)) if s.isdigit() else (1, s)
+_EXT_OWNER = {}
+for _t in sorted(TASKS, key=_tid_key):
+    _e = (int(_t["externalId"]) if str(_t.get("externalId") or "").strip().isdigit() else None)
+    if _e is not None and _e not in _EXT_OWNER:
+        _EXT_OWNER[_e] = str(_t.get("taskId") or "")
+EXT_DUP = []
+
 INHERITED = []
 _synth = [0]
 for t in TASKS:
@@ -131,6 +165,12 @@ for t in TASKS:
     except Exception:
         # Created directly in VisiLean, so no MSP UniqueID (drawing-revision rows
         # R0/R1/R2 etc). VisiLean counts these in "All Tasks" -> so do we.
+        _synth[0] += 1
+        uid = -_synth[0]
+    _copy = (uid is not None and uid > 0
+             and _EXT_OWNER.get(uid, str(t.get("taskId") or "")) != str(t.get("taskId") or ""))
+    if _copy:
+        EXT_DUP.append((str(t.get("taskId") or ""), uid))
         _synth[0] += 1
         uid = -_synth[0]
     cf, inherited_from = classify_cf(t)
@@ -179,7 +219,8 @@ for t in TASKS:
          # KP 26-Aug: progress weight comes from VisiLean's own "Weightage" custom
          # field - the approved Rev-2 model, which sums to ~100 across the project.
          # Cost is kept only for the budget card.
-         "wt": money(cf.get("Weightage")), "nd": nodate,
+         # a copy carries the original's Weightage: count it once
+         "wt": 0.0 if _copy else money(cf.get("Weightage")), "nd": nodate,
          "note": t.get("notes") or "", "desc": t.get("description") or "",
          "crit": (cf.get("Critical Activity") or ""),
          # KP 05-Oct: drawing revisions carry an approval category (CAT 1/2/3).
@@ -240,6 +281,9 @@ if REV_GROUPS:
           "follows the current revision" % (sum(len(x[1]) for x in REV_GROUPS), len(REV_GROUPS)))
 if REV_MIXED:
     print("  NOTE: left alone (parent still has MSP-imported children):", ", ".join(REV_MIXED[:5]))
+if EXT_DUP:
+    print("tasks sharing another task's MSP id, kept as their own rows:",
+          ", ".join("%s(ext %s)" % x for x in EXT_DUP))
 print("usable leaves:", len(leafs), "| milestones:", len(milestones_raw),
       "| excluded (trade = Not Applicable):", len(NA_SKIPPED))
 if INHERITED:
@@ -421,10 +465,8 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     # finished by today. Matches VisiLean's "Delayed Tasks" counter. The old test
     # (forecast finish >= 4 days past baseline) always read 0, because VisiLean's
     # planned dates equal the baseline until the schedule is actually rescheduled.
-    dly = 0
     # VisiLean counts an activity whether or not it is baselined, so we do too.
-    if r["pct"] < 100:
-        if r["ped"] < TODAY or (r["psd"] < TODAY and r["pct"] == 0): dly = 1
+    dly = vl_delayed(r["pct"], vs, r["psd"], r["ped"], r["aS"])
     if r["pct"] >= 100 or vs == "Complete": state = "done"
     elif r["pct"] > 0 or vs in ("Started", "Warning", "Stopped"): state = "inprog"
     elif r["bES"] < STATUS_WD: state = "late"
@@ -817,7 +859,7 @@ for pu in {p[0] for v in preds.values() for p in v}:
     pc = float(t.get("percentComplete") or 0)
     pe = pdate(t.get("plannedEndDate")) or pdate(t.get("baselineEndDate"))
     ps = pdate(t.get("plannedStartDate")) or pdate(t.get("baselineStartDate"))
-    dl = 1 if (pc < 100 and ((pe and pe < TODAY) or (ps and ps < TODAY and pc == 0))) else 0
+    dl = vl_delayed(pc, str(t.get("status") or ""), ps, pe, pdate(t.get("actualStartDate")))
     pred_meta[pu] = [str(t.get("taskName") or "")[:70], round(pc),
                      str(t.get("status") or ""),
                      (wd_f(pdate(t.get("baselineEndDate"))) if pdate(t.get("baselineEndDate")) else None),
