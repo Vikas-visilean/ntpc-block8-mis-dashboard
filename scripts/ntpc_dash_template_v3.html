@@ -47,7 +47,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 select,input[type=search]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line2);border-radius:5px;padding:3px 6px;max-width:180px;font-size:10.5px}
 .layout{display:flex;min-height:100vh}
 .sidebar{width:188px;flex:0 0 188px;background:var(--surface);border-right:1px solid var(--line);padding:8px 7px;position:sticky;top:0;height:100vh;overflow:auto}
-.brand{display:flex;gap:7px;align-items:center;padding:2px 5px 8px}
+.brand{display:flex;gap:7px;align-items:center;padding:2px 5px 8px;color:inherit;text-decoration:none;border-radius:8px}
+.brand:hover .t1{text-decoration:underline}
 .brand .kplogo{width:30px;height:30px;border-radius:6px;background:#fff;object-fit:contain;padding:2px;border:1px solid var(--line2)}
 .brand .t1{font-weight:700;font-size:11.5px}
 .brand .t2{color:var(--mut);font-size:10.5px}
@@ -719,10 +720,11 @@ html{zoom:1.3}
 <body>
 <div class="layout">
   <aside class="sidebar">
-    <div class="brand">
+    <!-- every project page sits next to portfolio/ (portfolio links back as ../<id>/index.html) -->
+    <a class="brand" href="../portfolio/index.html" title="Open the KP Group portfolio">
       <img class="kplogo" src="__LOGO__" alt="KP Group">
       <div><div class="t1">KP Group · MIS</div><div class="t2">Powered by VisiLean</div></div>
-    </div>
+    </a>
     <div class="navhdr">Project</div>
     <nav class="nav" id="nav-top"></nav>
     <div class="navhdr">Departments</div>
