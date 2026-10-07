@@ -40,6 +40,8 @@
 
 *{box-sizing:border-box}
 html,body{margin:0}
+/* opens at 90%; print stays at full size */
+@media screen{html{zoom:.9}}
 body{background:var(--page);color:var(--ink);font:14px/1.45 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;min-height:100dvh}
 .num,td.n,th.n{font-variant-numeric:tabular-nums}
@@ -57,7 +59,6 @@ a{color:var(--brand)}
 .apptitle{font-size:18px;font-weight:800;letter-spacing:-.01em;margin:0;color:var(--ink);text-transform:uppercase}
 .appmeta{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
 .appmeta img{width:28px;height:28px;border-radius:6px}
-.draft{font-size:11px;font-weight:700;color:var(--warn-ink);background:var(--warn-bg);border-radius:999px;padding:3px 9px}
 .pillbtn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);
   background:var(--card);cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-2);
   transition:background-color .12s var(--ease),transform .12s var(--ease)}
@@ -248,7 +249,6 @@ svg.chart{width:100%;height:auto;display:block;overflow:visible}
       <h1 class="apptitle">Project Portfolio</h1>
     </div>
     <div class="appmeta">
-      <span class="draft">Review draft</span>
       <span id="asof" class="num"></span>
       <button class="pillbtn" id="themeBtn" type="button" aria-pressed="false" aria-label="Switch to dark theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
@@ -614,9 +614,11 @@ const tip = document.getElementById("tip"); let tipFor = null;
 function showTip(el){
   const txt = el.getAttribute("data-tip"); if(!txt) return;
   tipFor = el; tip.textContent = txt; tip.classList.add("on"); tip.setAttribute("aria-hidden","false");
+  // the page runs html{zoom:.9}: getBoundingClientRect is in screen px, left/top in zoomed px
+  const z = document.documentElement.currentCSSZoom || 1;
   const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
-  let x = r.left + r.width/2 - tw/2, y = r.top - th - 8; if(y < 8) y = r.bottom + 8;
-  tip.style.left = clamp(x, 8, innerWidth - tw - 8) + "px"; tip.style.top = y + "px";
+  let x = (r.left + r.width/2)/z - tw/2, y = r.top/z - th - 8; if(y < 8) y = r.bottom/z + 8;
+  tip.style.left = clamp(x, 8, innerWidth/z - tw - 8) + "px"; tip.style.top = y + "px";
   const cross = el.dataset.x && el.closest("svg") && el.closest("svg").querySelector(".crosshair");
   if(cross){ cross.setAttribute("x1",el.dataset.x); cross.setAttribute("x2",el.dataset.x); cross.setAttribute("visibility","visible"); }
 }
