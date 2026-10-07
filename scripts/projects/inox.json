@@ -31,12 +31,12 @@
     ],
     "_comment": "day 1 = earliest planned start in VisiLean (28-Jan-2026; the schedule runs to 31-Mar-2027). Of 3,351 activities none starts on a Saturday and 559 start on a Sunday, so Saturday is the weekly off (checked 07-Oct-2026)."
   },
-  "baselineMode": "visilean",
+  "baselineMode": "planned",
   "activityTypeFromDepartment": true,
   "departments": {
-    "_comment": "Level 1 of the WBS -> dashboard department. Land & Liaisoning (128 activities) is land, not Project Initiation; Procurement & Vendor Documents splits on Level 2 - Service Procurement (602) is services, Supply Procurement and the OEM WTG supply are supply. The other Level 1s (Project Initiation, Design & Engineering, Execution & Construction, Testing & Commissioning, HOTO) match the built-in rules.",
+    "_comment": "Level 1 of the WBS -> dashboard department. Land & Liaisoning (128 activities) is land, not Project Initiation; Procurement & Vendor Documents splits on Level 3 (Level 1 here is the project itself) - Service Procurement (602) is services, Supply Procurement and the OEM WTG supply are supply. The other Level 1s (Project Initiation, Design & Engineering, Execution & Construction, Testing & Commissioning, HOTO) match the built-in rules.",
     "Land & Liaisoning": "land",
-    "Procurement & Vendor Documents/Service Procurement": "services",
+    "Procurement & Vendor Documents/L3:Service Procurement": "services",
     "Procurement & Vendor Documents": "supply"
   },
   "packageFromField": true,
@@ -56,7 +56,7 @@
   },
   "syncRepo": "Vikas-visilean/ntpc-block8-mis-dashboard",
   "syncWorkflow": "refresh-inox.yml",
-  "_baselineMode_comment": "VisiLean's baseline equals the planned dates on all 3,351 activities (07-Oct-2026), so baseline and forecast read the same until the plan is revised.",
+  "_baselineMode_comment": "VisiLean holds no baseline dates for this project (0 of 3,351 activities, checked 07-Oct-2026). 'planned' = the VisiLean planned dates ARE the baseline and rows are not flagged un-baselined. Switch to 'visilean' once the team sets a baseline.",
   "_steps_comment": "poStep, grnStep and rfpStep use the template defaults (poplacement, grnatsite, floatingofrfp), which match INOX's names. The service packages evaluate both bids in one step ('Technical & commercial bid evaluation'), so tbeStep names that too.",
   "procStage": [
     [
