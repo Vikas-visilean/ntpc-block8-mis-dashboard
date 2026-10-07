@@ -1,0 +1,858 @@
+diff --git a/scripts/ntpc_dash_template_v3.html b/scripts/ntpc_dash_template_v3.html
+index bc7d37b..0cd058d 100644
+--- a/scripts/ntpc_dash_template_v3.html
++++ b/scripts/ntpc_dash_template_v3.html
+@@ -62,9 +62,11 @@ h1{font-size:14px;font-weight:700}
+ .meta{display:flex;gap:10px;align-items:center}
+ .meta .k{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+ .meta .v{font-weight:700;font-size:11.5px}
+-.thm{display:flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden}
+-.thm button{padding:2px 7px;font-size:10.5px;color:var(--ink2)}
+-.thm button.on{background:var(--blue);color:#fff}
++.tbtns{display:flex;gap:8px;align-items:center}
++.thm{width:28px;height:28px;border-radius:50%;border:1px solid var(--line2);display:inline-flex;align-items:center;justify-content:center;color:var(--ink);transition:background-color .12s,transform .12s}
++.thm:hover{background:var(--blue-wash)}.thm:active{transform:scale(.94)}
++.thm svg{width:15px;height:15px}
++:root[data-theme="dark"] .thm{color:#f5b13a}
+ .fbar{position:sticky;top:0;z-index:30;display:flex;gap:5px 5px;align-items:center;flex-wrap:nowrap;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin-bottom:8px;box-shadow:0 2px 8px rgba(16,20,23,.04)}
+ .fbar .tgl{display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:2.5px 7px;cursor:pointer;user-select:none}
+ .fbar .tgl.on{background:var(--crit-wash);color:var(--crit-text);border-color:var(--crit)}
+@@ -436,7 +438,7 @@ th .thf{margin-left:4px;vertical-align:middle}
+  border-radius:6px;width:26px;height:26px;cursor:pointer;flex:0 0 auto}
+ #rsnmodal-x:hover{background:var(--blue-wash);color:var(--blue)}
+ #rsnmodal-bd{padding:10px 14px 14px;overflow:auto;flex:1 1 auto;min-height:0}
+-#tip{position:fixed;z-index:400;background:var(--tip-bg);color:var(--tip-fg);border-radius:6px;padding:6px 9px;font-size:10.5px;pointer-events:none;box-shadow:var(--shadow-popover);display:none;max-width:290px;line-height:1.45}
++#tip{position:fixed;z-index:400;background:var(--tip-bg);color:var(--tip-fg);border-radius:8px;padding:7px 10px;font-size:12px;pointer-events:none;box-shadow:var(--shadow-popover);display:none;max-width:290px;line-height:1.45}
+ #tip .t2{color:var(--tip-fg2)}
+ /* only rendered when the build is old enough to question - see checkSyncHealth() */
+ #syncwarn{display:flex;gap:10px;align-items:flex-start;margin:0 0 9px;padding:9px 12px;
+@@ -516,7 +518,8 @@ html{zoom:1.3}
+ .fbar select{max-width:128px;min-width:96px;flex:0 1 auto}
+ .fbar>*{flex-shrink:0}.fbar>select{flex-shrink:1}
+ @media(max-width:1150px){.fbar{flex-wrap:wrap}}
+-.fbar .dsl input[type=range]{width:80px}
++.fbar .dsl input[type=range]{width:150px}
++.ps-hero .fbar .dsl input[type=range]{width:240px}
+ .vlegbtn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--line2);border-radius:50%}
+ .vlegbtn:hover,.vlegbtn.on{border-color:var(--blue);background:var(--blue-wash)}
+ .vlegbtn .ring{width:15px;height:15px;border-radius:50%;
+@@ -526,8 +529,9 @@ html{zoom:1.3}
+  box-shadow:0 8px 24px rgba(16,20,23,.16);padding:9px 11px;min-width:190px}
+ .vlegpop[hidden]{display:none}
+ .vlegpop .vlh{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;margin-bottom:6px}
+-.vlegpop .vlchips{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+-.vlegpop .chip{font-size:10.5px;padding:2px 9px}
++.vlegpop .vlchips{display:flex;flex-direction:column;gap:4px}
++.vlegpop .vli{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--ink);line-height:1.5}
++.vlegpop .vli i{width:10px;height:10px;border-radius:3px;padding:0;flex:none}
+ .fbar input[type=date]{font-size:10.5px;padding:2px 4px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);color:var(--ink)}
+ 
+ .chip.vlr{background:rgba(56,212,48,.16);color:#1f9e18}
+@@ -576,7 +580,141 @@ html{zoom:1.3}
+   .stickycol th:first-child,.stickycol td:first-child{position:static!important;box-shadow:none!important}
+   .prsec+.prsec{break-before:page}
+ }
++/* ---------- Project Summary: the portfolio view's design system (index_portfolio.html) ---------- */
++:root{--c-act:#0e8bdf;--c-plan:#5b6b82;--c-fc:#00a3e0;--plan-seg:#b4bfce;--inset:#eef1f6;--muted:#5b6b82;--faint:#8592a6;
++  --hero-1:#002d62;--hero-2:#0a3566;--hero-3:#00507a;--on-hero:#fff;--on-hero-2:rgba(255,255,255,.72);
++  --glass:rgba(255,255,255,.09);--glass-line:rgba(255,255,255,.12);--ease:cubic-bezier(.2,0,0,1)}
++:root[data-theme="dark"]{--c-act:#3fb0f0;--c-plan:#93a3b8;--c-fc:#3fb0f0;--plan-seg:#3b4b63;--inset:#18243a;--muted:#93a3b8;--faint:#73849b;
++  --hero-1:#061c3a;--hero-2:#0a2a50;--hero-3:#0a3f5f}
++.ps{font-size:12.5px;gap:14px}
++.ps .card{border-radius:14px;padding:16px 18px}
++.ps .card h2{font-size:14.5px;font-weight:800;margin-bottom:10px}
++.ps .kpi .eyebrow{color:var(--muted)}
++.kpi .khd{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
++.kico{width:30px;height:30px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;flex:none;
++  background:color-mix(in srgb,currentColor 13%,transparent)}
++.kico svg{width:16px;height:16px}
++.ps .kpi .big{font-size:28px;margin-top:4px}
++.ps .kpi .cmp{color:var(--muted);font-size:11.5px}
++.ps .legend{font-size:11.5px;color:var(--muted);gap:14px}
++.ps .legend .sw{width:12px;height:6px;border-radius:999px}
++.ps-hero{grid-column:span 12;border-radius:16px;padding:16px 20px;color:var(--on-hero);display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;
++  background:linear-gradient(100deg,var(--hero-1) 0%,var(--hero-2) 55%,var(--hero-3) 100%)}
++.ps-hero .eyebrow{color:var(--on-hero-2)}
++.ps-hero h2{margin:3px 0 0;font-size:24px;line-height:1.08;font-weight:800;letter-spacing:-.02em;color:var(--on-hero)}
++.ps-hero h2>span{display:block;font-size:14px;font-weight:600;letter-spacing:0;color:var(--on-hero-2);margin-top:6px}
++.glassrow{margin-left:auto;display:flex;gap:12px;flex-wrap:wrap}
++.glass{background:var(--glass);border:1px solid var(--glass-line);border-radius:12px;padding:8px 14px;min-width:124px}
++.glass .v.good{color:#5fd99d}.glass .v.warn{color:#f9c566}.glass .v.bad{color:#ff8e8e}
++.glass .eyebrow{color:var(--on-hero-2)}
++.glass .v{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-top:2px;font-variant-numeric:tabular-nums}
++.glass .v small{font-size:13px;font-weight:600;color:var(--on-hero-2);margin-left:3px}
++.glass .s{font-size:11.5px;color:var(--on-hero-2)}
++@media(max-width:760px){.ps-hero h2{font-size:24px}.glassrow{margin-left:0;width:100%}.glass{flex:1 1 130px}}
++#ps-fslot{flex-basis:100%}
++.on-sum .topbar{display:none}
++.pshd{display:flex;flex-basis:100%;align-items:flex-start;gap:16px;flex-wrap:wrap}
++#ps-tslot{margin-left:auto}
++.ps-hero .glassrow{flex-basis:100%;margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
++@media(max-width:900px){.ps-hero .glassrow{grid-template-columns:repeat(2,minmax(0,1fr))}}
++.nav a{display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;margin:1px 0}
++.nav a .nvi{width:16px;height:16px;flex:none}
++.nav a.on{background:var(--hero-1);color:#fff;font-weight:700}
++.nav a.on:hover{background:var(--hero-2);color:#fff}
++:root[data-theme="dark"] .nav a.on{background:var(--c-act);color:var(--page)}
++.ps-hero #tbtns>button{height:30px;padding:0 13px;border-radius:999px;border:1px solid var(--glass-line);background:var(--glass);color:var(--on-hero);font-size:12px;font-weight:600}
++.ps-hero #tbtns>button:hover{background:rgba(255,255,255,.18)}
++.ps-hero #tbtns>.thm{width:30px;padding:0}
++.ps-hero #tbtns>#h-new{background:#fff;color:var(--hero-1)}
++.ps-hero .fbar{position:relative;flex-wrap:wrap;margin:0;background:var(--glass);border-color:var(--glass-line);box-shadow:none;border-radius:12px;padding:6px 10px;gap:6px}
++.ps-hero .fbar select,.ps-hero .fbar .tgl,.ps-hero .fbar .fpbtn,.ps-hero .fbar .vlegbtn{background-color:rgba(255,255,255,.08);border-color:var(--glass-line);color:var(--on-hero)}
++.ps-hero .fbar select option{color:#0a2540;background:#fff}
++.ps-hero .fbar .dsl,.ps-hero .fbar .dsl b{color:var(--on-hero)}
++.ps-hero .fbar .reset{color:#7fd1f0}
++.ps-hero .fbar .tgl.on{background:var(--crit);border-color:var(--crit);color:#fff}
++.ps-hero .fbar .tgl.on2{background:var(--warn);border-color:var(--warn);color:#fff}
++.ps-hero .fbar .fpbtn.on,.ps-hero .fbar .vlegbtn.on{background:rgba(255,255,255,.2);border-color:#fff}
++.ps-hero .fbar .fsep{background:var(--glass-line)}
++.ps-hero .fbar .vlegbtn{margin-left:auto}
++.badge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;text-transform:uppercase;border-radius:6px;padding:2px 7px;white-space:nowrap}
++.b-good{color:var(--good-text);background:var(--good-wash)}.b-warn{color:var(--warn-text);background:var(--warn-wash)}.b-bad{color:var(--crit-text);background:var(--crit-wash)}
++.psg{position:relative;height:190px;max-width:330px;margin:10px auto 0}
++.psg .c{position:absolute;left:0;right:0;bottom:6px;text-align:center;pointer-events:none}
++.psg .c b{display:block;font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--ink)}
++.psg .c span{font-size:11.5px;color:var(--muted)}
++.psnote{display:inline-block;vertical-align:2px;margin-left:6px;font-size:10.5px;font-weight:600;letter-spacing:0;color:var(--muted);background:var(--inset);border-radius:999px;padding:2px 8px;cursor:help}
++.epcsum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
++@media(max-width:900px){.epcsum{grid-template-columns:1fr}}
++.epct{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:12px;padding:14px}
++.epct .top{display:flex;align-items:center;gap:8px}.epct .top .badge{margin-left:auto}
++.epct .big{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--ink)}
++.epct .big small{font-size:15px;font-weight:700}.epct .big small.pl{font-size:18px;color:var(--muted);margin-left:4px}
++.epct .of{font-size:11.5px;color:var(--muted)}
++.psepc{display:flex;flex-direction:column}.psepc .epcsum{flex:1}
++.psepc .epct{padding:20px 18px;gap:14px;justify-content:space-between}
++.psepc .epct .top .eyebrow{font-size:13px;color:var(--ink)}
++.psepc .epct .big{font-size:36px}.psepc .epct .big small{font-size:18px}.psepc .epct .big small.pl{font-size:22px}
++.psepc .epct .of{font-size:12.5px;margin-top:6px}
++.psepc .stk{height:16px}
++.stk{position:relative;height:12px;border-radius:999px;background:var(--inset);overflow:hidden}
++.stk i{position:absolute;top:0;bottom:0}
++.stk i.a{left:0;background:var(--good)}.stk i.a.warn{background:var(--warn)}.stk i.a.bad{background:var(--crit)}
++.stk i.g{background:var(--plan-seg);border-radius:0 999px 999px 0}
++.psch{position:relative;height:230px}
++.psch.sm{height:170px}
++.psch.wk{height:270px}.psch.sm.wk{height:215px}
++.scx{overflow:hidden}
++.scx.wk{overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
++.scrow{display:flex;align-items:flex-start}
++.scrow>.psch{flex:1 0 auto;min-width:0}
++.ysx{position:sticky;left:0;z-index:2;flex:none;width:0;height:0}
++.scx .pslbl{position:sticky;left:0;width:max-content}
++.ps .hdrrow{align-items:center;margin-bottom:12px;row-gap:10px}
++.ps .hdrrow h2{margin:0}
++.pstg{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
++.llstats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
++@media(max-width:900px){.llstats{grid-template-columns:repeat(3,minmax(0,1fr))}}
++.llst{min-width:0}
++.lltbl td,.lltbl th{white-space:nowrap;padding-top:5px;padding-bottom:5px}
++.lltbl td:first-child{max-width:240px;overflow:hidden;text-overflow:ellipsis}
++.rsndonut{width:132px;height:132px;flex:0 0 auto}
++/* the donut grows with the card (up to 300px) and the legend sits right beside it,
++   the pair centred - no dead band between them on wide screens */
++.ps .rsndonut{width:auto;height:auto;flex:1 1 0;min-width:210px;max-width:340px;aspect-ratio:1}
++.ps .rsnrow{flex:1;min-width:0;justify-content:flex-start;gap:14px!important}
++.ps .rsnrow>div{min-width:0!important;flex:0 1 240px}
++/* department pages: the reasons card is wide (span 8) - keep the donut in proportion */
++.ps .span8 .rsndonut{max-width:240px}
++.psdn{position:relative}
++.psdn canvas{position:absolute;inset:0}   /* the square box sizes the chart, not the canvas */
++.psdn .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
++.psdn .c b{font-size:26px;font-weight:800;line-height:1;color:var(--ink)}
++.psdn .c span{font-size:11.5px;color:var(--muted);margin-top:2px}
++/* Project Summary: Reasons for Variance and Long Lead share one 425px row */
++.ps .card.rsnll{height:425px;overflow:hidden}
++.ps .rsnll .rsndonut{max-width:270px}
++.ps .card.rsnll{display:flex;flex-direction:column}
++.ps .rsnll>.rsnbody{flex:1;align-items:center!important}
++.ps .span8 .rsnrow{justify-content:space-evenly}
++/* gauge card: title, weightage note and status badge on one line */
++.ps .psgh{flex-wrap:nowrap;gap:8px}.ps .psgh h2{white-space:nowrap;min-width:0}.ps .psgh .badge{flex:none}
++.ps .psgh .psnote{font-size:10px;padding:2px 6px;margin-left:4px}
++.ps #rsn-rc button{padding:3px 9px;font-size:11px}
++.ps .toggle2{border:0;border-radius:999px;background:var(--inset);padding:2px;gap:2px;align-items:center}
++.ps .toggle2 button{border-radius:999px;padding:4px 11px;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--muted)}
++.ps .toggle2 button:hover:not(.on){color:var(--ink)}
++.ps .toggle2 button.on{background:var(--hero-1);color:#fff}
++:root[data-theme="dark"] .ps .toggle2 button.on{background:var(--c-act);color:var(--page)}
++.legend .ln{display:inline-block;width:16px;height:0;border-top:2px solid var(--c-act);margin-right:5px;vertical-align:middle}
++.legend .ln.plan{border-top-color:var(--c-plan)}
++.legend .ln.fc{border-top:2px dashed var(--c-fc);opacity:.75}
++.statline{display:flex;gap:24px;flex-wrap:wrap;margin:4px 0 10px}
++.statline .v{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--ink)}
++.statline .v.neg{color:var(--crit-text)}
++.pslbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:4px 0 4px}
+ </style>
++<!-- Project Summary charts; if the CDN is blocked the page falls back to its SVG charts -->
++<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+ </head>
+ <body>
+ <div class="layout">
+@@ -594,16 +732,17 @@ html{zoom:1.3}
+     <div class="topbar">
+       <div>
+         <h1 id="h-name">NTPC Bikaner Block 8 · 200 MW</h1>
+-        <div class="sub"><span id="h-sub">KPI Green Energy · LIVE from VisiLean · 6-day weeks · LOA 07-May-2026</span> · <span id="h-gen" style="color:var(--blue);font-weight:600"></span><button id="h-new" style="display:none" title="A newer VisiLean build is available. Your current view is kept.">● New data — load</button></div>
++
+       </div>
+       <div class="meta">
+         <div class="m"><div class="k">Capacity</div><div class="v" id="h-cap">200 MWac</div></div>
+         <div class="m"><div class="k">Data as of</div><div class="v" id="h-date"></div></div>
+         <div class="m"><div class="k">Days to COD</div><div class="v" id="h-cod"></div></div>
+-        <div class="m"><button id="btn-refresh" title="Fetch the latest VisiLean data build">⟳ Refresh</button></div>
+-        <div class="m"><button id="btn-pdf" title="Print or save every page of the dashboard as one PDF (A3 landscape, current filters applied)">⤓ PDF</button></div>
+-        <div class="m thm" id="thm">
+-          <button data-t="auto">Auto</button><button data-t="light">Light</button><button data-t="dark">Dark</button>
++        <div class="m tbtns" id="tbtns">
++          <button id="h-new" style="display:none" title="A newer VisiLean build is available. Your current view is kept.">● New data — load</button>
++          <button id="btn-refresh" title="Fetch the latest VisiLean data build">⟳ Refresh</button>
++          <button id="btn-pdf" title="Print or save every page of the dashboard as one PDF (A3 landscape, current filters applied)">⤓ PDF</button>
++          <button type="button" class="thm" id="thm" aria-label="Switch to dark theme" title="Switch light / dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+         </div>
+       </div>
+     </div>
+@@ -625,7 +764,7 @@ html{zoom:1.3}
+       <span class="fsep"></span>
+       <span class="dsl" title="Move the status date to see the project as it stood">As of <input type="range" id="f-date" min="0" max="0" step="1"><b id="f-datev"></b></span>
+       <button class="reset" id="f-reset">Reset</button>
+-      <span class="fnote" id="f-count" style="margin-left:auto"></span>
++
+       <button type="button" id="vleg-btn" class="vlegbtn" title="Status legend" aria-label="Status legend" aria-expanded="false" aria-controls="vleg"><span class="ring"></span></button>
+       <div id="vleg" class="vlegpop" role="dialog" aria-label="VisiLean status legend" hidden><div class="vlh">VisiLean status (live)</div></div>
+     </div>
+@@ -946,7 +1085,7 @@ const BUILD_ID="__BUILD__";
+ (function(){
+   const el=document.getElementById("vleg"); if(!el) return;
+   el.insertAdjacentHTML("beforeend", `<div class="vlchips">`+VLORDER.filter(k=>VLMAP[k]&&!VLHIDE.has(k))
+-    .map(k=>`<span class="chip ${VLMAP[k][0]}">${esc(vlText(k))}</span>`).join("")+`</div>`);
++    .map(k=>`<span class="vli"><i class="chip ${VLMAP[k][0]}"></i>${esc(vlText(k))}</span>`).join("")+`</div>`);
+   const btn=document.getElementById("vleg-btn"); if(!btn) return;
+   const show=on=>{el.hidden=!on;btn.setAttribute("aria-expanded",on?"true":"false");btn.classList.toggle("on",on)};
+   btn.addEventListener("click",e=>{e.stopPropagation();show(el.hidden)});
+@@ -1109,7 +1248,7 @@ function reasonsFor(deptKey){
+ function donut(items,total,sel){
+   const W=132,cx=66,cy=66,R=60,ri=36;
+   if(!total)return "";
+-  let a0=-Math.PI/2,g=`<svg viewBox="0 0 ${W} ${W}" style="width:132px;height:132px;flex:0 0 auto">`;
++  let a0=-Math.PI/2,g=`<svg viewBox="0 0 ${W} ${W}" class="rsndonut">`;
+   if(items.length===1){
+     g+=`<circle cx="${cx}" cy="${cy}" r="${(R+ri)/2}" fill="none" stroke="${rsnColor(items[0].k,0)}" stroke-width="${R-ri}" data-cat="${esc(items[0].k)}" class="rsnslice" style="cursor:pointer"/>`;
+   }else{
+@@ -1838,7 +1977,7 @@ function reasonsCard(deptKey,span){
+   // counts for the switch are taken before it is applied, so both sides stay visible
+   const nAll={"":0,"Late Started":0,"Late Completed":0};
+   all.forEach(r=>(r.cats||[]).forEach(c=>{if(c.rc){nAll[c.rc]++;nAll[""]++}}));
+-  const RCS=[["","All"],["Late Started","Late Started"],["Late Completed","Late Completed"]];
++  const RCS=[["","All"],["Late Started","Late start"],["Late Completed","Late finish"]];
+   const sw=`<div class="toggle2" id="rsn-rc">`+RCS.map(x=>
+     `<button data-rc="${esc(x[0])}" class="${rsnRC===x[0]?"on":""}">${esc(x[1])} ${nAll[x[0]]}</button>`).join("")+`</div>`;
+   if(!nAll[""])
+@@ -1846,8 +1985,8 @@ function reasonsCard(deptKey,span){
+       "reason recorded against every late start and late completion, as in VisiLean",
+       `<div class="fnote" style="padding:10px 0">No variance reasons recorded yet for this selection. They appear as soon as the team records a reason against a late start or a late completion in VisiLean.</div>`);
+   const acts=new Set(recs.filter(x=>!rsnCat||x.c.cat===rsnCat).map(x=>x.r.uid));
+-  let h=`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+-    <div style="display:flex;gap:12px;align-items:center">${donut(items,total,rsnCat)}
++  let h=`<div class="rsnbody" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
++    <div class="rsnrow" style="display:flex;gap:12px;align-items:center">${HASCJ()?psDonut(items,total,rsnCat):donut(items,total,rsnCat)}
+       <div style="min-width:200px">`;
+   items.forEach((x,i)=>{
+     const pc=total?(100*x.n/total):0;
+@@ -1856,8 +1995,8 @@ function reasonsCard(deptKey,span){
+       <span style="font-size:10.5px;flex:1">${esc(x.k)}</span>
+       <span style="font-size:10.5px;font-weight:700">${x.n}</span>
+       <span class="dim" style="font-size:10.5px;width:34px;text-align:right">${fmt1(pc)}%</span></div>`});
+-  h+=`</div></div>`;
+-  h+=`<div style="min-width:180px;display:flex;flex-direction:column;gap:6px">${sw}
++  h+=`<button id="rsn-drill" class="rsndrill" style="margin-top:10px" title="Drill down to the activity list">&#9783; ${total} ${total===1?"reason":"reasons"} · ${acts.size} ${acts.size===1?"activity":"activities"}</button></div></div>`;
++  if(M.naReasonRecords)h+=`<div style="min-width:180px;display:flex;flex-direction:column;gap:6px">
+     ${M.naReasonRecords?`<div class="small dim"><span title="KP rule: activities with trade = Not Applicable are out of scope for this dashboard">VisiLean's export also lists ${M.naReasonRecords} on Not Applicable activities, excluded here</span></div>`:``}</div>`;
+   h+=`</div>`;
+   if(rsnCat)h+=`<div style="margin:7px 0 3px">${chip("blue","Filtered: "+esc(rsnCat))}
+@@ -1873,7 +2012,7 @@ function reasonsCard(deptKey,span){
+   },0);
+   return card(span||"span12","Reasons for Variance",
+     "one record per late start and late completion, as VisiLean files them · click a slice to filter, then drill down for the activities",h,
+-    `<button id="rsn-drill" class="rsndrill" title="Drill down to the activity list">&#9783; ${total} ${total===1?"reason":"reasons"} · ${acts.size} ${acts.size===1?"activity":"activities"}</button>`);
++    sw);
+ }
+ // ---------- KPI cards ----------
+ // every KPI drills into the rows it counts
+@@ -1931,15 +2070,24 @@ function codCard(rows){
+     <div class="codkv"><span>Forecast COD</span><b>${M.forecastFinish}</b><span>Baseline COD</span><b>${M.baselineFinish}</b>
+       <span>Data as of</span><b>${M.statusDate}</b></div></div>`;
+ }
++const _ki=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
++// KPI card: [icon, accent (icon tile), value colour]
++const KICO={
++  all:[_ki('<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>'),"--c-act","--c-act"],
++  done:[_ki('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>'),"--good","--good-text"],
++  dly:[_ki('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),"--crit","--crit-text"],
++  wip:[_ki('<path d="M3 12h4l3-7 4 14 3-7h4"/>'),"--blue","--cyan-info"],
++  stp:[_ki('<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'),"--warn","--warn-text"],
++  fvb:[_ki('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>'),"--s-plan","--s-plan"],
++  cod:[_ki('<path d="M5 21V4h12l-2.5 4L17 12H5"/>'),"--c-act","--c-act"]};
+ function kpiCards(rows,projectLevel){
+   const inprog=rows.filter(isWip).length, stopped=rows.filter(isStopped).length;
+   const total=rows.length,done=rows.filter(isDone).length,dl=rows.filter(isDelayed).length,
+-        ls=rows.filter(isLateStart).length,cr=rows.filter(isCrit).length,
+-        pdl=rows.filter(isPredDelayed).length;   // delayed because upstream is unfinished
++        ls=rows.filter(isLateStart).length,cr=rows.filter(isCrit).length;
+   const bfin=rows.length?Math.max(...rows.map(r=>r[C.bEF])):0,ffin=rows.length?Math.max(...rows.map(r=>r[C.fEF])):0;
+   const d2cod=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
+-  const c=(t,big,cmp,ch,dk)=>`<div class="card span2 kpi${dk?" clickable":""}"${dk?` data-kpi="${dk}" tabindex="0" title="Drill through to the activities"`:""}>
+-    <div class="eyebrow">${t}</div><div class="big">${big}</div><div class="cmp">${cmp||""}</div>${ch?`<div style="margin-top:6px">${ch}</div>`:""}</div>`;
++  const c=(t,big,cmp,ch,dk,ik)=>{const [ic,ac,tx]=KICO[ik||dk];return `<div class="card span2 kpi${dk?" clickable":""}"${dk?` data-kpi="${dk}" tabindex="0" title="Drill through to the activities"`:""}>
++    <div class="khd"><div class="eyebrow">${t}</div><span class="kico" style="color:var(${ac})">${ic}</span></div><div class="big" style="color:var(${tx})">${big}</div><div class="cmp">${cmp||""}</div>${ch?`<div style="margin-top:6px">${ch}</div>`:""}</div>`};
+   // Milestones live outside the activity rows, so they only belong in the headline
+   // count when nothing is filtered - otherwise a filtered view (e.g. Activity Type =
+   // Construction) would read 9 too high against VisiLean.
+@@ -1954,19 +2102,16 @@ function kpiCards(rows,projectLevel){
+        (projectLevel&&unfiltered)?`incl. ${DATA.milestones.length} milestones${M.naExcluded?` · ${M.naExcluded} Not Applicable excluded`:""}`
+          :"in scope",null,"all")
+    + c("Completed",doneAll.toLocaleString(),fmt1(100*doneAll/Math.max(1,totalAll))+"% of count",null,"done")
+-   // how many of the delays are inherited from an unfinished predecessor — the
+-   // drill marks exactly these rows and can list them on their own
+    + c("Delayed",dlAll.toLocaleString(),`past planned start or finish, not complete`,
+-       (cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical"))
+-       +` <span title="Delayed activities with at least one predecessor still unfinished — the delay is inherited from upstream. Open the card to see them marked.">${chip("blue",pdl+" due to predecessor")}</span>`,"dly")
++       (cr?chip("vlnr",cr+" critical"):chip("vlc","0 critical")),"dly")
+    + c("In progress",inprog.toLocaleString(),`started, not yet complete`,null,"wip")
+    + c("Stopped",stopped.toLocaleString(),stopped?`work halted in VisiLean`:`none halted`,
+        stopped?chip("vlst","needs attention"):null,"stp")
+    // the forecast is the live number, so it leads; the baseline is the comparison
+-   + c("Forecast vs Baseline",wdate(ffin,1),`baseline ${wdate(bfin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):((ffin-bfin)<=-4?chip("vlc",(ffin-bfin)+" days"):null))
++   + c("Forecast vs Baseline",wdate(ffin,1),`baseline ${wdate(bfin,1)}`,(ffin-bfin)>=4?chip("vlw","+"+(ffin-bfin)+" days"):((ffin-bfin)<=-4?chip("vlc",(ffin-bfin)+" days"):null),null,"fvb")
+    // KP 07-Sep: Days to COD belongs on the Project Summary only - a department page
+    // shows the same project-wide number, which reads as if it were that department's
+-   + (projectLevel===true?c("Days to COD",`${d2cod}<span class="u">days</span>`,"forecast "+M.forecastFinish):"");
++   + (projectLevel===true?c("Days to COD",`${d2cod}<span class="u">days</span>`,"forecast "+M.forecastFinish,null,null,"cod"):"");
+ }
+ // ---------- S-curve ----------
+ let scMode="cum";
+@@ -2150,8 +2295,13 @@ function scurveTable(rows){
+   return h+"</table></div>";
+ }
+ // the summary card's two charts, cumulative and per period
+-const scBoxHtml=rows=>`<div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">${scPer==="w"&&HASWK()?"Weekly":"Monthly"}</div>${scurveMulti(rows,"sc2",true)}`;
++const scBoxHtml=rows=>HASCJ()?psScBox(rows):`<div class="hint" style="margin-bottom:2px">Cumulative</div>${scurveMulti(rows,"sc",false)}<div class="hint" style="margin:8px 0 2px">${scPer==="w"&&HASWK()?"Weekly":"Monthly"}</div>${scurveMulti(rows,"sc2",true)}`;
+ // ---------- milestones: card stepper ----------
++// a milestone's live VisiLean status, read off its row in DATA.msLeaves by name
++function msStatus(m){
++  const r=(DATA.msLeaves||[]).find(x=>x[C.name]===m.name);
++  if(!r)return "";const [cls,lbl]=rowStatus(r);return chip(cls,esc(lbl));
++}
+ function msTimeline(){
+   // the feed lists milestones by name ("MS-1", "MS-2" ...), which is not the order
+   // they fall in - read them left to right by date, as the track above them does
+@@ -2167,7 +2317,7 @@ function msTimeline(){
+   ms.forEach((m2,i)=>{
+     h+=`<div class="msc" data-i="${i}">
+       <div class="mscn"><span class="mscdot" style="background:${DOT[m2.status]}"></span>${esc(m2.name.replace(/^MS-\d+\s*/,""))}</div>
+-      <div class="mscch">${m2.slip>0?chip(m2.slip>15?"vlnr":"vlw","+"+m2.slip+" days"):chip("vlc","on plan")}</div>
++      <div class="mscch">${msStatus(m2)} ${m2.slip>0?chip(m2.slip>15?"vlnr":"vlw","+"+m2.slip+" days"):`<span class="dim" style="font-size:10.5px">${m2.slip?-m2.slip+" days ahead":"on baseline"}</span>`}</div>
+       <div class="mscd"><span class="k">Baseline</span><b>${wdate(m2.b,1)}</b></div>
+       <div class="mscd"><span class="k">Forecast</span><b style="color:${m2.slip>0?"var(--crit-text)":"var(--good-text)"}">${wdate(m2.f,1)}</b></div>
+     </div>`;
+@@ -2197,6 +2347,15 @@ function stageKey(r){
+   return s||"Other Site Works";
+ }
+ function stageBars(rows){
++  let h=`<div class="legend"><span><span class="sw" style="background:var(--s-act)"></span>Actual</span><span><span class="sw" style="background:var(--s-plan)"></span>Plan (tick)</span></div>`;
++  stageSets(rows).forEach(([s,rr])=>{const a=actPct(rr),p=planPct(rr);
++    h+=`<div class="prow"><div class="nm" title="${esc(s)} — ${rr.length} activities">${s} <span class="dim">(${rr.length})</span></div>
++     <div class="val"><b>${unitVal(a)}</b> <span class="dim">/ ${unitVal(p)}</span></div>
++     <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div></div>`});
++  return h;
++}
++// [stage, its rows] in schedule order - shared by the bar list and the summary chart
++function stageSets(rows){
+   const set={};rows.forEach(r=>{const s=stageKey(r);(set[s]=set[s]||[]).push(r)});
+   const order=(CFG.stageOrder||["Initiation","Engineering","Quality","Supply","Services","Statutory & Approvals","Civil & Foundations","Piling","MMS & Module","Laying & Terminations","Earthing & LA","Equipment","PSS & Switchyard","Other Site Works","T&C","HOTO"]).slice();
+   // a project can produce a bucket this list does not name - a floating plant has
+@@ -2204,12 +2363,7 @@ function stageBars(rows){
+   // dropping those activities off the card. NTPC's buckets are all named above, so
+   // nothing changes there.
+   Object.keys(set).forEach(k=>{if(order.indexOf(k)<0)order.push(k)});
+-  let h=`<div class="legend"><span><span class="sw" style="background:var(--s-act)"></span>Actual</span><span><span class="sw" style="background:var(--s-plan)"></span>Plan (tick)</span></div>`;
+-  order.forEach(s=>{if(!set[s])return;const rr=set[s];const a=actPct(rr),p=planPct(rr);
+-    h+=`<div class="prow"><div class="nm" title="${esc(s)} — ${rr.length} activities">${s} <span class="dim">(${rr.length})</span></div>
+-     <div class="val"><b>${unitVal(a)}</b> <span class="dim">/ ${unitVal(p)}</span></div>
+-     <div class="pbar"><div class="fill" style="width:${Math.min(100,a)}%"></div><div class="tick" style="left:${Math.min(100,p)}%"></div></div></div>`});
+-  return h;
++  return order.filter(s=>set[s]).map(s=>[s,set[s]]);
+ }
+ // ---------- pipeline table: schedule-step columns ----------
+ function sizeDetPins(){
+@@ -2910,23 +3064,24 @@ function longLeadCard(span){
+   const items=longLeadItems();
+   const late=items.filter(x=>x.d>0), ahead=items.filter(x=>x.d<0), ontime=items.filter(x=>!x.d);
+   const dlv=items.filter(x=>x.pc>=100);
+-  const nxt=items.slice().sort((a,b)=>a.f-b.f).filter(x=>x.pc<100).slice(0,3);
+-  const stat=(lbl,n,cls,pc)=>`<div style="flex:1;min-width:104px">
++  const nxt=items.slice().sort((a,b)=>a.f-b.f).filter(x=>x.pc<100).slice(0,5);
++  const stat=(lbl,n,cls,pc)=>`<div class="llst">
+     <div class="eyebrow">${lbl}</div>
+-    <div style="font-size:20px;font-weight:800;line-height:1.1;color:var(--ink)">${n}</div>
++    <div style="font-size:20px;font-weight:800;line-height:1.1;color:var(${cls||"--ink"})">${n}</div>
+     ${pc?`<div class="small dim">${pc}</div>`:""}</div>`;
+-  let h=`<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
++  const dly=x=>x.d>0?`<span style="color:var(--crit-text);font-weight:700">+${x.d} d</span>`
++    :(x.d<0?`<span style="color:var(--good-text);font-weight:700">${x.d} d</span>`:`<span class="dim">on time</span>`);
++  const sts=x=>x.pc>=100?chip("vlc","Delivered"):(x.pc>0?chip("vls","In progress "+Math.round(x.pc)+"%"):chip("mut","Not started"));
++  let h=`<div class="llstats">
+     ${stat("Packages",items.length,"", fmt1(items.reduce((a,x)=>a+x.wp,0))+"% of project weight")}
+     ${stat("Delivered",dlv.length,"", fmt1(items.length?100*dlv.length/items.length:0)+"% of packages")}
+-    ${stat("Ahead of baseline",ahead.length,"","")}
++    ${stat("Ahead of baseline",ahead.length,ahead.length?"--good-text":"","")}
+     ${stat("On baseline",ontime.length,"","")}
+-    ${stat("Behind baseline",late.length,"","")}
+-    <div style="flex:2;min-width:230px">
+-      <div class="eyebrow">Next deliveries</div>
+-      ${nxt.length?nxt.map(x=>`<div style="display:flex;gap:8px;font-size:10.5px;padding:1px 0">
+-         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(x.p)}">${esc(x.p)}</span>
+-         <b>${wdate(x.f,1)}</b></div>`).join(""):`<div class="small dim">nothing outstanding</div>`}
+-    </div></div>`;
++    ${stat("Behind baseline",late.length,late.length?"--crit-text":"","")}</div>
++    <div class="eyebrow" style="margin:14px 0 6px">Next ${nxt.length||""} deliveries</div>
++    ${nxt.length?`<div class="twrap lltbl"><table><tr><th>Long-lead item</th><th class="num">Wt %</th><th>Baseline</th><th>Forecast</th><th class="num">Delay</th><th>Status</th></tr>`
++      +nxt.map(x=>`<tr><td title="${esc(x.p)}"><b>${esc(x.p)}</b></td><td class="num">${fmt1(x.wp)}</td><td>${wdate(x.b,1)}</td><td>${wdate(x.f,1)}</td><td class="num">${dly(x)}</td><td>${sts(x)}</td></tr>`).join("")
++      +`</table></div>`:`<div class="small dim">nothing outstanding</div>`}`;
+   setTimeout(()=>{const b=document.getElementById("ll-drill");
+     if(b)b.addEventListener("click",openLongLead)},0);
+   return card(span||"span12","Long Lead Item Delivery Status",
+@@ -4804,8 +4959,251 @@ function buildParkGL(rows, idp, box, P){
+ // ---------- pages ----------
+ function card(cls,title,hint,body,extraHdr){return `<div class="card ${cls}"><div class="hdrrow"><div><h2>${title}</h2><div class="hint">${hint}</div></div>${extraHdr||""}</div>${body}</div>`}
+ const unitToggle=()=>`<div class="toggle2"><button id="u-pct" class="${state.unit==="%"?"on":""}">%</button><button id="u-mw" class="${state.unit==="MW"?"on":""}">MW</button></div>`;
++// ---------- Project Summary in the portfolio view's design (Chart.js) ----------
++// Without Chart.js (CDN blocked / offline) the page falls back to the SVG cards below.
++const HASCJ=()=>typeof Chart!=="undefined";
++const cssv=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
++const cvar=c=>/^var\(/.test(c)?cssv(c.slice(4,-1)):c;
++const PSCH={},PSSIG={};
++// The page runs html{zoom:1.15-1.3}, and Chart.js maps the mouse to the chart in
++// unzoomed pixels - the pointer on Sep-26 reads as Nov-26. Re-derive x/y from the
++// canvas's on-screen box before Chart.js handles any event (hover, tooltip, click).
++const psZoomFix={id:"psZoomFix",beforeEvent(c,args){
++  const e=args.event,n=e.native;if(!n||n.clientX==null)return;
++  const r=c.canvas.getBoundingClientRect();if(!r.width||!r.height)return;
++  e.x=(n.clientX-r.left)*c.width/r.width;e.y=(n.clientY-r.top)*c.height/r.height;}};
++function psChart(id,cfg){
++  const el=document.getElementById(id);if(!el)return;
++  if(!psChart.reg){Chart.register(psZoomFix);psChart.reg=1}
++  if(PSCH[id])PSCH[id].destroy();
++  Chart.defaults.color=cssv("--muted");Chart.defaults.borderColor=cssv("--line");
++  Chart.defaults.font.family='Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';Chart.defaults.font.size=11;
++  const o=cfg.options=cfg.options||{};
++  const sig=JSON.stringify(cfg.data.datasets.map(d=>d.data)),same=PSSIG[id]===sig;PSSIG[id]=sig;
++  o.responsive=true;o.maintainAspectRatio=false;o.devicePixelRatio=Math.max(2,(window.devicePixelRatio||1)*effZoom());o.animation=(_printBusy||same)?false:{duration:450};
++  o.plugins=Object.assign({legend:{display:false}},o.plugins);
++  o.plugins.tooltip=Object.assign({enabled:false,external:psTipExt,backgroundColor:cssv("--tip-bg"),titleColor:cssv("--tip-fg"),bodyColor:cssv("--tip-fg"),
++    footerColor:cssv("--tip-fg2"),padding:10,cornerRadius:8,boxPadding:4,usePointStyle:true},o.plugins.tooltip);
++  PSCH[id]=new Chart(el,cfg);
++}
++const PSTIPTOP=new Set(["sc-cv","sc2-cv"]);
++function psTipExt({chart,tooltip:t}){
++  if(!t.opacity){hideTip();return}
++  const r=chart.canvas.getBoundingClientRect(),z=effZoom();
++  const html=[...(t.title||[]).filter(Boolean).map(esc),
++    ...t.body.map(b=>esc(b.lines.join(" ").trim())),
++    ...(t.footer||[]).filter(Boolean).map(x=>`<span class="t2">${esc(x)}</span>`)].join("<br>");
++  showTip({clientX:r.left+t.caretX*z,clientY:r.top+t.caretY*z},html);
++  if(PSTIPTOP.has(chart.canvas.id)){              // centred above the plot, as on the portfolio
++    const tw=tip.offsetWidth,th=tip.offsetHeight,x=r.left/z+t.caretX-tw/2;
++    let y=r.top/z+chart.chartArea.top-th-8;if(y<8)y=r.top/z+chart.chartArea.top+8;
++    tip.style.left=Math.min(Math.max(x,8),innerWidth/z-tw-8)+"px";tip.style.top=y+"px";
++  }
++}
++// thin vertical guide at the hovered period
++const psCross={id:"psCross",afterDatasetsDraw(c){
++  const a=c.tooltip&&c.tooltip.getActiveElements();if(!a||!a.length)return;
++  const {ctx,chartArea:ca}=c,x=a[0].element.x;
++  ctx.save();ctx.strokeStyle=cssv("--faint");ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,ca.top);ctx.lineTo(x,ca.bottom);ctx.stroke();ctx.restore();}};
++// value labels at the last actual point: "22.3%" bold, "Plan 35.8%" above the plan line
++const psEnd={id:"psEnd",afterDatasetsDraw(c,_,o){
++  if(!o||o.ai==null)return;
++  const el=c.getDatasetMeta(o.ai).data.at(-1);if(!el)return;
++  const {ctx,chartArea:ca,scales:{y}}=c,right=el.x>ca.right-90,dx=right?-9:9;
++  ctx.save();ctx.textAlign=right?"right":"left";
++  ctx.font='800 11.5px Inter,system-ui,sans-serif';ctx.fillStyle=cssv("--ink");ctx.fillText(fmt1(o.a)+"%",el.x+dx,el.y+4);
++  ctx.font='600 11.5px Inter,system-ui,sans-serif';ctx.fillStyle=cssv("--muted");ctx.fillText("Plan "+fmt1(o.p)+"%",el.x+dx,y.getPixelForValue(o.p)-6);
++  ctx.restore();}};
++const psNice=raw=>{if(raw<=0)return 1;const k=Math.pow(10,Math.floor(Math.log10(raw)));
++  for(const m of [1,2,2.5,5,10])if(m*k>=raw)return Math.max(1,m*k);return 10*k};
++const psScales=(xo,yo)=>({
++  x:Object.assign({grid:{display:false},border:{color:cssv("--line")}},xo),
++  y:Object.assign({beginAtZero:true,grid:{color:cssv("--line")},border:{display:false},ticks:{callback:v=>(+(+v).toFixed(1))+"%"}},yo)});
++// the dashed today line, plus the value of any bar taller than the axis (scBarMax clips it)
++const psToday={id:"psToday",afterDatasetsDraw(c,_,o){
++  const {ctx,chartArea:a,scales:{x,y}}=c;ctx.save();
++  ctx.font='700 10px Inter,system-ui,sans-serif';
++  if(o.x!=null){const px=x.getPixelForValue(o.x);
++    ctx.strokeStyle=o.color;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(px,a.top);ctx.lineTo(px,a.bottom);ctx.stroke();
++    ctx.setLineDash([]);ctx.fillStyle=o.color;ctx.fillText(o.label,px+4,a.top+10);}
++  if(o.clip){ctx.fillStyle=cssv("--ink");
++    c.data.datasets.forEach((d,di)=>c.getDatasetMeta(di).data.forEach((el,i)=>{
++      if(d.data[i]>y.max)ctx.fillText(fmt1(d.data[i])+"%",el.x+el.width/2+3,a.top+10)}));}
++  ctx.restore();}};
++// weekly S-curve scrolls sideways; this copies the y-axis strip onto a sticky canvas
++// at the left of the scroll box so the % scale stays in view
++const WK_PX=26;
++const psYStick={id:"psYStick",afterDraw(c,_,o){
++  const y=document.getElementById(o.el);if(!y)return;
++  const r=c.currentDevicePixelRatio,L=Math.ceil(c.chartArea.left)+1,H=Math.ceil(c.chartArea.bottom)+4;
++  y.width=L*r;y.height=H*r;y.style.width=L+"px";y.style.height=H+"px";y.style.marginRight=-L+"px";
++  const g=y.getContext("2d");g.fillStyle=cssv("--surface");g.fillRect(0,0,y.width,y.height);
++  g.drawImage(c.canvas,0,0,L*r,H*r,0,0,L*r,H*r);}};
++function psGap(plan,act){const g=plan-act;return g<=2?["good","On plan"]:g<=10?["warn","Behind"]:["bad","Well behind"]}
++const psBadge=(k,t)=>`<span class="badge b-${k}">${t}</span>`;
++const psStCol=k=>cssv(k==="good"?"--good":k==="warn"?"--warn":"--crit");
++const pts1=v=>(v>=0?"+":"−")+fmt1(Math.abs(v));
++function psHero(rows,o){
++  o=o||{};const sum=!o.title;
++  const a=rows?actPct(rows):0,p=rows?planPct(rows):0,spi=p>0.05?a/p:0,[k,t]=psGap(p,a);
++  const gl=(e,v,s,cl)=>`<div class="glass"><div class="eyebrow">${e}</div><div class="v ${cl||""}">${v}</div><div class="s">${s}</div></div>`;
++  const d2cod=Math.round((new Date(M.codForecast)-new Date(M.statusIso))/86400000);
++  // Days to COD is project-wide, so only the Project Summary shows it (KP 07-Sep);
++  // every other page closes the row with its own completed count
++  const done=rows?rows.filter(isDone).length:0;
++  const tiles=o.tiles?o.tiles.map(x=>gl(...x)).join("")
++    :gl(state.at===SW?"Actual progress":"Progress as of "+wdate(state.at,1),fmt1(a)+"<small>%</small>","Plan "+fmt1(p)+"%",k)
++      +gl("Variance",pts1(a-p)+"<small>%</small>","Actual − Plan",a-p>=0?"good":"bad")
++      +gl("SPI",spi?spi.toFixed(2):"—","Actual ÷ Plan")
++      +(sum?gl("Days to COD",d2cod+"<small>days</small>","forecast "+esc(M.forecastFinish)+(M.delayDays?` · ${M.delayDays>0?"+":""}${M.delayDays}d vs baseline`:""))
++           :gl("Completed",done.toLocaleString()+`<small>/ ${rows.length.toLocaleString()}</small>`,fmt1(100*done/Math.max(1,rows.length))+"% of activities"));
++  return `<div class="ps-hero"><div class="pshd"><div><div class="eyebrow">${esc(o.eyebrow||"Project summary")}</div>
++    <h2>${esc(o.title||CFG.name)}<span>${esc(sum?(CFG.client||""):CFG.name)} · Data as of ${esc(M.statusDate)} &nbsp;${rows&&!o.tiles?psBadge(k,t):""}</span></h2></div><div id="ps-tslot"></div></div>
++    <div class="glassrow">${tiles}</div><div id="ps-fslot"></div></div>`;
++}
++function psGaugeCard(rows){
++  const a=actPct(rows),p=planPct(rows),spi=p>0.05?a/p:0,[k,t]=psGap(p,a);
++  setTimeout(()=>psChart("psg-cv",{type:"doughnut",data:{labels:["Done","Remaining"],datasets:[
++      {label:"Plan",data:[p,Math.max(0,100-p)],backgroundColor:[cssv("--plan-seg"),cssv("--inset")],borderWidth:0,weight:.35},
++      {label:"",data:[100],backgroundColor:"transparent",borderWidth:0,weight:.12},
++      {label:"Actual",data:[a,Math.max(0,100-a)],backgroundColor:[psStCol(k),cssv("--inset")],borderWidth:0,borderRadius:4}]},
++    options:{rotation:-90,circumference:180,cutout:"64%",plugins:{tooltip:{filter:i=>i.dataIndex===0&&!!i.dataset.label,
++      callbacks:{title:()=>"",label:c=>`${c.dataset.label}: ${fmt1(c.raw)}%`}}}}}),0);
++  return `<div class="card span4"><div class="hdrrow psgh"><h2>Overall progress <span class="psnote" title="Earned units ÷ total units, each activity weighted by VisiLean's Weightage field">ⓘ weightage-based</span></h2>${psBadge(k,t)}</div>
++    <div class="psg"><canvas id="psg-cv" aria-label="Actual ${fmt1(a)}% against plan ${fmt1(p)}%" role="img"></canvas>
++      <div class="c"><b>${fmt1(a)}%</b><span>plan ${fmt1(p)}%</span></div></div>
++    <div class="legend" style="justify-content:center;margin-top:8px"><span><span class="sw" style="background:${psStCol(k)}"></span>Actual</span><span><span class="sw" style="background:var(--plan-seg)"></span>Plan</span></div></div>`;
++}
++function psEpcCard(){
++  const segs=[["Engineering",L.filter(isEng)],["Procurement",L.filter(isProc)],["Construction",L.filter(isCon)]];
++  return `<div class="card span8 psepc"><h2>EPC bifurcation</h2><div class="epcsum">`+segs.map(([n,rr])=>{
++    const a=actPct(rr),p=planPct(rr),[k,t]=psGap(p,a),A=Math.min(100,a),P=Math.min(100,p);
++    return `<div class="epct" title="${n} — ${rr.length.toLocaleString()} activities · actual ${fmt1(a)}% · plan ${fmt1(p)}%">
++      <div class="top"><div class="eyebrow">${n}</div>${psBadge(k,t)}</div>
++      <div><div class="big" style="color:var(${k==="good"?"--good-text":k==="warn"?"--warn-text":"--crit-text"})">${fmt1(a)}<small>%</small><small class="pl">/ ${fmt1(p)}%</small></div>
++        <div class="of">Actual / Plan · gap ${pts1(a-p)}% · ${rr.length.toLocaleString()} activities</div></div>
++      <div class="stk"><i class="a ${k==="good"?"":k}" style="width:${A}%"></i>${P>A?`<i class="g" style="left:${A}%;width:${P-A}%"></i>`:""}</div></div>`}).join("")
++    +`</div><div class="legend" style="margin-top:12px"><span><span class="sw" style="background:var(--good)"></span>Actual</span><span><span class="sw" style="background:var(--plan-seg)"></span>Actual → Plan shortfall</span>
++      <span>${psBadge("good","On plan")} within 2%</span><span>${psBadge("warn","Behind")} 2–10%</span><span>${psBadge("bad","Well behind")} over 10%</span></div></div>`;
++}
++function psStage(rows,sets,id){
++  const S=sets||stageSets(rows);id=id||"pss-cv";
++  const A=S.map(([,rr])=>actPct(rr)),P=S.map(([,rr])=>planPct(rr));
++  setTimeout(()=>psChart(id,{type:"bar",data:{labels:S.map(([s,rr])=>`${s} (${rr.length})`),datasets:[
++      {label:"Actual",data:A,backgroundColor:A.map((a,i)=>psStCol(psGap(P[i],a)[0])),borderRadius:4,barPercentage:.9,categoryPercentage:.75},
++      {label:"Plan",data:P,backgroundColor:cssv("--plan-seg"),borderRadius:4,barPercentage:.9,categoryPercentage:.75}]},
++    options:{indexAxis:"y",interaction:{mode:"index",intersect:false},
++      scales:{x:{min:0,max:100,grid:{color:cssv("--line")},border:{display:false},ticks:{callback:v=>v+"%"}},
++              y:{grid:{display:false},border:{color:cssv("--line")},ticks:{color:cssv("--ink"),autoSkip:false}}},
++      plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${unitVal(c.raw)}`}}}}}),0);
++  return `<div class="legend"><span><span class="sw" style="background:var(--good)"></span>Actual (amber / red = behind plan)</span><span><span class="sw" style="background:var(--plan-seg)"></span>Baseline plan</span></div>
++    <div class="psch" style="height:${S.length*30+36}px"><canvas id="${id}" role="img" aria-label="Progress, actual against plan"></canvas></div>`;
++}
++function psScBox(rows){
++  const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
++  setTimeout(()=>{psSc(rows,"sc",false,sels);psSc(rows,"sc2",true,sels);
++    // weekly opens scrolled to today, like the portfolio S-curve
++    const sx=document.getElementById("sc-scx"),ps=scPeriods();
++    if(sx&&scPer==="w"&&HASWK()&&ps.length>1)sx.scrollLeft=Math.max(0,sx.scrollWidth*scXof(ps,i=>i,state.at)/(ps.length-1)-sx.clientWidth*.6)},0);
++  const leg=sels.length>1
++    ?sels.map(x=>`<span><span class="ln" style="border-top-color:${x[3]}"></span>${x[1]}</span>`).join("")+`<span>solid = actual · dashed = forecast · dotted = plan</span>`
++    :`<span><span class="ln"></span>Actual</span><span><span class="ln plan"></span>Plan (baseline)</span><span><span class="ln fc"></span>Forecast</span>`;
++  let stat="";
++  if(sels.length===1){const rs=rows.filter(sels[0][2]),a=actPct(rs),p=planPct(rs);
++    stat=`<div class="eyebrow">${sels[0][0]==="all"?"Overall":esc(sels[0][1])} progress · as of ${wdate(state.at,1)}${state.at===SW?" (data date)":""}</div>
++      <div class="statline"><div><div class="v">${fmt1(a)}%</div><div class="eyebrow">Actual</div></div>
++        <div><div class="v">${fmt1(p)}%</div><div class="eyebrow">Plan</div></div>
++        <div><div class="v${a-p<0?" neg":""}">${pts1(a-p)}%</div><div class="eyebrow">Gap</div></div></div>`;}
++  const wk=scPer==="w"&&HASWK(), row=(id,cls,lbl)=>`<div class="scrow"><canvas class="ysx" id="${id}-y" aria-hidden="true"></canvas><div class="psch${cls}${wk?" wk":""}" id="${id}-w"><canvas id="${id}-cv" role="img" aria-label="${lbl}"></canvas></div></div>`;
++  return `${stat}<div class="scx${wk?" wk":""}" id="sc-scx"><div class="pslbl">Cumulative${wk?" · scroll sideways for every week":""}</div>${row("sc","","Cumulative S-curve")}
++    <div class="pslbl" style="margin-top:12px">${wk?"Weekly":"Monthly"}${sels.length===1?" · click a bar for its activities":""}</div>${row("sc2"," sm","S-curve per period")}</div>
++    <div class="legend" style="margin-top:8px">${leg}${sels.length===1?`<span><span class="sw" style="background:var(--plan-seg)"></span>Plan / period</span><span><span class="sw" style="background:var(--c-act)"></span>Actual / period</span>`:""}</div>`;
++}
++function psSc(rows,id,per,sels){
++  const ps=scPeriods(),n=ps.length;if(!n)return;
++  const D=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v), one=sels.length===1;
++  const today={x:scXof(ps,i=>i,state.at),label:state.at===SW?"Data date":"as of "+wdate(state.at,1),color:cssv("--warn")};
++  const lbl=i=>String(ps[i]?ps[i].label:"").replace(/-/g," ");
++  const rk=it=>/Actual$/.test(it.dataset.label)?0:/Plan$/.test(it.dataset.label)?1:2;
++  const order=(a,b)=>(Math.floor(a.datasetIndex/3)-Math.floor(b.datasetIndex/3))||rk(a)-rk(b);
++  const series=sels.map(s=>{const rs=rows.filter(s[2]),V=scVals(rs,ps);
++    return {s,rs,V,plan:per?D(V.plan):V.plan,fc:per?D(V.fc):V.fc,act:per?D(V.act):V.act}});
++  const pct=c=>`${c.dataset.label} ${fmt1(c.parsed.y)}%`;
++  // weekly: WK_PX per week so every label fits; the box scrolls, the y-axis is pinned by psYStick
++  const wk=scPer==="w"&&HASWK(), wrap=document.getElementById(id+"-w");
++  if(wk&&wrap)wrap.style.width=Math.max(wrap.closest(".scx").clientWidth,n*WK_PX+70)+"px";
++  const xt=wk?{autoSkip:false,maxRotation:50,minRotation:50,font:{size:10}}:{maxRotation:0,autoSkip:true,maxTicksLimit:12};
++  const stick=wk?{el:id+"-y"}:false, st=wk?1:Math.max(1,Math.ceil(n/8));
++  const xcb=(v,i)=>(i%st===0||i===n-1)?lbl(i):"";
++  if(per&&one){                                  // one series per period: Plan vs Actual bars
++    const S=series[0],bm=scBarMax([...S.plan,...S.act]),label=S.s[0]!=="all"?S.s[1]:"";
++    return psChart(id+"-cv",{type:"bar",data:{labels:ps.map(p=>p.label),datasets:[
++        {label:"Plan",data:S.plan,backgroundColor:cssv("--plan-seg"),borderRadius:3,categoryPercentage:.8},
++        {label:"Actual",data:S.act,backgroundColor:cssv("--c-act"),borderRadius:3,categoryPercentage:.8}]},
++      options:{interaction:{mode:"index",intersect:false},
++        scales:psScales({ticks:Object.assign({},xt,{autoSkip:false,callback:xcb})},{max:Math.ceil(bm.ymax)}),
++        plugins:{psToday:Object.assign({clip:bm.clip},today),psYStick:stick,
++          tooltip:{itemSort:(a,b)=>rk(a)-rk(b),callbacks:{title:it=>scPerLbl(ps[it[0].dataIndex]).replace(/-/g," "),label:pct,footer:()=>"click for the activities"}}},
++        onClick:(e,_,c)=>{const hit=c.getElementsAtEventForMode(e,"nearest",{intersect:false,axis:"x"},false)[0];
++          if(hit)scPeriodDrill(S.rs,ps,hit.index,hit.datasetIndex===1?"act":"plan",label)},
++        onHover:(e,els)=>{e.native.target.style.cursor=els.length?"pointer":"default"}},
++      plugins:[psToday,psYStick,psCross]});
++  }
++  const ds=[];
++  series.forEach(S=>{
++    const col=one?null:cvar(S.s[3]), nm=one?"":S.s[1]+" ";
++    const ax=i=>(!per&&S.V.tail&&i===S.act.length-1)?scXof(ps,j=>j,SW):i;
++    const xy=(arr,xf)=>arr.map((y,i)=>({x:xf?xf(i):i,y}));
++    // portfolio marks: straight segments, a dot on every actual point (weekly: the last only)
++    const line={pointRadius:0,pointHoverRadius:0,tension:0};
++    ds.push(Object.assign({label:nm+"Plan",data:xy(S.plan),borderColor:col||cssv("--c-plan"),borderWidth:one?2:1.2,borderDash:one?[]:[2,3]},line));
++    ds.push(Object.assign({label:nm+"Forecast",data:xy(S.fc),borderColor:(col||cssv("--c-fc"))+"bf",borderWidth:1.5,borderDash:[5,4]},line));
++    ds.push(Object.assign({},line,{label:nm+"Actual",data:xy(S.act,ax),borderColor:col||cssv("--c-act"),borderWidth:2.2,
++      fill:one?"origin":false,backgroundColor:cssv("--c-act")+"1a",
++      pointRadius:c=>c.dataIndex===S.act.length-1?5:(wk||per?0:4),pointHoverRadius:c=>c.dataIndex===S.act.length-1?5:(wk||per?0:4),
++      pointBackgroundColor:col||cssv("--c-act"),pointBorderColor:cssv("--surface"),pointBorderWidth:2}));
++  });
++  // y in four even steps (0 / 25 / 50 / 75 / 100 on a full curve), as on the portfolio
++  const ymx=Math.max(1,...series.flatMap(S=>[...S.plan,...S.fc,...S.act])),ystep=psNice(ymx/4);
++  const S0=series[0],end=(one&&!per&&S0.act.length)?{ai:2,a:actPct(S0.rs),p:planPct(S0.rs)}:false;
++  psChart(id+"-cv",{type:"line",data:{datasets:ds},
++    options:{interaction:{mode:"index",intersect:false},layout:{padding:{right:end?6:0}},
++      scales:psScales({type:"linear",min:0,max:Math.max(1,n-1),
++        afterBuildTicks:s=>{s.ticks=s.ticks.filter(t=>Number.isInteger(t.value)&&(t.value%st===0||t.value===n-1))},
++        ticks:Object.assign({},xt,{stepSize:st,autoSkip:false,callback:v=>lbl(v)})},
++        {max:ystep*4,ticks:{stepSize:ystep,color:cssv("--faint"),callback:v=>(+(+v).toFixed(1))+"%"}}),
++      plugins:{psToday:today,psYStick:stick,psEnd:end,
++        tooltip:{itemSort:order,callbacks:{title:it=>ps[it[0].dataIndex]?scPerLbl(ps[it[0].dataIndex]).replace(/-/g," "):"",label:pct}}}},
++    plugins:[psToday,psYStick,psCross,psEnd]});
++}
++// every page opens the same way: the hero, then (on activity pages) the KPI row
++function psOpen(rows,o){return HASCJ()?`<div class="grid ps">`+psHero(rows,o):`<div class="grid">`}
++// Reasons for Variance donut: click a slice to filter by that category (click again to clear)
++function psDonut(items,total,sel){
++  if(!total)return "";
++  const cols=items.map((x,i)=>rsnColor(x.k,i));
++  setTimeout(()=>psChart("rsn-cv",{type:"doughnut",data:{labels:items.map(x=>x.k),datasets:[{data:items.map(x=>x.n),
++      backgroundColor:cols.map((c,i)=>sel&&sel!==items[i].k?c+"47":c),borderColor:cssv("--surface"),borderWidth:2,hoverOffset:6}]},
++    options:{cutout:"58%",layout:{padding:6},
++      plugins:{tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw} (${fmt1(100*c.raw/total)}%)`}}},
++      onClick:(e,els)=>{if(!els.length)return;const k=items[els[0].index].k;rsnCat=(rsnCat===k?"":k);rsnSel=null;render()},
++      onHover:(e,els)=>{e.native.target.style.cursor=els.length?"pointer":"default"}}}),0);
++  return `<div class="rsndonut psdn"><canvas id="rsn-cv" role="img" aria-label="Reasons for variance by category"></canvas>
++    <div class="c"><b>${total}</b><span>reasons</span></div></div>`;
++}
+ function pageSummary(){
+   const rows=filtered();
++  if(HASCJ()){
++    let h=`<div class="grid ps">`+psHero(rows)+kpiCards(rows,"nocod")+psGaugeCard(rows)+psEpcCard();
++    h+=reasonsCard("","span5 rsnll")+longLeadCard("span7 rsnll");
++    if((DATA.milestones||[]).length)h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
++    h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
++      `<div id="sc-box">${scBoxHtml(rows)}</div>`,
++      `<div class="pstg">${scPerToggle()}<div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
++    h+=card("span5","Stage progress","Actual % vs Baseline Plan %",psStage(rows));
++    setTimeout(()=>bindKpi(rows,""),0);
++    return h+"</div>";
++  }
+   let h=`<div class="grid">`;
+   // top row rebalanced: the Cost card carries only Budget (BAC) now, so it takes
+   // span2 and the freed width goes to the gauge and the EPC bifurcation
+@@ -4858,7 +5256,8 @@ function pageLayout(){
+   const rows=filtered();
+   const site=rows.filter(r=>r[C.dept]==="execution"||r[C.dept]==="tnc"||r[C.dept]==="hoto");
+   const use=site.length?site:rows;
+-  let h=`<div class="grid">`;
++  let h=psOpen(use,{eyebrow:"Project",title:"Plant Layout"})+kpiCards(use,false);
++  setTimeout(()=>bindKpi(use,""),0);
+   {const m=site3d(use,"lay3d");
+    if(m)h+=card("span12","Plant Layout — 3D Site Model","real block outlines, roads, corridors, boundary, turbines and BESS off the issued array layout · arrays built = actual % · click a block to filter",m);}
+   {const m=park3d(use,"park3d");
+@@ -4870,13 +5269,13 @@ function pageLayout(){
+ }
+ function pagePipeline(){
+   const rows=filtered().filter(r=>r[C.dept]==="supply"||r[C.dept]==="services");
+-  let h=`<div class="grid">`;
++  let h=psOpen(rows,{eyebrow:"Project",title:"Package Pipeline"})+kpiCards(rows,false);
+   h+=stepSummaryCards(rows,SPEC_PO());
+   h+=card("span12","Procurement Pipeline — schedule stages","per package · red date = overdue vs baseline · click a row for activities",pipeTable(rows,"pp",false));
+   // KP 08-Sep: Scope vs Order vs Deliver hidden here as well
+   // h+=card("span12","Scope vs Order vs Deliver","supply quantities",scopeOrderDeliver(filtered()));
+   h+="</div>";
+-  setTimeout(()=>bindPipe("pp"),0);
++  setTimeout(()=>{bindPipe("pp");bindKpi(rows,"")},0);
+   return h;
+ }
+ // ---------- Constraints Log ----------
+@@ -4914,8 +5313,13 @@ function pageConstraints(){
+   const linked=all.filter(c=>c.act!=null).length;
+   const byPri={},byCat={};
+   all.forEach(c=>{byPri[c.pri]=(byPri[c.pri]||0)+1;byCat[c.cat]=(byCat[c.cat]||0)+1});
++  const conHero=psOpen(null,{eyebrow:"Project",title:"Constraints Log",tiles:[
++    ["Total",all.length.toLocaleString(),"raised in VisiLean"],
++    ["Open",open.toLocaleString(),open?"need closing":"none open",open?"bad":"good"],
++    ["Closed",(all.length-open).toLocaleString(),fmt1(all.length?100*(all.length-open)/all.length:0)+"% of all"],
++    ["Linked",linked.toLocaleString(),"to a dashboard activity"]]});
+   if(!all.length)
+-    return `<div class="grid">`+card("span12","Constraints Log",
++    return conHero+card("span12","Constraints Log",
+       "live from the VisiLean constraints log",
+       `<div style="padding:14px 6px;text-align:center"><div style="font-weight:700;margin:4px 0">No constraints logged yet</div>
+        <div class="fnote">The VisiLean constraints log is connected — entries appear here as teams raise them.</div></div>`)+`</div>`;
+@@ -4961,7 +5365,7 @@ function pageConstraints(){
+     const st=document.getElementById("cons-st");
+     if(st)st.addEventListener("change",()=>{consOpen=st.value;render()});
+   },0);
+-  return `<div class="grid">`+card("span12","Constraints Log",
++  return conHero+card("span12","Constraints Log",
+     "every constraint raised in VisiLean · click a row to open the activity it was raised against",h)+`</div>`;
+ }
+ function pageMom(){
+@@ -5075,11 +5479,11 @@ function engOverview(rows){
+ }
+ function pageDept(key){
+   const rows=filtered(key);
+-  let h=`<div class="grid">`;
+-  // KP 05-Oct: no S-curve on a department page - the Project Summary carries it. The
+-  // gauge and the variance reasons share the top row instead.
+-  h+=gaugeCard(rows,"span5")+reasonsCard(key,"span7");
++  let h=psOpen(rows,{eyebrow:"Department",title:DNAME[key]||key});
++  // KP 05-Oct: no S-curve on a department page - the Project Summary carries it.
++  // Same flow as the Project Summary: KPI row, then the gauge beside the reasons.
+   h+=kpiCards(rows,false);
++  h+=HASCJ()?psGaugeCard(rows)+reasonsCard(key,"span8"):gaugeCard(rows,"span5")+reasonsCard(key,"span7");
+   if(key==="engineering"){
+     // KP 08-Sep: Engineering Overview - Exec View hidden. engOverview() is untouched -
+     // put this line back to restore it.
+@@ -5111,14 +5515,18 @@ function pageDept(key){
+     if(key==="execution"){const m=site3d(rows,"exe3d");
+      if(m)h+=card("span12","3D Site Model — execution progress","real block outlines, roads, corridors, boundary, turbines and BESS off the issued array layout · arrays built = actual % · click a block to filter",m);}
+     h+=layoutCard(rows,CFG.plantLayout?"Block / Feeder scorecard — Site Map":"Block / Feeder scorecard","layd-view");
+-    h+=card("span12","Stage progress","by work type · Actual % vs Baseline Plan %",stageBars(rows));
++    h+=card("span12","Stage progress","by work type · Actual % vs Baseline Plan %",HASCJ()?psStage(rows):stageBars(rows));
+   }else{
+-    h+=card("span12","Sections","progress by section · Actual % vs Baseline Plan %",stageSecs(rows));
++    h+=card("span12","Sections","progress by section · Actual % vs Baseline Plan %",HASCJ()?psStage(rows,secSets(rows),"pssec-cv"):stageSecs(rows));
+   }
+   h+="</div>";
+   setTimeout(()=>{bindPipe("pe");bindPipe("pd");bindKpi(rows,key)},0);
+   return h;
+ }
++function secSets(rows){
++  const g={};rows.forEach(r=>{const k=String(r[C.sec]||"").trim()||"Section not set in VisiLean";(g[k]=g[k]||[]).push(r)});
++  return Object.entries(g);
++}
+ function stageSecs(rows){
+   // rows with no WBS Level 2 in VisiLean would otherwise render as an empty label
+   const g={};rows.forEach(r=>{const k=String(r[C.sec]||"").trim()||"Section not set in VisiLean";
+@@ -5130,9 +5538,14 @@ function stageSecs(rows){
+   return h;
+ }
+ // ---------- shell ----------
++const NAVI={
++  summary:'<path d="M3 3v18h18"/><path d="M8 17v-4M13 17V7M18 17v-8"/>',
++  layout:'<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>',
++  pipeline:'<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M6 9v3a3 3 0 0 0 3 3h6"/>',
++  constraints:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'};
+ function navHtml(){
+-  const top=[["summary","📊 Project Summary"],["layout","🗺 Plant Layout"],["pipeline","🔀 Package Pipeline"],["constraints","🚧 Constraints Log"]];
+-  document.getElementById("nav-top").innerHTML=top.map(([k,n])=>`<a href="#" data-p="${k}" class="${state.page===k?"on":""}">${n}</a>`).join("");
++  const top=[["summary","Project Summary"],["layout","Plant Layout"],["pipeline","Package Pipeline"],["constraints","Constraints Log"]];
++  document.getElementById("nav-top").innerHTML=top.map(([k,n])=>`<a href="#" data-p="${k}" class="${state.page===k?"on":""}"><svg class="nvi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAVI[k]}</svg>${n}</a>`).join("");
+   document.getElementById("nav-dept").innerHTML=DEPTS.map(d=>
+     `<a href="#" data-p="d:${d.key}" class="${state.page==="d:"+d.key?"on":""}">${esc(d.name)}</a>`).join("");
+   document.querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();state.page=a.dataset.p;render()}));
+@@ -5155,7 +5568,7 @@ function syncFilterUI(){
+     pb.classList.toggle("on",!!(f.w1||f.w2))}
+   document.getElementById("f-crit").classList.toggle("on",f.crit);
+   document.getElementById("f-del").classList.toggle("on2",f.del);
+-  document.getElementById("f-count").textContent=filtered().length.toLocaleString()+" activities";
++
+   const ds=document.getElementById("f-date");
+   ds.min=20;ds.max=M.forecastFinishWd;ds.value=state.at;
+   document.getElementById("f-datev").textContent=wdate(state.at,1)+(state.at===SW?" (today)":"");
+@@ -5213,6 +5626,7 @@ function printPdf(){
+           +`<span>${esc(CFG.name)} · data as of ${esc(M.statusDate)} · printed ${wdate(SW,1)}</span></div>`
+           +pageHtml(k)+`</section>`;
+       });
++      fbarHome();document.body.classList.remove("on-sum");   // print keeps the topbar
+       pg.innerHTML=h;
+       // a matrix wider than the sheet is scaled down rather than clipped
+       pg.querySelectorAll(".twrap").forEach(w=>{
+@@ -5226,11 +5640,21 @@ function printPdf(){
+     }catch(e){done()}
+   },30);
+ }
++// the filter bar sits inside the Project Summary hero; put it back under the topbar
++// before #page is rebuilt, or the rebuild would throw it away with the old page
++function fbarHome(){const fb=document.getElementById("fbar"),sw=document.getElementById("syncwarn");
++  if(fb.nextElementSibling!==sw)sw.before(fb);
++  const tb=document.getElementById("tbtns"),mt=document.querySelector(".topbar .meta");
++  if(tb.parentNode!==mt)mt.appendChild(tb)}
+ function render(){
+   const _keep=lastPage===state.page;const _sy=window.scrollY;
+   navHtml();syncFilterUI();
+   const pg=document.getElementById("page");
++  fbarHome();
+   pg.innerHTML=pageHtml(state.page);
++  {const slot=document.getElementById("ps-fslot");if(slot)slot.appendChild(document.getElementById("fbar"));
++   const ts=document.getElementById("ps-tslot");if(ts)ts.appendChild(document.getElementById("tbtns"));
++   document.body.classList.toggle("on-sum",!!slot);}
+   sweepGL();                                   // the page just changed; drop orphaned scenes
+   const rows=filtered();
+   const cht=document.getElementById("sc-chart"),tbl=document.getElementById("sc-table");
+@@ -5294,15 +5718,22 @@ document.getElementById("f-d2").addEventListener("change",e=>{state.f.w2=wdOfIso
+ document.getElementById("f-crit").addEventListener("click",()=>{state.f.crit=!state.f.crit;render()});
+ document.getElementById("f-del").addEventListener("click",()=>{state.f.del=!state.f.del;render()});
+ document.getElementById("f-reset").addEventListener("click",()=>{state.f={dept:"",type:"",area:"",pkg:"",owner:"",ownship:"",w1:null,w2:null,crit:false,del:false};state.at=SW;pipeSearch="";pipeDelOnly=false;regQ="";regStatus="";regSort={key:"seq",dir:1};document.getElementById("f-d1").value="";document.getElementById("f-d2").value="";for(const k in pipeL1)delete pipeL1[k];for(const k in pipeL2)delete pipeL2[k];for(const k in pipeCellFilt)delete pipeCellFilt[k];closeColPop();render()});
+-document.getElementById("f-date").addEventListener("input",e=>{state.at=+e.target.value;render()});
++// dragging only moves the label; the page rebuilds once the thumb is released (or per
++// arrow-key step) - rebuilding mid-drag re-parents the filter bar and drops the drag
++document.getElementById("f-date").addEventListener("input",e=>{const w=+e.target.value;
++  document.getElementById("f-datev").textContent=wdate(w,1)+(w===SW?" (today)":"")});
++document.getElementById("f-date").addEventListener("change",e=>{state.at=+e.target.value;render()});
++// light / dark only; until the reader picks one ("auto") it follows the OS
+ function applyTheme(t){
+-  document.querySelectorAll("#thm button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+-  if(t==="auto"){const dk=matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.dataset.theme=dk?"dark":"light"}
+-  else document.documentElement.dataset.theme=t;
++  if(t==="auto"){const dk=matchMedia("(prefers-color-scheme: dark)").matches;t=dk?"dark":"light"}
++  document.documentElement.dataset.theme=t;
++  const b=document.getElementById("thm");if(b)b.setAttribute("aria-label",t==="dark"?"Switch to light theme":"Switch to dark theme");
+ }
+-document.querySelectorAll("#thm button").forEach(b=>b.addEventListener("click",()=>{lsSet("kp-thm",b.dataset.t);applyTheme(b.dataset.t)}));
++document.getElementById("thm").addEventListener("click",()=>{
++  const t=document.documentElement.dataset.theme==="dark"?"light":"dark";
++  lsSet("kp-thm",t);applyTheme(t);render()});
+ applyTheme(lsGet("kp-thm")||"auto");
+-matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>applyTheme(lsGet("kp-thm")||"auto"));
++matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{applyTheme(lsGet("kp-thm")||"auto");render()});
+ // Refresh = the page reloads on every click, full stop. It first checks whether a
+ // newer VisiLean build exists (instant reload into it); when none exists it says so
+ // — the sync publishes only when data actually CHANGES, so "old" usually means
+@@ -5449,7 +5880,7 @@ document.getElementById("h-date").textContent=M.statusDate;
+ // ---------- data freshness ----------
+ // KP asked for the ageing counter ("1h 13m old") to go — the header keeps only the
+ // plain timestamp of the last published data change.
+-if(M.generatedAt){document.getElementById("h-gen").textContent="last data change "+M.generatedAt;}
++
+ // background poll: pick up a new build without anyone pressing Refresh
+ let _pollBusy=false,_pending=null;
+ // Never reload while somebody is reading. A new build only lights up a button; the
