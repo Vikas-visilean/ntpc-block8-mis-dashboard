@@ -1,5 +1,5 @@
 {
-  "_comment": "INOX Wind 99 MW, Khavda - project configuration. Read by the data builder (dash_data.py) and published to the page as DATA.cfg. Never put API tokens here - the token is VL_TOKEN_INOX (fallback the \"inox\" entry of VL_TOKENS_JSON); see vl_token.py. Vocabulary (departments, procurement steps, areas) starts from ABREL Talaja, the other wind project, until INOX's own schedule is checked.",
+  "_comment": "INOX Wind 99 MW (33 x 3.0 MW WTG), Khavda - project configuration. Read by the data builder (dash_data.py) and published to the page as DATA.cfg. Never put API tokens here - the token is VL_TOKEN_INOX (fallback the \"inox\" entry of VL_TOKENS_JSON); see vl_token.py. The schedule is KP's wind MSP template; its procurement steps use NTPC's vocabulary (PRF raising, Floating of RFP, PO placement, GRN at Site), so the template's step defaults apply.",
   "key": "inox",
   "projectId": "C554311F-9153-D263-58A2-E36DBA2738E2",
   "outDir": "inox",
@@ -22,95 +22,119 @@
   "location": "Khavda, Gujarat",
   "plant": "INOX Wind — 99 MW",
   "tech": "Wind · WTG",
-  "week": "7-day weeks",
-  "loa": "Start TBC",
+  "week": "6-day weeks",
+  "loa": "Start 28-Jan-2026",
   "calendar": {
-    "startDate": "2025-08-21",
-    "weeklyOff": []
+    "startDate": "2026-01-28",
+    "weeklyOff": [
+      5
+    ],
+    "_comment": "day 1 = earliest planned start in VisiLean (28-Jan-2026; the schedule runs to 31-Mar-2027). Of 3,351 activities none starts on a Saturday and 559 start on a Sunday, so Saturday is the weekly off (checked 07-Oct-2026)."
   },
   "baselineMode": "visilean",
   "activityTypeFromDepartment": true,
   "departments": {
-    "BD Activities": "initiation",
-    "Project Planning": "initiation",
-    "Land Activities": "land",
-    "Planning and design": "engineering",
-    "Procurement/L3:Service Vendor": "services",
-    "Procurement": "supply",
-    "Statutory": "regulatory",
-    "Execution": "execution",
-    "Project Closure": "hoto"
+    "_comment": "Level 1 of the WBS -> dashboard department. Land & Liaisoning (128 activities) is land, not Project Initiation; Procurement & Vendor Documents splits on Level 2 - Service Procurement (602) is services, Supply Procurement and the OEM WTG supply are supply. The other Level 1s (Project Initiation, Design & Engineering, Execution & Construction, Testing & Commissioning, HOTO) match the built-in rules.",
+    "Land & Liaisoning": "land",
+    "Procurement & Vendor Documents/Service Procurement": "services",
+    "Procurement & Vendor Documents": "supply"
   },
-  "scopeRequiresWbs": true,
   "packageFromField": true,
   "areaRe": "Location[ -]?(\\d+)",
   "areaFromLevel3": "Location[ -]?(\\d+)",
   "areaLabel": "Location-%s",
+  "tbeStep": [
+    "technicalbidevaluation",
+    "technicalcommercialbidevaluation"
+  ],
+  "statSteps": {
+    "cea": [],
+    "cod": [
+      "commercialoperationdatecoddeclaration"
+    ],
+    "sldc": []
+  },
+  "syncRepo": "Vikas-visilean/ntpc-block8-mis-dashboard",
+  "syncWorkflow": "refresh-inox.yml",
+  "_baselineMode_comment": "VisiLean's baseline equals the planned dates on all 3,351 activities (07-Oct-2026), so baseline and forecast read the same until the plan is revised.",
+  "_steps_comment": "poStep, grnStep and rfpStep use the template defaults (poplacement, grnatsite, floatingofrfp), which match INOX's names. The service packages evaluate both bids in one step ('Technical & commercial bid evaluation'), so tbeStep names that too.",
   "procStage": [
     [
       [
-        "pr",
-        "rfq",
-        "tender",
-        "vendorfinalization",
-        "comparative"
+        "rfppreparation",
+        "rfpspecification",
+        "fqap",
+        "mqap",
+        "additionalvendor",
+        "vendorapprovalfromclient",
+        "prfraising",
+        "prfforwtg",
+        "pqsoconfirmation",
+        "floatingofrfp",
+        "vendorproposal",
+        "technicalbid",
+        "technicalcommercialbid",
+        "commercialbid",
+        "cspreparation",
+        "eauction"
       ],
       "Tender"
     ],
     [
       [
-        "po",
-        "purchaseorder",
-        "loi",
-        "advance"
+        "managementapproval",
+        "pqplacement",
+        "poplacement",
+        "abg",
+        "advancepayment"
       ],
       "Order & Advance"
     ],
     [
       [
+        "designdocument"
+      ],
+      "Vendor Docs"
+    ],
+    [
+      [
         "manufacturing",
-        "inspection",
-        "fat",
-        "mdcc",
-        "qap"
+        "stageinspection",
+        "predispatch",
+        "assigninspector",
+        "collectshare",
+        "inspectionreport",
+        "submitquality",
+        "compliancereport",
+        "mdccissuance",
+        "sharemdcc"
       ],
       "Mfg & Quality"
     ],
     [
       [
+        "jmssheet",
+        "jmsabstract",
         "dispatch",
-        "delivery",
-        "receipt",
-        "jms",
-        "unloading"
+        "intercarting",
+        "receiptunloading",
+        "incomingmaterial",
+        "incominginspection",
+        "grnatsite",
+        "afterdeliverygrn"
       ],
       "Delivery / JMS"
     ],
     [
       [
-        "payment"
+        "paymentprocess",
+        "invoicebooking",
+        "finalpaymentprocess"
       ],
       "Payments"
     ]
   ],
-  "stepMatch": "suffix",
-  "poStep": [
-    "po"
-  ],
-  "grnStep": [
-    "materialreceiptatsite"
-  ],
-  "rfpStep": [
-    "pr"
-  ],
-  "tbeStep": [
-    "mdcc"
-  ],
-  "statSteps": {
-    "cea": [],
-    "cod": [],
-    "sldc": []
-  },
-  "syncRepo": "Vikas-visilean/ntpc-block8-mis-dashboard",
-  "syncWorkflow": "refresh-inox.yml"
+  "_procStage_comment": "the template's NTPC stages plus the names only INOX uses: the OEM WTG chain (PRF for WTG component, PQ / SO confirmation, Dispatch clearance, Intercarting, Receipt & unloading, GRN after delivery) and 'Manufacturing / vendor preparation'.",
+  "_statSteps_comment": "the chips are NTPC's milestones; INOX has a COD declaration step under Testing & Commissioning, and its statutory clearance is GEDA's, not CEA's.",
+  "_area_comment": "areas would be turbine locations as on Talaja, but INOX's location field carries none yet (every activity reads Off-site / Office on 07-Oct-2026); the pattern is kept so they appear once the site fills it in."
 }
