@@ -735,6 +735,16 @@ while m0 <= _mend:
     months.append({"label": m0.strftime("%b-%y"), "wd": max((i for i, dt in enumerate(wdates) if dt <= m0), default=0) + 1})
     m0 = (m0 + datetime.timedelta(days=46)).replace(day=1) - datetime.timedelta(days=1)
 
+# Monday-start weeks over the same span as the months, in the NTPC feed's format;
+# the template shows the Monthly / Weekly S-curve toggle whenever DATA.weeks exists
+weeks = []
+w0 = START - datetime.timedelta(days=START.weekday())
+while w0 <= _mend:
+    week_end = w0 + datetime.timedelta(days=6)
+    wd = max((i for i, dt in enumerate(wdates) if dt <= week_end), default=0) + 1
+    weeks.append({"label": w0.strftime("%d-%b-%y"), "wd": wd, "start": w0.isoformat(), "end": week_end.isoformat()})
+    w0 += datetime.timedelta(days=7)
+
 WT_I = 26   # "wt" column - VisiLean's Weightage custom field (asserted below)
 def w_of(x): return x[WT_I] if x[WT_I] and x[WT_I] > 0 else 0.0
 WSUM = sum(w_of(x) for x in rows)
@@ -1082,7 +1092,7 @@ print("logic network: %d activities have a predecessor | %d predecessors are off
       % (len(preds), len(pred_meta)))
 
 _dept_used = {x[0] for x in rows}
-DATA = {"meta": meta, "months": months, "reasons": reasons, "msLeaves": ms_rows,
+DATA = {"meta": meta, "months": months, "weeks": weeks, "reasons": reasons, "msLeaves": ms_rows,
         # the page reads its labels and schedule vocabulary from here (template CFG)
         "cfg": {k: v for k, v in CFG.items() if not k.startswith("_")},
         "preds": {str(k): v for k, v in preds.items()},
