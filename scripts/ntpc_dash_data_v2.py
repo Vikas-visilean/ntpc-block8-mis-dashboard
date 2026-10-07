@@ -143,6 +143,28 @@ def classify_cf(t, depth=0):
     out.update({k: v for k, v in cf.items() if v not in (None, "")})
     return out, str(p.get("taskName") or "")
 
+# KP 07-Oct: the Level 1-7 fields are written once, at the MSP import, and never
+# follow a later rename or move in VisiLean. Task 45552 is "33kV HT Cable Sizing" in
+# the Gantt, yet its children still carry Level 4 "34 KV HT Cable Laying Arrangement
+# Drawing" - so the dashboard showed two drawings of that name. What a reader sees is
+# the tree, so the WBS shown is the tree: the ancestors' live names, project root left
+# out, taken from the same node the Levels describe (for a revision row R0/R1, the
+# classified ancestor it inherits from). Classification still reads the Levels.
+def live_path(t):
+    node, depth = t, 0
+    # a row with no Levels of its own borrowed them from an ancestor: describe that one
+    while not _has_levels(node.get("customField")) and depth < 6:
+        p = GUID.get(node.get("parentGUID"))
+        if p is None:
+            return []
+        node, depth = p, depth + 1
+    names, p = [], GUID.get(node.get("parentGUID"))
+    while p is not None and len(names) < 12:
+        names.append(str(p.get("taskName") or "").strip())
+        p = GUID.get(p.get("parentGUID"))
+    return names[::-1][1:]          # drop the project root
+WBS_STALE = []
+
 # A task copied inside VisiLean keeps the original's MSP UniqueID, so two tasks can
 # share one externalId (45878 and 52506 both carry 12789). Keyed by that id, the copy
 # silently overwrote the original, so VisiLean counted tasks the dashboard never saw.
@@ -177,6 +199,12 @@ for t in TASKS:
     if inherited_from and not t.get("parent"):
         INHERITED.append((str(t.get("taskId") or ""), str(t.get("taskName") or ""), inherited_from))
     L = [cf.get(f"Level {i}", "") or "" for i in range(1, 8)]
+    # the path shown: the live tree where it has the Levels' shape, else the Levels
+    _lv = [x for x in L if x]
+    _lp = live_path(t)
+    W = _lp if (_lp and len(_lp) == len(_lv)) else _lv
+    if _lp and _lp != _lv and not t.get("parent"):
+        WBS_STALE.append((str(t.get("taskId") or ""), " > ".join(_lv), " > ".join(_lp)))
     bs, bf = pdate(t.get("baselineStartDate")), pdate(t.get("baselineEndDate"))
     # "not baselined": VisiLean counts these in All Tasks but leaves them out of
     # Completed / Delayed, because there is no baseline to measure them against.
@@ -197,7 +225,7 @@ for t in TASKS:
         bs = bs or pbs or START
         bf = bf or pbf or bs
     r = {"uid": uid, "name": t.get("taskName") or "", "parent": bool(t.get("parent")),
-         "L": L, "atype": cf.get("Activity Type", ""), "pkgcf": cf.get("Package", ""),
+         "L": L, "W": W, "atype": cf.get("Activity Type", ""), "pkgcf": cf.get("Package", ""),
          "deptcf": cf.get("Department", ""),
          "owner": cf.get("Owner.", "") or cf.get("Owner", ""),
          "tid": str(t.get("taskId") or ""), "org": str(t.get("organisation") or "").strip(),
@@ -290,6 +318,11 @@ if INHERITED:
     print("classification inherited from the parent for %d rows with no custom fields:"
           % len(INHERITED), ", ".join("%s %s<-%s" % x for x in INHERITED[:4]),
           "..." if len(INHERITED) > 4 else "")
+if WBS_STALE:
+    # renamed or moved in VisiLean after the import: the WBS shown follows the tree
+    print("WBS from the live tree, Levels stale on %d rows:" % len(WBS_STALE))
+    for x in WBS_STALE[:8]:
+        print("  %s  Levels: %s  ->  tree: %s" % x)
 
 # ---------- forecast = VisiLean PLANNED dates, verbatim (KP rule 17-Aug-2026) ----------
 # No dashboard-side re-forecasting: VisiLean owns scheduling. Planned start/end
@@ -439,7 +472,9 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     # Deepest WBS level that exists for this row. In Design & Engineering the Package
     # field carries the Level-3 group, so the Level-4 deliverable is the real package;
     # where Level 4 is blank this falls back to the Package field unchanged.
-    item = L[3] if (L[3] and len(L4_SPAN.get(L[3], ())) == 1) else pkg
+    # the deliverable's name as the Gantt shows it now (see live_path)
+    l4 = r["W"][3] if (len(r["W"]) > 3 and all(L[:4])) else L[3]
+    item = l4 if (L[3] and len(L4_SPAN.get(L[3], ())) == 1) else pkg
     stage = ""
     # "R1" matches no stage; the revision belongs to the stage of the activity it
     # revises, so match on the parent's name where one was inherited
@@ -481,7 +516,7 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
                  strip_html(r["desc"])[:120], strip_html(r["note"])[:220],
                  # actual finish, so completed work counts from when it finished
                  (wd_f(r["aF"]) if r["aF"] else None),
-                 r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
+                 r["tid"], " > ".join(r["W"][:5])[:170],
                  ("" if r["org"].lower() == "none" else r["org"])[:60], u,
                  r["pb"], r["sup"], r["appr"][:16],
                  # actual start, for the drill tables' Actual start column
@@ -783,7 +818,7 @@ for r in sorted(leafs.values(), key=lambda x: x["uid"]):
     if not cats and not var: continue          # nothing variance-related to report
     for c in cats:
         if c["rc"]: cat_tally[c["rc"] + " / " + c["cat"]] += 1
-    wbs = " > ".join([x for x in r["L"][:5] if x])
+    wbs = " > ".join(r["W"][:5])
     reasons.append({
         "uid": u, "tid": r["tid"], "org": r["org"], "name": r["name"][:110], "dept": dept_of(r),
         "type": r["atype"], "pkg": str(r["pkgcf"] or "")[:70],
@@ -828,7 +863,7 @@ for r in sorted(milestones_raw, key=lambda x: x["uid"]):
         1 if str(r.get("crit") or "").strip().lower().startswith("y") else 0,
         strip_html(r["desc"])[:120], strip_html(r["note"])[:220],
         (wd_f(r["aF"]) if r["aF"] else None),
-        r["tid"], " > ".join([x for x in r["L"][:5] if x])[:170],
+        r["tid"], " > ".join(r["W"][:5])[:170],
         ("" if r["org"].lower() == "none" else r["org"])[:60], u, r["pb"], r["sup"], r["appr"][:16],
         (wd_s(r["aS"]) if r["aS"] else None), r["ptid"]])
 
