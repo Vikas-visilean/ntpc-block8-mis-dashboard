@@ -837,6 +837,9 @@ const qtyCell=(r,html)=>{
     +` <span class="dim">/ ${p} ${esc(u)}</span>`;
 };
 const DEPTS = DATA.depts, DNAME = {}; DEPTS.forEach(d=>DNAME[d.key]=d.name);
+// Project Initiation has no page of its own (sidebar, department filter, PDF); its
+// activities still count in every total, so no figure changes
+const PAGE_DEPTS = DEPTS.filter(d=>d.key!=="initiation");
 const SW = M.statusWd;
 // ---------- project configuration ----------
 // Everything that names the project or its schedule vocabulary lives here, so the same
@@ -5546,7 +5549,7 @@ const NAVI={
 function navHtml(){
   const top=[["summary","Project Summary"],["layout","Plant Layout"],["pipeline","Package Pipeline"],["constraints","Constraints Log"]];
   document.getElementById("nav-top").innerHTML=top.map(([k,n])=>`<a href="#" data-p="${k}" class="${state.page===k?"on":""}"><svg class="nvi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAVI[k]}</svg>${n}</a>`).join("");
-  document.getElementById("nav-dept").innerHTML=DEPTS.map(d=>
+  document.getElementById("nav-dept").innerHTML=PAGE_DEPTS.map(d=>
     `<a href="#" data-p="d:${d.key}" class="${state.page==="d:"+d.key?"on":""}">${esc(d.name)}</a>`).join("");
   document.querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();state.page=a.dataset.p;render()}));
 }
@@ -5557,7 +5560,7 @@ function fillSelect(id,vals,cur){
 function syncFilterUI(){
   const f=state.f;
   const dsel=document.getElementById("f-dept");
-  dsel.innerHTML=`<option value="">All departments</option>`+DEPTS.map(d=>`<option value="${d.key}" ${f.dept===d.key?"selected":""}>${esc(d.name)}</option>`).join("");
+  dsel.innerHTML=`<option value="">All departments</option>`+PAGE_DEPTS.map(d=>`<option value="${d.key}" ${f.dept===d.key?"selected":""}>${esc(d.name)}</option>`).join("");
   const base=L.filter(r=>!f.dept||r[C.dept]===f.dept);
   fillSelect("f-area",[...new Set(base.map(r=>r[C.area]))].sort((a,b)=>{const na=a.match(AREA_RE),nb=b.match(AREA_RE);if(na&&nb)return +na[1]-+nb[1];if(na)return -1;if(nb)return 1;return a.localeCompare(b)}),f.area);
   fillSelect("f-pkg",[...new Set(base.filter(r=>(!f.area||r[C.area]===f.area)).map(r=>r[C.pkg]))].sort().slice(0,400),f.pkg);
@@ -5593,7 +5596,7 @@ function pageHtml(key){
 }
 const PRINT_ORDER=()=>[["summary","Project Summary"],["layout","Plant Layout"],
   ["pipeline","Package Pipeline"],["constraints","Constraints Log"]]
-  .concat(DEPTS.map(d=>["d:"+d.key,d.name]));
+  .concat(PAGE_DEPTS.map(d=>["d:"+d.key,d.name]));
 // ---------- PDF export ----------
 // The dashboard renders one page at a time, so "download the whole dashboard" means
 // building every page into the document, letting the browser paginate it (A3
@@ -5852,6 +5855,9 @@ function restoreUI(){
     if(s.unit)state.unit=s.unit;
     if(typeof s.at==="number")state.at=s.at;
     if(s.f)state.f=Object.assign(state.f,s.f);
+    // a view saved on the Project Initiation page (or filtered to it) has nowhere to land now
+    if(state.page==="d:initiation")state.page="summary";
+    if(state.f.dept==="initiation")state.f.dept="";
     // no control left for activity type, so a saved value must not filter unseen
     state.f.type="";
     if(Array.isArray(s.scSel)&&s.scSel.length)scSel=s.scSel;
