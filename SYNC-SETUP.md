@@ -18,6 +18,7 @@ offset a few minutes from the next so the pushes do not collide:
 | `refresh-adoption.yml` | `/adoption/` | 10:15, 16:15 |
 | `refresh-updates.yml` | `/updates/` | 10:18, 16:18 |
 | `refresh-talaja.yml` | `/talaja/` | 10:21, 16:21 |
+| `refresh-inox.yml` | `/inox/` | 10:27, 16:27 |
 
 **To refresh on demand:** Actions tab → pick the workflow → *Run workflow*, or
 `gh workflow run <file>`. GitHub starts scheduled runs late by 10-30 min (occasionally
@@ -46,6 +47,7 @@ step, and it is done once.**
 | Adani S7 | `VL_TOKEN_ADANIS7` | `/adani-s7/` |
 | Floating Solar | `VL_TOKEN_FLOATING` | `/floating/` |
 | ABREL Talaja | `VL_TOKEN_TALAJA` | `/talaja/` |
+| INOX Wind 99MW | `VL_TOKEN_INOX` | `/inox/` |
 
 Each secret holds the raw token and nothing else, and every project, Talaja included,
 has exactly one. The Adoption tracker reads the NTPC project, so it uses
@@ -66,7 +68,8 @@ in one flat map:
   "adani":    "…",
   "adanis7":  "…",
   "floating": "…",
-  "talaja":   "…"
+  "talaja":   "…",
+  "inox":     "…"
 }
 ```
 

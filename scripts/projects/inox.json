@@ -1,0 +1,116 @@
+{
+  "_comment": "INOX Wind 99 MW, Khavda - project configuration. Read by the data builder (dash_data.py) and published to the page as DATA.cfg. Never put API tokens here - the token is VL_TOKEN_INOX (fallback the \"inox\" entry of VL_TOKENS_JSON); see vl_token.py. Vocabulary (departments, procurement steps, areas) starts from ABREL Talaja, the other wind project, until INOX's own schedule is checked.",
+  "key": "inox",
+  "projectId": "C554311F-9153-D263-58A2-E36DBA2738E2",
+  "outDir": "inox",
+  "vlLabel": {
+    "Not Ready": "Not Started"
+  },
+  "vlHide": [
+    "Ready",
+    "Forced Ready",
+    "Rejected at QC",
+    "Quality Checked"
+  ],
+  "dataFile": "inox_dashboard_data.json",
+  "relationsFile": "inox_relations.json",
+  "title": "INOX Wind 99MW — MIS Dashboard (Live)",
+  "name": "INOX Wind 99MW",
+  "client": "KP Group",
+  "clientShort": "INOX",
+  "capacity": "99 MW",
+  "location": "Khavda, Gujarat",
+  "plant": "INOX Wind — 99 MW",
+  "tech": "Wind · WTG",
+  "week": "7-day weeks",
+  "loa": "Start TBC",
+  "calendar": {
+    "startDate": "2025-08-21",
+    "weeklyOff": []
+  },
+  "baselineMode": "visilean",
+  "activityTypeFromDepartment": true,
+  "departments": {
+    "BD Activities": "initiation",
+    "Project Planning": "initiation",
+    "Land Activities": "land",
+    "Planning and design": "engineering",
+    "Procurement/L3:Service Vendor": "services",
+    "Procurement": "supply",
+    "Statutory": "regulatory",
+    "Execution": "execution",
+    "Project Closure": "hoto"
+  },
+  "scopeRequiresWbs": true,
+  "packageFromField": true,
+  "areaRe": "Location[ -]?(\\d+)",
+  "areaFromLevel3": "Location[ -]?(\\d+)",
+  "areaLabel": "Location-%s",
+  "procStage": [
+    [
+      [
+        "pr",
+        "rfq",
+        "tender",
+        "vendorfinalization",
+        "comparative"
+      ],
+      "Tender"
+    ],
+    [
+      [
+        "po",
+        "purchaseorder",
+        "loi",
+        "advance"
+      ],
+      "Order & Advance"
+    ],
+    [
+      [
+        "manufacturing",
+        "inspection",
+        "fat",
+        "mdcc",
+        "qap"
+      ],
+      "Mfg & Quality"
+    ],
+    [
+      [
+        "dispatch",
+        "delivery",
+        "receipt",
+        "jms",
+        "unloading"
+      ],
+      "Delivery / JMS"
+    ],
+    [
+      [
+        "payment"
+      ],
+      "Payments"
+    ]
+  ],
+  "stepMatch": "suffix",
+  "poStep": [
+    "po"
+  ],
+  "grnStep": [
+    "materialreceiptatsite"
+  ],
+  "rfpStep": [
+    "pr"
+  ],
+  "tbeStep": [
+    "mdcc"
+  ],
+  "statSteps": {
+    "cea": [],
+    "cod": [],
+    "sldc": []
+  },
+  "syncRepo": "Vikas-visilean/ntpc-block8-mis-dashboard",
+  "syncWorkflow": "refresh-inox.yml"
+}

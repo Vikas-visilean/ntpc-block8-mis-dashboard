@@ -1,0 +1,107 @@
+name: Refresh INOX Wind 99MW dashboard from VisiLean
+
+# Runs twice a day (10:27 and 16:27 IST) and whenever someone presses "Run workflow"
+# in the Actions tab. Each run is ONE refresh: fetch VisiLean, rebuild, commit and push
+# only if the data or the template changed. Same pattern as refresh-adani-s7.yml.
+#
+# Like every project, INOX has one VisiLean token, VL_TOKEN_INOX, serving the task,
+# history and constraint-log feeds; if VisiLean rejects it the builder falls back to the
+# "inox" entry of VL_TOKENS_JSON. See vl_token.py.
+#
+# GitHub fires scheduled runs on a best-effort basis, so a scheduled run may start a
+# little later than asked (typically 10-30 min, worst case ~2 h). Press "Run workflow"
+# if you need the numbers right now.
+
+on:
+  schedule:
+    # cron is UTC. IST = UTC+5:30. Each project is offset a few minutes from the others
+    # so the workers do not all push to the repo at the same second.
+    - cron: "57 4 * * *"      # 10:27 IST
+    - cron: "57 10 * * *"     # 16:27 IST
+  workflow_dispatch:          # manual: Actions tab -> "Run workflow", or `gh workflow run refresh-inox.yml`
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-inox
+  cancel-in-progress: true      # a manual run started during a scheduled one replaces it
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Resolve credentials. VL_TOKEN_INOX is tried first, then the project's entry in
+      # the single VL_TOKENS_JSON secret. Not configured = warning + skipped refresh,
+      # never a failed run - see scripts/sync_preflight.py.
+      - name: Resolve VisiLean credentials
+        id: pre
+        env:
+          VL_TOKENS_JSON: ${{ secrets.VL_TOKENS_JSON }}
+          VL_TOKEN_INOX: ${{ secrets.VL_TOKEN_INOX }}
+        run: python scripts/sync_preflight.py inox
+
+      - name: Refresh once (fetch, build, publish if changed)
+        if: steps.pre.outputs.configured == 'true'
+        env:
+          VL_TOKENS_JSON: ${{ secrets.VL_TOKENS_JSON }}
+          VL_TOKEN_INOX: ${{ secrets.VL_TOKEN_INOX }}
+        run: |
+          set -uo pipefail
+          git config user.name  "visilean-bot"
+          git config user.email "support@visilean.com"
+
+          # VisiLean occasionally blinks; give it three tries two minutes apart before
+          # calling the run failed.
+          built=false
+          for attempt in 1 2 3 ; do
+            echo "::group::attempt $attempt  $(date -u '+%H:%M:%S UTC')"
+            if python scripts/dash_data.py inox && python scripts/build_dash.py inox ; then
+              built=true
+              echo "::endgroup::"
+              break
+            fi
+            echo "attempt $attempt failed (VisiLean unreachable or build error)"
+            echo "::endgroup::"
+            git checkout -- inox 2>/dev/null || true
+            [ "$attempt" -lt 3 ] && sleep 120
+          done
+
+          if [ "$built" != "true" ]; then
+            echo "::error title=INOX Wind 99MW refresh failed::3 attempts failed - VisiLean unreachable, token rejected, or a build error."
+            echo "### INOX Wind 99MW refresh failed" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "All 3 attempts failed. Check the logs above: a rejected token gives HTTP 400 from VisiLean." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          if git diff --quiet -- inox/.datahash inox/.tplhash ; then
+            echo "no data change - nothing published"
+            echo "No change in VisiLean data since the last build; nothing published." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # The other projects publish at about the same time, so a push can be rejected.
+          # Rebasing is the wrong tool here: this page is generated output, not somebody's
+          # edit, and a rebase of it against a concurrent build conflicts and then retries
+          # the same conflict until the run fails. Instead, re-cut the commit on whatever
+          # master has become, keeping the files this run just built. Ours is the newer
+          # render of the newer data, so ours wins by construction and never conflicts.
+          for try in 1 2 3 4 5 ; do
+            git fetch -q origin master
+            git reset -q --mixed origin/master      # keep the built files, move onto master
+            git add inox
+            git commit -q -m "inox auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || {
+              echo "nothing left to publish after $(git rev-parse --short origin/master)"; exit 0; }
+            git push -q && { echo "published"; echo "Published a new build at $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            echo "push retry $try"; sleep $((10*try))
+          done
+          echo "::error::could not push after 5 tries"
+          exit 1

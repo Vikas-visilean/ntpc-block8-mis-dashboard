@@ -23,7 +23,7 @@ SCR = os.path.dirname(os.path.abspath(__file__))
 TOKENS_FILE = os.path.join(SCR, "vl_tokens.json")
 TOKENS_FILE_NAME = "scripts/vl_tokens.json"
 
-KEYS = ("ntpc", "sjvn", "adani", "adanis7", "floating", "talaja")
+KEYS = ("ntpc", "sjvn", "adani", "adanis7", "floating", "talaja", "inox")
 LABELS = {
     "ntpc":     "NTPC Bikaner Block 8",
     "sjvn":     "SJVN Khavda",
@@ -31,6 +31,7 @@ LABELS = {
     "adanis7":  "Adani S7",
     "floating": "Floating Solar",
     "talaja":   "ABREL Talaja",
+    "inox":     "INOX Wind 99MW",
 }
 # Every project, ABREL Talaja included, has exactly one token and it serves every feed:
 # the Include* flags in the URL choose what comes back. (Until 30-Sep-2026 Talaja ran on

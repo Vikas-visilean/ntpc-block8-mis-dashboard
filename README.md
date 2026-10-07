@@ -32,6 +32,7 @@ VisiLean token.
 | `adanis7` | Adani Green Energy S7 · 300 MW | `11127A8C-E796-06BF-8B4A-82CF074A6C4E` | [/adani-s7/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/adani-s7/) | `refresh-adani-s7.yml` | `VL_TOKEN_ADANIS7` |
 | `floating` | Floating Solar · Kadana Dam · 110 MW | `A52816EA-1EA7-A978-EEEA-29A0D775CD7F` | [/floating/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/floating/) | `refresh-floating.yml` | `VL_TOKEN_FLOATING` |
 | `talaja` | ABREL Talaja · 83.7 MW wind | `2F7F0BA6-2345-C92E-81E8-C034D1E9848D` | [/talaja/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/talaja/) | `refresh-talaja.yml` | `VL_TOKEN_TALAJA` |
+| `inox` | INOX Wind · 99 MW wind, Khavda | `C554311F-9153-D263-58A2-E36DBA2738E2` | [/inox/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/inox/) | `refresh-inox.yml` | `VL_TOKEN_INOX` |
 
 The two user-activity reports reuse those projects' tokens; neither has one of its own.
 
@@ -109,7 +110,8 @@ token serves all of that project's feeds. Each project's token is a repository s
   "adani":    "<Adani S6a token>",
   "adanis7":  "<Adani S7 token>",
   "floating": "<Floating Solar token>",
-  "talaja":   "<ABREL Talaja token>"
+  "talaja":   "<ABREL Talaja token>",
+  "inox":     "<INOX Wind token>"
 }
 ```
 
