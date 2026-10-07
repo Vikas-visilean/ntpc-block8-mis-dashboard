@@ -106,6 +106,7 @@ h1{font-size:14px;font-weight:700}
    Only the header description is hidden - labels inside a card body (the S-curve's
    Cumulative / Monthly, definition footnotes) are content, so they stay. */
 .card>.hdrrow .hint,.card>h2+.hint{display:none}
+.wtag{font-size:11.5px;font-weight:600;color:var(--ink);background:var(--blue-wash);border-radius:999px;padding:2px 10px;cursor:help;white-space:nowrap}
 .hdrrow{display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap}
 .stack{display:flex;flex-direction:column;gap:12px;min-width:0}.stack>.card{flex:1 1 auto}
 .span2{grid-column:span 2}.span3{grid-column:span 3}.span4{grid-column:span 4}.span5{grid-column:span 5}.span6{grid-column:span 6}.span7{grid-column:span 7}.span8{grid-column:span 8}.span10{grid-column:span 10}.span12{grid-column:span 12}
@@ -379,6 +380,10 @@ tr.predrow td:first-child{box-shadow:inset 3px 0 0 var(--crit)}
 /* give every column room; the box scrolls sideways rather than crushing text */
 #rsnmodal-bd .dbox table{min-width:1180px}
 #rsnmodal-bd .dbox th,#rsnmodal-bd .dbox td{vertical-align:top}
+/* a node's own activities, nested under it */
+#rsnmodal-bd .dbox tr.kidrow td{background:var(--line2);border-top-color:transparent}
+#rsnmodal-bd .dbox tr.kidrow .kidnm{display:inline-block;padding-left:18px;font-weight:600;color:var(--ink)}
+#rsnmodal-bd .dbox tr.kidrow .kidnm:before{content:"↳ ";color:var(--mut)}
 #rsnmodal-bd .dbox td{overflow-wrap:anywhere}
 #rsnmodal-bd .dbox tr:hover td{background:var(--blue-wash)}
 .dfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;
@@ -1047,8 +1052,9 @@ function gaugeCard(rows,span){
   const basis=`weightage-based · earned units ÷ total units over the ${rows.length.toLocaleString()} activities in view`
     +` · they carry ${fmt1(wsum)}% of project weight · ${fmt1(wc)}% of them have a weightage set`
     +(sup?` · ${sup} superseded revision${sup===1?"":"s"} carry no weight — the deliverable's weight sits on its current revision`:``);
-  return `<div class="card ${span||"span4"}"><h2>Overall progress</h2>
-   <div class="hint">${basis}</div>
+  // KP 07-Oct: card descriptions are hidden, so the basis goes on the title line
+  return `<div class="card ${span||"span4"}"><div class="hdrrow" style="justify-content:flex-start;align-items:center">
+   <h2>Overall progress</h2><span class="wtag" title="${esc(basis)}">Weightage based</span></div>
    <div class="gwrap">${gauge(a,p)}
     <div class="gstats">
      <span class="k">SPI — Schedule Performance Index<br><span style="font-weight:400">(= Actual % ÷ Planned %)</span></span><span class="v">${spi?spi.toFixed(2):"—"}</span>
@@ -1507,7 +1513,15 @@ function drillRender(){
     const cls=[clickable?"drow":"",s.rowClass?(s.rowClass(r)||""):""].filter(Boolean).join(" ");
     h+=`<tr${cls?` class="${cls}"`:""}${clickable?' style="cursor:pointer" title="Open activity detail"':""} data-rid="${esc(s.rowId?s.rowId(r):"")}" data-uid="${ru}">`;
     cols.forEach(c=>{h+=`<td class="${c.num?"num":""}">${c.html?c.html(r):esc(String(c.get(r)??"—"))}</td>`});
-    h+=`</tr>`});
+    h+=`</tr>`;
+    // a WBS node's own activities, one indented row each under it (Submission to
+    // Client -> R0, R1), read the way VisiLean's Gantt nests them
+    if(s.kids)s.kids(r).forEach(k=>{
+      const ku=(C.uid!==undefined&&k[C.uid]!=null)?k[C.uid]:"";
+      h+=`<tr class="kidrow${ku!==""?" drow":""}"${ku!==""?' style="cursor:pointer" title="Open activity detail"':""} data-rid="" data-uid="${ku}">`;
+      cols.forEach(c=>{h+=`<td class="${c.num?"num":""}">${c.kid?c.kid(k):""}</td>`});
+      h+=`</tr>`});
+  });
   if(!page.length)h+=`<tr><td colspan="${cols.length}" style="color:var(--mut);padding:14px">No rows for this selection.</td></tr>`;
   h+=`</table></div>`;
   const from=total?_dpage*DPAGE+1:0,to=Math.min(total,(_dpage+1)*DPAGE);
@@ -1551,15 +1565,17 @@ function drillRender(){
     const p=document.getElementById("d-prev"),n=document.getElementById("d-next"),c=document.getElementById("d-copy");
     if(p)p.addEventListener("click",()=>{if(_dpage>0){_dpage--;drillRender()}});
     if(n)n.addEventListener("click",()=>{_dpage++;drillRender()});
-    const cell=(x,r)=>String(x.txt?x.txt(r):(x.get(r)??"")).replace(/\s+/g," ").trim();
+    const cell=(x,r)=>String(r&&r.__kid?(x.kidTxt?x.kidTxt(r.k):""):(x.txt?x.txt(r):(x.get(r)??""))).replace(/\s+/g," ").trim();
+    // the export carries the nested activities too, each straight after its parent
+    const withKids=rs=>_dspec.kids?rs.flatMap(r=>[r,..._dspec.kids(r).map(k=>({__kid:1,k}))]):rs;
     if(c)c.addEventListener("click",()=>{
-      const cs=drillCols(),rs=drillRows();
+      const cs=drillCols(),rs=withKids(drillRows());
       const txt=[cs.map(x=>x.label).join("\t")].concat(
         rs.map(r=>cs.map(x=>cell(x,r)).join("\t"))).join("\n");
       copyOut(txt,c,"Copied "+rs.length+" rows","Copy");});
     const xb=document.getElementById("d-csv");
     if(xb)xb.addEventListener("click",()=>{
-      const s2=_dspec,cs=drillCols(),rs=drillRows();
+      const s2=_dspec,cs=drillCols(),rs=withKids(drillRows());
       const esq=v=>`"${String(v).replace(/"/g,'""')}"`;
       const lines=[cs.map(x=>esq(x.label)).join(",")].concat(
         rs.map(r=>cs.map(x=>esq(cell(x,r))).join(",")));
@@ -3144,6 +3160,7 @@ function stcUnits(rows){
   const units=[];
   all.filter(r=>STC_RE.test(String(r[C.name]||""))).forEach(r=>units.push({
     drawing:apprDrawing(r),pkg:String(r[C.pkg]||"").trim(),wbs:String(r[C.wbs]||""),
+    tid:String(r[C.tid]||""),pct:r[C.pct]||0,
     status:st(r),chip:rowChip(r),revs:[],acts:[r],
     bs:r[C.bES],be:r[C.bEF],as:actS(r),ae:actF(r)}));
   const grp=new Map();
@@ -3155,7 +3172,11 @@ function stcUnits(rows){
     const s=rr.map(st), done=s.every(x=>x==="Complete"), any=s.some(x=>x==="Complete"||x==="Started");
     const status=done?"Complete":(any?"Started":s[0]);
     const as=rr.map(actS).filter(x=>x!=null), ae=rr.map(actF);
+    // the node's progress as VisiLean rolls it up: its activities weighted by duration
+    const dw=rr.reduce((x,r)=>x+Math.max(1,r[C.dur]||0),0);
     units.push({drawing:apprDrawing(rr[0]),pkg:String(rr[0][C.pkg]||"").trim(),wbs:String(rr[0][C.wbs]||""),
+      tid:(C.ptid!==undefined&&rr[0][C.ptid])?String(rr[0][C.ptid]):"",
+      pct:rr.reduce((x,r)=>x+(r[C.pct]||0)*Math.max(1,r[C.dur]||0),0)/dw,
       status,chip:done?chip("vlc",vlText("complete")):(any?chip("vls",vlText("started")):rowChip(rr[0])),
       revs:rr,acts:rr,
       bs:Math.min(...rr.map(r=>r[C.bES])),be:Math.max(...rr.map(r=>r[C.bEF])),
@@ -3170,23 +3191,36 @@ function stcDrill(units,cats,sub,pkg){
   const cmp=(a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:"base"});
   const rows=(pkg?units.filter(u=>(u.pkg||"—")===pkg):units).slice().sort((a,b)=>cmp(a.drawing,b.drawing));
   const tags=u=>[...new Set(u.revs.map(r=>r[C.appr]).filter(Boolean))].sort(cmp);
-  const revTxt=u=>u.revs.slice().sort((a,b)=>cmp(b[C.name],a[C.name]))
-    .map(r=>String(r[C.name]||"")+(r[C.appr]?" ("+r[C.appr]+")":"")).join(" · ");
   const dt=(w,f)=>w==null?"—":(f?dFin(w):dStart(w));
+  const dash=`<span class="dim">—</span>`;
+  // VisiLean can hold two drawings of the same name in one package (e.g. a copied
+  // WBS). Say so on the row - the Task ID tells them apart.
+  const nm=new Map();
+  units.forEach(u=>{const k=u.drawing+"\x00"+u.pkg;nm.set(k,(nm.get(k)||0)+1)});
+  const twin=u=>nm.get(u.drawing+"\x00"+u.pkg)||1;
+  // the revisions nested under a node, oldest first as the Gantt lists them
+  const kids=u=>u.revs.slice().sort((a,b)=>cmp(a[C.name],b[C.name]));
   drillOpen({eyebrow:"Design & Engineering"+(pkg?" · "+pkg:""),title:"Submission to Client",
     status:pill("info",`${rows.length} submissions`),
-    rows,rowId:u=>u.key,sub:sub||"all",
+    rows,rowId:u=>u.key,sub:sub||"all",kids,
     cols:[
-      {k:"d",label:"Drawing",w:250,get:u=>u.drawing,html:u=>`<b title="${esc(u.wbs)}">${esc(u.drawing)}</b>`},
-      {k:"p",label:"Design package",w:150,get:u=>u.pkg||"—"},
-      {k:"s",label:"Status",w:100,get:u=>u.status,html:u=>u.chip},
+      {k:"t",label:"Task ID",w:74,get:u=>u.tid||"—",kid:r=>esc(String(r[C.tid]||"—")),kidTxt:r=>r[C.tid]||"—"},
+      {k:"d",label:"Drawing / activity",w:270,get:u=>u.drawing,
+       html:u=>`<b title="${esc(u.wbs)}">${esc(u.drawing)}</b><div class="small dim">${u.revs.length?`Submission to Client · ${u.revs.length} revision${u.revs.length===1?"":"s"}`:"Submission to Client"}</div>`+
+         (twin(u)>1?`<div class="small" style="color:var(--crit-text)">${twin(u)} drawings share this name in VisiLean — see Task ID</div>`:""),
+       kid:r=>`<span class="kidnm" title="${esc(String(r[C.wbs]||""))}">${esc(String(r[C.name]||""))}</span>`,
+       kidTxt:r=>"  > "+String(r[C.name]||"")},
+      {k:"p",label:"Design package",w:150,get:u=>u.pkg||"—",kid:r=>esc(String(r[C.pkg]||"—").trim()),kidTxt:r=>String(r[C.pkg]||"—").trim()},
+      {k:"s",label:"Status",w:100,get:u=>u.status,html:u=>u.chip,kid:r=>rowChip(r),kidTxt:r=>rowStatus(r)[1]},
+      {k:"pc",label:"% complete",w:78,num:true,get:u=>Math.round(u.pct),kid:r=>Math.round(r[C.pct]||0),kidTxt:r=>Math.round(r[C.pct]||0)},
       {k:"c",label:"Approval type",w:110,get:u=>tags(u).join(", ")||"—",
-       html:u=>tags(u).map(t=>chip("blue",esc(t))).join(" ")||`<span class="dim">—</span>`},
-      {k:"r",label:"Revisions",w:150,get:u=>revTxt(u)||"—"},
-      {k:"bs",label:"Baseline start",get:u=>u.bs,html:u=>dt(u.bs),txt:u=>dt(u.bs)},
-      {k:"be",label:"Baseline end",get:u=>u.be,html:u=>dt(u.be,1),txt:u=>dt(u.be,1)},
-      {k:"as",label:"Actual start",get:u=>u.as??1e9,html:u=>dt(u.as),txt:u=>dt(u.as)},
-      {k:"ae",label:"Actual end",get:u=>u.ae??1e9,html:u=>u.ae==null?`<span class="dim">—</span>`:`<b>${dt(u.ae,1)}</b>`,txt:u=>dt(u.ae,1)}],
+       html:u=>tags(u).map(t=>chip("blue",esc(t))).join(" ")||dash,
+       kid:r=>r[C.appr]?chip("blue",esc(r[C.appr])):dash,kidTxt:r=>r[C.appr]||"—"},
+      {k:"bs",label:"Baseline start",get:u=>u.bs,html:u=>dt(u.bs),txt:u=>dt(u.bs),kid:r=>dt(r[C.bES]),kidTxt:r=>dt(r[C.bES])},
+      {k:"be",label:"Baseline end",get:u=>u.be,html:u=>dt(u.be,1),txt:u=>dt(u.be,1),kid:r=>dt(r[C.bEF],1),kidTxt:r=>dt(r[C.bEF],1)},
+      {k:"as",label:"Actual start",get:u=>u.as??1e9,html:u=>dt(u.as),txt:u=>dt(u.as),kid:r=>actS(r)==null?dash:dt(actS(r)),kidTxt:r=>dt(actS(r))},
+      {k:"ae",label:"Actual end",get:u=>u.ae??1e9,html:u=>u.ae==null?dash:`<b>${dt(u.ae,1)}</b>`,txt:u=>dt(u.ae,1),
+       kid:r=>actF(r)==null?dash:dt(actF(r),1),kidTxt:r=>dt(actF(r),1)}],
     subsets:[{k:"all",label:"All"},
              {k:"done",label:"Completed",f:u=>u.status==="Complete"},
              {k:"started",label:"Started",f:u=>u.status==="Started"},
