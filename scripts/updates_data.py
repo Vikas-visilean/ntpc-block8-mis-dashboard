@@ -36,7 +36,7 @@ BASE = "https://app.visilean.net/pb/PowerBiAPI/resource/powerBi/getData/visilean
 IST = timezone(timedelta(hours=5, minutes=30))
 
 # the projects this report covers, in the order KP reads them
-PROJECT_KEYS = ["ntpc", "adani", "adanis7", "talaja", "floating"]
+PROJECT_KEYS = ["ntpc", "sjvn", "adani", "adanis7", "floating", "talaja", "inox"]
 
 # Why file uploads are missing, checked 28-Sep-2026.
 #

@@ -366,13 +366,23 @@ function auZoom(dir){                    // -1 out, +1 in, 0 fit
   i=Math.max(0,Math.min(AU_STEPS.length-1,i+dir));
   AU_Z=AU_STEPS[i];render();
 }
+let AU_MODE="day";
 let AU_DAYS=0,AU_PER=0;                  // what the last render actually used
 function usersOverTime(rs,id){
-  const g={};rs.forEach(r=>{const d=(r[C.ts]||"").slice(0,10);if(!d)return;(g[d]=g[d]||new Set()).add(r[C.actor])});
+  const g={};rs.forEach(r=>{
+    let d=(r[C.ts]||"").slice(0,10);
+    if(!d)return;
+    if(AU_MODE==="week") d = dMon(d);
+    (g[d]=g[d]||new Set()).add(r[C.actor])
+  });
   const ks=Object.keys(g).sort();
   if(!ks.length)return `<div class="empty">No dated updates in this selection.</div>`;
   const all=[];{const a=new Date(ks[0]+"T12:00:00Z"),b=new Date(ks[ks.length-1]+"T12:00:00Z");
-    while(a<=b&&all.length<400){all.push(a.toISOString().slice(0,10));a.setUTCDate(a.getUTCDate()+1)}
+    while(a<=b&&all.length<400){
+      const iso = a.toISOString().slice(0,10);
+      if(AU_MODE==="day" || iso === dMon(iso)) all.push(iso);
+      a.setUTCDate(a.getUTCDate()+1);
+    }
     if(all.length>=400)all.length=0}                      // absurd span: chart only the days present
   if(!all.length)ks.forEach(k=>all.push(k));
   const val=d=>(g[d]?g[d].size:0);
@@ -414,10 +424,20 @@ function usersOverTime(rs,id){
   s+=`</svg></div>`;
   setTimeout(()=>{document.querySelectorAll(`#${id} .vbar`).forEach(el=>{
     const d=el.dataset.v,v=val(d);
-    el.addEventListener("mousemove",e=>showTip(e,`<b>${dshow(d+"T00:00:00")}</b><br>${v} active user${v===1?"":"s"}`
-      +(v?`<br><span style="opacity:.75">${esc([...g[d]].join(", "))}</span><br>click to filter to this day`:"")));
+    let lbl = dshow(d+"T00:00:00");
+    if(AU_MODE==="week") lbl = `${lbl} to ${dshow(dAdd(d,6)+"T00:00:00")}`;
+    el.addEventListener("mousemove",e=>showTip(e,`<b>${lbl}</b><br>${v} active user${v===1?"":"s"}`
+      +(v?`<br><span style="opacity:.75">${esc([...g[d]].join(", "))}</span><br>click to filter to this ${AU_MODE}`:"")));
     el.addEventListener("mouseleave",hideTip);
-    if(v)el.addEventListener("click",()=>{hideTip();toggle("day",d)})})},0);
+    if(v)el.addEventListener("click",()=>{
+      hideTip();
+      if(AU_MODE==="day") toggle("day",d);
+      else {
+        S.day.clear();
+        F.d1=d; F.d2=dAdd(d,6);
+        page=0; render();
+      }
+    })})},0);
   return s;
 }
 /* ---------- vertical bars with axis titles, as in the reference ---------- */
@@ -653,10 +673,14 @@ function render(){
       <button id="au-in" ${atMax?"disabled":""} title="zoom in">+</button>
       <span class="dim">${AU_PER?`${AU_PER}px / day · scroll sideways`:`${fmt(AU_DAYS)} days in view`}</span>
     </div>`;
+   const auModeToggle = `<div class="thm" id="au-mode" style="margin-right:8px">
+     <button data-m="day" class="${AU_MODE==="day"?"on":""}">Day</button>
+     <button data-m="week" class="${AU_MODE==="week"?"on":""}">Week</button>
+   </div>`;
    h+=card("sp12","Number of active users over time",
-     "distinct people who updated on each day · click a point to filter to that day",
+     `distinct people who updated on each ${AU_MODE} · click a point to filter to that ${AU_MODE}`,
      chart,
-     `${peakDay?`<span class="chip info">peak ${dayUsers[peakDay].size} users on ${dshow(peakDay+"T00:00:00")}</span> `:""}${zoom}`);}
+     `<div style="display:flex;align-items:center;gap:8px">${peakDay?`<span class="chip info">peak ${dayUsers[peakDay].size} users on ${dshow(peakDay+"T00:00:00")}</span>`:""}${auModeToggle}${zoom}</div>`);}
   h+=weekSummary();
   h+=neverUpdatedCard();
   h+=card("sp6","No of Updates made by Users","click a bar to filter the page to that person",
@@ -692,6 +716,7 @@ function render(){
   document.getElementById("page").innerHTML=h;
   {const o=document.getElementById("au-out"),fi=document.getElementById("au-fit"),i=document.getElementById("au-in");
    if(o)o.onclick=()=>auZoom(-1); if(fi)fi.onclick=()=>auZoom(0); if(i)i.onclick=()=>auZoom(1);}
+  document.querySelectorAll("#au-mode button").forEach(b=>b.onclick=()=>{if(AU_MODE!==b.dataset.m){AU_MODE=b.dataset.m;AU_Z=null;render()}});
 
   document.querySelectorAll("[data-un]").forEach(el=>el.onclick=()=>toggle(el.dataset.un,el.dataset.v));
   document.querySelectorAll("[data-clr]").forEach(el=>el.onclick=()=>{F[el.dataset.clr]="";page=0;render()});
