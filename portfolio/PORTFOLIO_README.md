@@ -23,6 +23,7 @@ How it is wired into the repo's GitHub Actions and Pages setup: [HOW_TO_INTEGRAT
 | NTPC Bikaner | `v3/` | Solar | 200 MW | Bikaner, Rajasthan | EPC |
 | SJVN Khavda | `sjvn/` | Solar | 200 MW | Khavda, Gujarat | EPC |
 | Floating Solar | `floating/` | Solar | 110 MW | Kadana Dam, Gujarat | EPC |
+| INOX Wind | `inox/` | Wind | 99 MW | Khavda, Gujarat | EPC |
 
 - KP supplied the Type, Capacity, Location and Type of project values. The pages do not hold them in this form.
 - The `adoption/` and `updates/` reports are deliberately left out for now.
@@ -33,7 +34,7 @@ How it is wired into the repo's GitHub Actions and Pages setup: [HOW_TO_INTEGRAT
 
 ### 1. Reading the data already in the project pages
 
-Each project page (`<folder>/index.html`) carries its full dataset as plain JSON in an inline script: `const DATA = {...};`. All six pages come from the same template, `scripts/ntpc_dash_template_v3.html`, so the data has the same shape:
+Each project page (`<folder>/index.html`) carries its full dataset as plain JSON in an inline script: `const DATA = {...};`. All seven pages come from the same template, `scripts/ntpc_dash_template_v3.html`, so the data has the same shape:
 
 - **`meta`:** status date, plan %, actual %, SPI, COD (commercial operation date) baseline and forecast, and activity counts. This is the same content as `meta.json`.
 - **`cfg`:** the project config, including its calendar, document rule (`acceptRe`) and PO step (`poStep`).
@@ -96,7 +97,7 @@ Details:
 |---|---|
 | `scripts/portfolio_template.html` | the page design, with a `__PAYLOAD__` placeholder for the data |
 | `scripts/projects/portfolio.json` | the values KP supplied (name, type, MW, location, contract type) and the project order |
-| `scripts/build_portfolio.py` | reads the six project pages, recalculates (sections 1–3a), runs the checks, fills the template and writes `portfolio/index.html`, `meta.json`, `.datahash` and `.tplhash` |
+| `scripts/build_portfolio.py` | reads the seven project pages, recalculates (sections 1–3a), runs the checks, fills the template and writes `portfolio/index.html`, `meta.json`, `.datahash` and `.tplhash` |
 
 ```
 python scripts/build_portfolio.py                      # from the project pages in this checkout

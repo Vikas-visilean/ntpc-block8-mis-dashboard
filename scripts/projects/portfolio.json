@@ -6,6 +6,7 @@
     {"id": "talaja",   "name": "ABREL Talaja",   "type": "Wind",  "mw": 83.75, "site": "Talaja",     "state": "Gujarat",   "contract": "EPC"},
     {"id": "v3",       "name": "NTPC Bikaner",   "type": "Solar", "mw": 200,   "site": "Bikaner",    "state": "Rajasthan", "contract": "EPC"},
     {"id": "sjvn",     "name": "SJVN Khavda",    "type": "Solar", "mw": 200,   "site": "Khavda",     "state": "Gujarat",   "contract": "EPC"},
-    {"id": "floating", "name": "Floating Solar", "type": "Solar", "mw": 110,   "site": "Kadana Dam", "state": "Gujarat",   "contract": "EPC"}
+    {"id": "floating", "name": "Floating Solar", "type": "Solar", "mw": 110,   "site": "Kadana Dam", "state": "Gujarat",   "contract": "EPC"},
+    {"id": "inox",     "name": "INOX Wind",      "type": "Wind",  "mw": 99,    "site": "Khavda",     "state": "Gujarat",   "contract": "EPC"}
   ]
 }

@@ -5,13 +5,14 @@ name: Refresh portfolio page
 
 on:
   workflow_run:
-    workflows:                # exact `name:` lines of the six feeding workflows
+    workflows:                # exact `name:` lines of the seven feeding workflows
       - "Refresh v2 dashboard from VisiLean"           # NTPC - builds v2 AND v3; the portfolio reads v3/
       - "Refresh SJVN dashboard from VisiLean"
       - "Refresh Adani S6a dashboard from VisiLean"
       - "Refresh Adani S7 dashboard from VisiLean"
       - "Refresh Floating Solar dashboard from VisiLean"
       - "Refresh ABREL Talaja dashboard from VisiLean"
+      - "Refresh INOX Wind 99MW dashboard from VisiLean"
     types: [completed]
   schedule:
     - cron: "15 5 * * *"      # 10:45 IST, after the morning project refreshes
@@ -19,7 +20,7 @@ on:
   workflow_dispatch:          # manual: Actions tab -> "Run workflow", or `gh workflow run refresh-portfolio.yml`
     inputs:
       refresh_projects:
-        description: "Refresh all six projects from VisiLean first, then rebuild"
+        description: "Refresh all seven projects from VisiLean first, then rebuild"
         type: boolean
         default: false
 
@@ -36,16 +37,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60         # 15 is plenty for a plain rebuild; the wait below can take longer
     steps:
-      # Manual run with "refresh projects" ticked: start the six project workflows, wait
+      # Manual run with "refresh projects" ticked: start the seven project workflows, wait
       # for them to finish, then fall through to the build. Waiting here, rather than
-      # relying on workflow_run, guarantees the rebuild sees all six new pages.
+      # relying on workflow_run, guarantees the rebuild sees all seven new pages.
       - name: Refresh the projects first (manual runs only)
         if: github.event_name == 'workflow_dispatch' && inputs.refresh_projects
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -uo pipefail
-          WFS="refresh-v2.yml refresh-sjvn.yml refresh-adani.yml refresh-adani-s7.yml refresh-floating.yml refresh-talaja.yml"
+          WFS="refresh-v2.yml refresh-sjvn.yml refresh-adani.yml refresh-adani-s7.yml refresh-floating.yml refresh-talaja.yml refresh-inox.yml"
           since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           for wf in $WFS; do gh workflow run "$wf" -R "$GITHUB_REPOSITORY" --ref master; done
           sleep 30
@@ -56,7 +57,7 @@ jobs:
                      --json status,createdAt --jq "[.[] | select(.createdAt >= \"$since\")][0].status // \"missing\"")
               [ "$st" = "completed" ] || pending=$((pending+1))
             done
-            [ "$pending" -eq 0 ] && { echo "all six project refreshes finished"; break; }
+            [ "$pending" -eq 0 ] && { echo "all seven project refreshes finished"; break; }
             echo "waiting on $pending project refresh(es)…"; sleep 30
           done
           for wf in $WFS; do
