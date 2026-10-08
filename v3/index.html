@@ -663,8 +663,8 @@ html{zoom:1.04}
 .stk i.a{left:0;background:var(--good)}.stk i.a.warn{background:var(--warn)}.stk i.a.bad{background:var(--crit)}
 .stk i.g{background:var(--plan-seg);border-radius:0 999px 999px 0}
 .psch{position:relative;height:230px}
-.psch.sm{height:170px}
-.psch.wk{height:270px}.psch.sm.wk{height:215px}
+.psch.sm{height:260px}
+.psch.wk{height:270px}.psch.sm.wk{height:300px}
 .scx{overflow:hidden}
 .scx.wk{overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
 .scrow{display:flex;align-items:flex-start}
@@ -696,6 +696,7 @@ html{zoom:1.04}
 .ps .card.rsnll{height:425px;overflow:hidden}
 .ps .rsnll .rsndonut{max-width:270px}
 .ps .card.rsnll{display:flex;flex-direction:column}
+.ps .card.psstg{display:flex;flex-direction:column}.ps .card.psstg>.psch{flex:1 1 0;height:auto!important;min-height:var(--h)}.ps .card.psstg>.psch>canvas{position:absolute;inset:0}
 .ps .rsnll>.rsnbody{flex:1;align-items:center!important}
 .ps .span8 .rsnrow{justify-content:space-evenly}
 /* gauge card: title, weightage note and status badge on one line */
@@ -2124,6 +2125,7 @@ let scMode="cum";
 // Monthly or weekly buckets for every S-curve. Each period is a point at its END
 // (month-end / week-end working day), so the curves read the same either way.
 let scPer="m";
+let scWide=lsGet("kp-scwide")==="1";   // S-curve card spread to the full row
 const HASWK=()=>(DATA.weeks||[]).length>0;
 function scPeriods(){return (scPer==="w"&&HASWK())?DATA.weeks:DATA.months}
 function scPerName(){return (scPer==="w"&&HASWK())?"Week":"Month"}
@@ -2177,7 +2179,6 @@ function scFrame(ps,ymax,elId){
 // value printed - nothing is hidden, the rest just become readable.
 function scBarMax(vals){
   const v=vals.filter(x=>x>0).sort((a,b)=>b-a);
-  if(v.length>2&&v[0]>2.2*v[1])return {ymax:Math.max(1,v[1]*1.3),clip:true};
   return {ymax:Math.max(5,v[0]||0)*1.06,clip:false};
 }
 // The activities behind one period's bars: planned work that falls in the period,
@@ -5106,7 +5107,7 @@ function psStage(rows,sets,id){
               y:{grid:{display:false},border:{color:cssv("--line")},ticks:{color:cssv("--ink"),autoSkip:false}}},
       plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${unitVal(c.raw)}`}}}}}),0);
   return `<div class="legend"><span><span class="sw" style="background:var(--good)"></span>Actual (amber / red = behind plan)</span><span><span class="sw" style="background:var(--plan-seg)"></span>Baseline plan</span></div>
-    <div class="psch" style="height:${S.length*30+36}px"><canvas id="${id}" role="img" aria-label="Progress, actual against plan"></canvas></div>`;
+    <div class="psch" style="--h:${S.length*30+36}px;height:var(--h)"><canvas id="${id}" role="img" aria-label="Progress, actual against plan"></canvas></div>`;
 }
 function psScBox(rows){
   const sels=SC_SERIES.filter(x=>scSel.includes(x[0]));
@@ -5124,7 +5125,7 @@ function psScBox(rows){
         <div><div class="v">${fmt1(p)}%</div><div class="eyebrow">Plan</div></div>
         <div><div class="v${a-p<0?" neg":""}">${pts1(a-p)}%</div><div class="eyebrow">Gap</div></div></div>`;}
   const wk=scPer==="w"&&HASWK(), row=(id,cls,lbl)=>`<div class="scrow"><canvas class="ysx" id="${id}-y" aria-hidden="true"></canvas><div class="psch${cls}${wk?" wk":""}" id="${id}-w"><canvas id="${id}-cv" role="img" aria-label="${lbl}"></canvas></div></div>`;
-  return `${stat}<div class="scx${wk?" wk":""}" id="sc-scx"><div class="pslbl">Cumulative${wk?" · scroll sideways for every week":""}</div>${row("sc","","Cumulative S-curve")}
+  return `${stat}<div class="scx${wk?" wk":""}" id="sc-scx"><div class="pslbl">Cumulative${wk&&!scWide?" · scroll sideways for every week":""}</div>${row("sc","","Cumulative S-curve")}
     <div class="pslbl" style="margin-top:12px">${wk?"Weekly":"Monthly"}${sels.length===1?" · click a bar for its activities":""}</div>${row("sc2"," sm","S-curve per period")}</div>
     <div class="legend" style="margin-top:8px">${leg}${sels.length===1?`<span><span class="sw" style="background:var(--plan-seg)"></span>Plan / period</span><span><span class="sw" style="background:var(--c-act)"></span>Actual / period</span>`:""}</div>`;
 }
@@ -5141,9 +5142,10 @@ function psSc(rows,id,per,sels){
   const pct=c=>`${c.dataset.label} ${fmt1(c.parsed.y)}%`;
   // weekly: WK_PX per week so every label fits; the box scrolls, the y-axis is pinned by psYStick
   const wk=scPer==="w"&&HASWK(), wrap=document.getElementById(id+"-w");
-  if(wk&&wrap)wrap.style.width=Math.max(wrap.closest(".scx").clientWidth,n*WK_PX+70)+"px";
+  const wpx=wk&&wrap&&scWide?Math.max(8,Math.min(WK_PX,(wrap.closest(".scx").clientWidth-70)/n)):WK_PX;
+  if(wk&&wrap)wrap.style.width=Math.max(wrap.closest(".scx").clientWidth,n*wpx+70)+"px";
   const xt=wk?{autoSkip:false,maxRotation:50,minRotation:50,font:{size:10}}:{maxRotation:0,autoSkip:true,maxTicksLimit:12};
-  const stick=wk?{el:id+"-y"}:false, st=wk?1:Math.max(1,Math.ceil(n/8));
+  const stick=wk?{el:id+"-y"}:false, st=wk?Math.ceil(WK_PX/wpx):Math.max(1,Math.ceil(n/8));
   const xcb=(v,i)=>(i%st===0||i===n-1)?lbl(i):"";
   if(per&&one){                                  // one series per period: Plan vs Actual bars
     const S=series[0],bm=scBarMax([...S.plan,...S.act]),label=S.s[0]!=="all"?S.s[1]:"";
@@ -5207,10 +5209,10 @@ function pageSummary(){
     let h=`<div class="grid ps">`+psHero(rows)+kpiCards(rows,"nocod")+psGaugeCard(rows)+psEpcCard();
     h+=reasonsCard("","span5 rsnll")+longLeadCard("span7 rsnll");
     if((DATA.milestones||[]).length)h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
-    h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
+    h+=card(scWide?"span12":"span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
       `<div id="sc-box">${scBoxHtml(rows)}</div>`,
-      `<div class="pstg">${scPerToggle()}<div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
-    h+=card("span5","Stage progress","Actual % vs Baseline Plan %",psStage(rows));
+      `<div class="pstg">${scPerToggle()}<div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div><button type="button" class="thm" id="sc-wide" title="${scWide?"Shrink the S-curve":"Expand the S-curve to full width"}" aria-pressed="${scWide}" aria-label="${scWide?"Shrink the S-curve":"Expand the S-curve to full width"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${scWide?'<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>':'<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>'}</svg></button></div>`);
+    h+=card(scWide?"span12":"span5 psstg","Stage progress","Actual % vs Baseline Plan %",psStage(rows));
     setTimeout(()=>bindKpi(rows,""),0);
     return h+"</div>";
   }
@@ -5229,10 +5231,10 @@ function pageSummary(){
   h+=reasonsCard("","span6")+longLeadCard("span6");
   // a project with no milestone rows in VisiLean gets no empty card
   if((DATA.milestones||[]).length)h+=card("span12","Key Milestones","baseline vs forecast",msTimeline());
-  h+=card("span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
+  h+=card(scWide?"span12":"span7","S-curve — Plan vs Actual","weightage-based · multi-select disciplines to compare",
     `<div id="sc-box">${scBoxHtml(rows)}</div>`,
-    `<div style="display:flex;gap:5px;flex-wrap:wrap">${scPerToggle()}<div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div></div>`);
-  h+=card("span5","Stage progress","Actual % vs Baseline Plan %",stageBars(rows));
+    `<div style="display:flex;gap:5px;flex-wrap:wrap">${scPerToggle()}<div class="toggle2" id="sc-series">${SC_SERIES.map(x=>`<button data-s="${x[0]}" class="${scSel.includes(x[0])?"on":""}">${x[1]}</button>`).join("")}</div><div class="toggle2"><button id="sc-chart" class="on">Chart</button><button id="sc-table">Table</button></div><button type="button" class="thm" id="sc-wide" title="${scWide?"Shrink the S-curve":"Expand the S-curve to full width"}" aria-pressed="${scWide}" aria-label="${scWide?"Shrink the S-curve":"Expand the S-curve to full width"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${scWide?'<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>':'<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>'}</svg></button></div>`);
+  h+=card(scWide?"span12":"span5","Stage progress","Actual % vs Baseline Plan %",stageBars(rows));
   // KP 07-Sep: Critical points card hidden for now (critPoints() is kept intact -
   // put this line back to restore it).
   // h+=critPoints(rows);
@@ -5667,6 +5669,8 @@ function render(){
    document.body.classList.toggle("on-sum",!!slot);}
   sweepGL();                                   // the page just changed; drop orphaned scenes
   const rows=filtered();
+  const scw=document.getElementById("sc-wide");
+  if(scw)scw.onclick=()=>{scWide=!scWide;lsSet("kp-scwide",scWide?"1":"");render()};
   const cht=document.getElementById("sc-chart"),tbl=document.getElementById("sc-table");
   if(cht){
     cht.onclick=()=>{document.getElementById("sc-box").innerHTML=scBoxHtml(rows);cht.classList.add("on");tbl.classList.remove("on")};
