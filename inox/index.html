@@ -2127,7 +2127,10 @@ let scPer="m";
 const HASWK=()=>(DATA.weeks||[]).length>0;
 function scPeriods(){return (scPer==="w"&&HASWK())?DATA.weeks:DATA.months}
 function scPerName(){return (scPer==="w"&&HASWK())?"Week":"Month"}
-function scPerLbl(p){return (scPer==="w"&&HASWK())?"Week of "+p.label:p.label}
+function scPerLbl(p){
+  if(!(scPer==="w"&&HASWK()))return p.label;
+  const d=p.end&&new Date(p.end+"T00:00");
+  return "Week "+p.label+(d?" to "+String(d.getDate()).padStart(2,"0")+"-"+MON[d.getMonth()]+"-"+String(d.getFullYear()).slice(2):"")}
 const scPerToggle=()=>HASWK()?`<div class="toggle2 scper" title="Period for the S-curve">`+
   [["m","Monthly"],["w","Weekly"]].map(x=>`<button data-per="${x[0]}" class="${scPer===x[0]?"on":""}">${x[1]}</button>`).join("")+`</div>`:"";
 // The x of any working day on an axis whose points sit at period ends. Today falls
@@ -5129,7 +5132,8 @@ function psSc(rows,id,per,sels){
   const ps=scPeriods(),n=ps.length;if(!n)return;
   const D=x=>x.map((v,i)=>i?Math.max(0,v-x[i-1]):v), one=sels.length===1;
   const today={x:scXof(ps,i=>i,state.at),label:state.at===SW?"Data date":"as of "+wdate(state.at,1),color:cssv("--warn")};
-  const lbl=i=>String(ps[i]?ps[i].label:"").replace(/-/g," ");
+  const wkEnd=p=>{const d=new Date(p.end+"T00:00");return String(d.getDate()).padStart(2,"0")+" "+MON[d.getMonth()]+" "+String(d.getFullYear()).slice(2)};
+  const lbl=i=>!ps[i]?"":(scPer==="w"&&HASWK()&&ps[i].end)?wkEnd(ps[i]):String(ps[i].label).replace(/-/g," ");
   const rk=it=>/Actual$/.test(it.dataset.label)?0:/Plan$/.test(it.dataset.label)?1:2;
   const order=(a,b)=>(Math.floor(a.datasetIndex/3)-Math.floor(b.datasetIndex/3))||rk(a)-rk(b);
   const series=sels.map(s=>{const rs=rows.filter(s[2]),V=scVals(rs,ps);
@@ -5143,12 +5147,12 @@ function psSc(rows,id,per,sels){
   const xcb=(v,i)=>(i%st===0||i===n-1)?lbl(i):"";
   if(per&&one){                                  // one series per period: Plan vs Actual bars
     const S=series[0],bm=scBarMax([...S.plan,...S.act]),label=S.s[0]!=="all"?S.s[1]:"";
-    return psChart(id+"-cv",{type:"bar",data:{labels:ps.map(p=>p.label),datasets:[
+    return psChart(id+"-cv",{type:"bar",data:{labels:ps.map((p,i)=>lbl(i)),datasets:[
         {label:"Plan",data:S.plan,backgroundColor:cssv("--plan-seg"),borderRadius:3,categoryPercentage:.8},
         {label:"Actual",data:S.act,backgroundColor:cssv("--c-act"),borderRadius:3,categoryPercentage:.8}]},
       options:{interaction:{mode:"index",intersect:false},
         scales:psScales({ticks:Object.assign({},xt,{autoSkip:false,callback:xcb})},{max:Math.ceil(bm.ymax)}),
-        plugins:{psToday:Object.assign({clip:bm.clip},today),psYStick:stick,
+        plugins:{psToday:Object.assign({clip:bm.clip},today,{x:today.x+.5}),psYStick:stick,
           tooltip:{itemSort:(a,b)=>rk(a)-rk(b),callbacks:{title:it=>scPerLbl(ps[it[0].dataIndex]).replace(/-/g," "),label:pct,footer:()=>"click for the activities"}}},
         onClick:(e,_,c)=>{const hit=c.getElementsAtEventForMode(e,"nearest",{intersect:false,axis:"x"},false)[0];
           if(hit)scPeriodDrill(S.rs,ps,hit.index,hit.datasetIndex===1?"act":"plan",label)},
