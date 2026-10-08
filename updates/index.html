@@ -67,9 +67,13 @@ h1{font-size:17px;font-weight:800;letter-spacing:-.01em}
 .zoomer button#au-fit{width:auto;padding:0 8px;font-size:10.5px}
 .zoomer button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
 .zoomer .dim{font-size:10px}
-.thm{display:flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
-.thm button{padding:5px 9px;font-size:10.5px;color:var(--mut)}
-.thm button.on{background:var(--blue);color:#fff}
+.thm{width:28px;height:28px;border-radius:50%;border:1px solid var(--line2);background:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--ink);transition:background-color .12s,transform .12s}
+.thm:hover{background:var(--blue-wash)}.thm:active{transform:scale(.94)}
+.thm svg{width:15px;height:15px}
+:root[data-theme="dark"] .thm{color:#f5b13a}
+.seg{display:flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{padding:5px 9px;font-size:10.5px;color:var(--mut)}
+.seg button.on{background:var(--blue);color:#fff}
 .hsub{font-size:10.5px;color:var(--mut);padding:0 18px 10px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;border-radius:14px;padding:2px 8px;white-space:nowrap}
 .chip.good{background:var(--good-wash);color:var(--good-text)}
@@ -95,13 +99,14 @@ h1{font-size:17px;font-weight:800;letter-spacing:-.01em}
    continues below the fold looked like it simply ended. Give every scrolling area a
    visible track, and fade the last row of a list that still has more in it. */
 .hscroll{overflow-x:auto}
-.slist,.rail,.twrap,.hscroll{scrollbar-width:thin;scrollbar-color:var(--b3) var(--grid)}
-.slist::-webkit-scrollbar,.rail::-webkit-scrollbar,.twrap::-webkit-scrollbar,.hscroll::-webkit-scrollbar{width:10px;height:10px}
-.slist::-webkit-scrollbar-track,.rail::-webkit-scrollbar-track,.twrap::-webkit-scrollbar-track,.hscroll::-webkit-scrollbar-track{background:var(--grid);border-radius:7px}
-.slist::-webkit-scrollbar-thumb,.rail::-webkit-scrollbar-thumb,.twrap::-webkit-scrollbar-thumb,.hscroll::-webkit-scrollbar-thumb{
+.slist,.rail,.twrap,.hscroll,.vscroll{scrollbar-width:thin;scrollbar-color:var(--b3) var(--grid)}
+.slist::-webkit-scrollbar,.rail::-webkit-scrollbar,.twrap::-webkit-scrollbar,.hscroll::-webkit-scrollbar,.vscroll::-webkit-scrollbar{width:10px;height:10px}
+.slist::-webkit-scrollbar-track,.rail::-webkit-scrollbar-track,.twrap::-webkit-scrollbar-track,.hscroll::-webkit-scrollbar-track,.vscroll::-webkit-scrollbar-track{background:var(--grid);border-radius:7px}
+.slist::-webkit-scrollbar-thumb,.rail::-webkit-scrollbar-thumb,.twrap::-webkit-scrollbar-thumb,.hscroll::-webkit-scrollbar-thumb,.vscroll::-webkit-scrollbar-thumb{
  background:var(--b3);border-radius:7px;border:2px solid var(--surface);min-height:32px}
-.slist::-webkit-scrollbar-thumb:hover,.rail::-webkit-scrollbar-thumb:hover,.twrap::-webkit-scrollbar-thumb:hover,.hscroll::-webkit-scrollbar-thumb:hover{background:var(--b2)}
-.slist::-webkit-scrollbar-corner,.twrap::-webkit-scrollbar-corner{background:var(--grid)}
+.slist::-webkit-scrollbar-thumb:hover,.rail::-webkit-scrollbar-thumb:hover,.twrap::-webkit-scrollbar-thumb:hover,.hscroll::-webkit-scrollbar-thumb:hover,.vscroll::-webkit-scrollbar-thumb:hover{background:var(--b2)}
+.slist::-webkit-scrollbar-corner,.twrap::-webkit-scrollbar-corner,.vscroll::-webkit-scrollbar-corner{background:var(--grid)}
+.vscroll{max-height:700px;overflow-y:auto;padding-right:4px}
 .slicer .body{position:relative}
 .slicer .body.ovf::after{content:"";position:absolute;left:11px;right:17px;bottom:6px;height:13px;pointer-events:none;
  background:linear-gradient(to bottom,transparent,var(--surface))}
@@ -197,7 +202,7 @@ svg text{fill:var(--mut);font-family:inherit}
     <select id="f-loc" title="Location"><option value="">All locations</option></select>
     <button class="btn dark" id="btn-csv">&#8681; Export CSV</button>
     <button class="btn pri" id="btn-refresh">&#8635; Refresh</button>
-    <div class="thm" id="thm"><button data-t="auto">Auto</button><button data-t="light">Light</button><button data-t="dark">Dark</button></div>
+    <button type="button" class="thm" id="thm" aria-label="Switch to dark theme" title="Switch light / dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></button>
   </div>
 </div>
 <div class="hsub" id="h-meta"></div>
@@ -443,20 +448,20 @@ function usersOverTime(rs,id){
 /* ---------- vertical bars with axis titles, as in the reference ---------- */
 function vbars(items,o){
   if(!items.length)return `<div class="empty">Nothing to chart for this selection.</div>`;
-  const n=items.length,W=Math.max(620,n*58),H=288,pl=54,pr=12,pt=26,pb=96;
-  const iw=W-pl-pr,ih=H-pt-pb,max=Math.max(1,...items.map(x=>x.n)),step=iw/n,bw=Math.min(38,step*0.6);
-  let s=`<div class="hscroll"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:${Math.min(W,820)}px;height:auto" id="${o.id}">`;
+  const n=items.length,W=Math.max(680,n*52),H=420,pl=54,pr=14,pt=30,pb=105;
+  const iw=W-pl-pr,ih=H-pt-pb,max=Math.max(1,...items.map(x=>x.n)),step=iw/n,bw=Math.min(36,Math.max(16,step*0.58));
+  let s=`<div class="hscroll"><svg viewBox="0 0 ${W} ${H}" style="width:${W}px;min-width:100%;height:${H}px;display:block" id="${o.id}">`;
   for(let t=0;t<=4;t++){const y=pt+ih*(1-t/4);
     s+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="var(--grid)"/>
-        <text x="${pl-7}" y="${y+3}" font-size="9" text-anchor="end">${fmt(Math.round(max*t/4))}</text>`}
+        <text x="${pl-7}" y="${y+3}" font-size="9.5" text-anchor="end">${fmt(Math.round(max*t/4))}</text>`}
   s+=`<text class="axt" transform="rotate(-90 15 ${pt+ih/2})" x="15" y="${pt+ih/2}" text-anchor="middle">${esc(o.yTitle)}</text>`;
   items.forEach((x,i)=>{
     const h=ih*x.n/max,cx=pl+step*i+step/2,y=pt+ih-h,sel=S[o.set]&&S[o.set].has(x.k);
-    s+=`<rect class="vbar${sel?" sel":""}" data-v="${esc(x.k)}" x="${cx-bw/2}" y="${y}" width="${bw}" height="${Math.max(1.5,h)}" rx="3" fill="${ramp(i)}"/>`;
-    s+=`<text x="${cx}" y="${y-6}" font-size="9.5" font-weight="800" text-anchor="middle" style="fill:var(--ink)">${fmt(x.n)}</text>`;
+    s+=`<rect class="vbar${sel?" sel":""}" data-v="${esc(x.k)}" x="${cx-bw/2}" y="${y}" width="${bw}" height="${Math.max(2,h)}" rx="3" fill="${ramp(i)}"/>`;
+    s+=`<text x="${cx}" y="${y-6}" font-size="10" font-weight="700" text-anchor="middle" style="fill:var(--ink)">${fmt(x.n)}</text>`;
     const lbl=String(x.k);
-    s+=`<text x="${cx}" y="${pt+ih+11}" font-size="9" text-anchor="end" transform="rotate(-40 ${cx} ${pt+ih+11})">${esc(lbl.length>20?lbl.slice(0,19)+"…":lbl)}</text>`});
-  s+=`<text class="axt" x="${pl+iw/2}" y="${H-5}" text-anchor="middle">${esc(o.xTitle)}</text>`;
+    s+=`<text x="${cx}" y="${pt+ih+12}" font-size="9.5" text-anchor="end" transform="rotate(-40 ${cx} ${pt+ih+12})">${esc(lbl.length>22?lbl.slice(0,21)+"…":lbl)}</text>`});
+  s+=`<text class="axt" x="${pl+iw/2}" y="${H-6}" text-anchor="middle">${esc(o.xTitle)}</text>`;
   s+=`</svg></div>`;
   setTimeout(()=>{document.querySelectorAll(`#${o.id} .vbar`).forEach(el=>{
     const it=items.find(x=>String(x.k)===el.dataset.v);
@@ -607,14 +612,15 @@ function neverUpdatedCard(){
   never.sort((a,b)=>(b.tasks||0)-(a.tasks||0));
   if(!never.length)return "";
   const tot=never.reduce((s,a)=>s+(a.tasks||0),0),mx=Math.max(1,...never.map(a=>a.tasks||0));
-  return card("sp12",`Assigned work but never updated <span class="dim" style="font-weight:400">(${never.length} user${never.length===1?"":"s"})</span>`,
-    "activities are assigned to them in VisiLean, yet the trail holds no update from them at all — not this week, not ever",
-    never.map(a=>`<div class="urow" style="cursor:default" title="${esc(a.name)} holds ${fmt(a.tasks)} activities on ${esc(pname(a.proj))} and has never updated in VisiLean">
+  const rows=never.map(a=>`<div class="urow" style="cursor:default" title="${esc(a.name)} holds ${fmt(a.tasks)} activities on ${esc(pname(a.proj))} and has never updated in VisiLean">
         <div class="rk dot" style="color:var(--crit)">•</div>
         <div class="nm">${esc(a.name)}${a.dept?`<span class="dept">${esc(a.dept)}</span>`:""}${
           PKEYS.length>1?`<span class="dept" style="opacity:.75">${esc(pname(a.proj))}</span>`:""}</div>
         <div class="mbar"><i style="width:${Math.max(4,100*(a.tasks||0)/mx).toFixed(1)}%;background:var(--crit)"></i></div>
-        <div class="n">${fmt(a.tasks)}</div></div>`).join(""),
+        <div class="n">${fmt(a.tasks)}</div></div>`).join("");
+  return card("sp12",`Assigned work but never updated <span class="dim" style="font-weight:400">(${never.length} user${never.length===1?"":"s"})</span>`,
+    "activities are assigned to them in VisiLean, yet the trail holds no update from them at all — not this week, not ever",
+    `<div class="vscroll">${rows}</div>`,
     `<span class="chip crit">${fmt(tot)} activities with nobody updating them</span>`);
 }
 
@@ -673,7 +679,7 @@ function render(){
       <button id="au-in" ${atMax?"disabled":""} title="zoom in">+</button>
       <span class="dim">${AU_PER?`${AU_PER}px / day · scroll sideways`:`${fmt(AU_DAYS)} days in view`}</span>
     </div>`;
-   const auModeToggle = `<div class="thm" id="au-mode" style="margin-right:8px">
+   const auModeToggle = `<div class="seg" id="au-mode" style="margin-right:8px">
      <button data-m="day" class="${AU_MODE==="day"?"on":""}">Day</button>
      <button data-m="week" class="${AU_MODE==="week"?"on":""}">Week</button>
    </div>`;
@@ -780,13 +786,22 @@ document.getElementById("btn-refresh").addEventListener("click",e=>{
 });
 
 function applyTheme(t){
-  document.querySelectorAll("#thm button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
-  document.documentElement.dataset.theme=(t==="auto")?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t}
+  if(t==="auto")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
+  document.documentElement.dataset.theme=t;
+  const b=document.getElementById("thm");if(b)b.setAttribute("aria-label",t==="dark"?"Switch to light theme":"Switch to dark theme");
+}
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
-document.querySelectorAll("#thm button").forEach(b=>b.addEventListener("click",()=>{lsSet("kp-upd-thm",b.dataset.t);applyTheme(b.dataset.t)}));
-applyTheme(lsGet("kp-upd-thm")||"light");
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>applyTheme(lsGet("kp-upd-thm")||"light"));
+const thmBtn=document.getElementById("thm");
+if(thmBtn){
+  thmBtn.addEventListener("click",()=>{
+    const cur=document.documentElement.dataset.theme==="dark"?"dark":"light";
+    const next=cur==="dark"?"light":"dark";
+    lsSet("kp-upd-thm",next);applyTheme(next);
+  });
+}
+applyTheme(lsGet("kp-upd-thm")||"auto");
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>applyTheme(lsGet("kp-upd-thm")||"auto"));
 
 render();
 </script>
