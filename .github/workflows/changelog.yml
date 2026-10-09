@@ -1,0 +1,93 @@
+name: Logic changelog
+
+# Adds an entry to CHANGELOG.md for every pushed commit that changes dashboard logic:
+# the data builders, the page templates, the project configs. It runs on GitHub, so it
+# records every change whoever makes it and from whatever machine. The entry is the
+# commit message, stamped with the commit time (IST), the author's GitHub user and the
+# files it touched. Auto-refresh commits (visilean-bot) only publish data and are skipped.
+#
+# The push this workflow makes uses GITHUB_TOKEN, and CHANGELOG.md is outside the paths
+# below, so it never triggers itself.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "scripts/**.py"
+      - "scripts/*_template*.html"
+      - "scripts/projects/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: changelog
+  cancel-in-progress: false     # every push gets its entry; runs queue, none is dropped
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add the entries
+        run: |
+          python - <<'PY'
+          import json, os, re, datetime
+          ev = json.load(open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8"))
+          repo = os.environ["GITHUB_REPOSITORY"]
+          IST = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+
+          def logic(f):
+              return f.startswith("scripts/") and (
+                  f.endswith(".py") or re.search(r"_template[^/]*\.html$", f)
+                  or f.startswith("scripts/projects/"))
+
+          path = "CHANGELOG.md"
+          log = open(path, encoding="utf-8").read()
+          MARK = "<!-- entries: newest first, inserted below this line by changelog.yml -->"
+          new = []
+          # ponytail: GitHub lists at most 20 commits per push event; a bigger push logs
+          # its last 20. Walk `git log before..after` if that ever matters.
+          for c in ev.get("commits", []):
+              a = c.get("author") or {}
+              if a.get("name") == "visilean-bot":
+                  continue
+              files = sorted({f for k in ("added", "modified", "removed") for f in c.get(k, []) if logic(f)})
+              if not files or c["id"][:8] in log:
+                  continue
+              when = datetime.datetime.fromisoformat(c["timestamp"]).astimezone(IST)
+              who = a.get("username") or a.get("name") or "unknown"
+              subject, _, body = c["message"].partition("\n")
+              body = re.sub(r"(?m)^Co-Authored-By:.*\n?", "", body).strip()
+              e = "### %s · @%s · [`%s`](https://github.com/%s/commit/%s)\n**%s**\n\n" % (
+                  when.strftime("%d-%b-%Y %H:%M IST"), who, c["id"][:8], repo, c["id"], subject.strip())
+              if body:
+                  e += body + "\n\n"
+              e += "Files: " + ", ".join("`%s`" % f for f in files) + "\n"
+              new.append(e)
+          if not new:
+              print("no logic commits to log")
+              raise SystemExit(0)
+          # payload order is oldest first; the log is newest first
+          log = log.replace(MARK, MARK + "\n\n" + "\n".join(reversed(new)).rstrip("\n"), 1)
+          open(path, "w", encoding="utf-8").write(log)
+          print("logged %d commit(s)" % len(new))
+          PY
+
+      - name: Push
+        run: |
+          git diff --quiet -- CHANGELOG.md && { echo "nothing to push"; exit 0; }
+          git config user.name  "visilean-bot"
+          git config user.email "support@visilean.com"
+          git add CHANGELOG.md
+          git commit -q -m "changelog: ${GITHUB_SHA::8}"
+          # the refresh workflows push to master all day; only this one edits
+          # CHANGELOG.md, so a rebase onto theirs never conflicts
+          for try in 1 2 3 ; do
+            git pull -q --rebase origin master && git push -q origin HEAD:master && exit 0
+            echo "push retry $try"; sleep 5
+          done
+          echo "::error::could not push the changelog after 3 tries"
+          exit 1
