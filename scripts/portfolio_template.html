@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>KP Project Portfolio</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 /* ---------- tokens (format of the VisiLean LPS portfolio view) ---------- */
 :root{
@@ -160,6 +162,10 @@ main{padding-top:24px;padding-bottom:calc(48px + env(safe-area-inset-bottom))}
 .spark .dt{fill:var(--ink)}
 .spark .cap{font-size:11.5px;color:var(--muted);margin-top:2px}
 .spark .cap b{color:var(--ink);font-weight:700}
+.spark .sw{position:relative;max-width:150px;margin:0 auto;padding-top:16px}
+.spark .sw b{position:absolute;transform:translateY(-100%);font-size:12px;font-weight:700;color:var(--ink);line-height:1;text-shadow:0 0 2px var(--card),0 0 2px var(--card),0 0 3px var(--card)}
+.spark .ends{display:flex;justify-content:space-between;max-width:150px;margin:2px auto 0;font-size:10.5px;color:var(--muted);line-height:1.2}
+.spark .ends b{color:var(--ink);font-weight:700;font-size:12px}
 .go{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;color:var(--muted);text-decoration:none;
   transition:background-color .12s var(--ease),color .12s var(--ease)}
 .go:hover{background:var(--inset);color:var(--ink)}
@@ -237,6 +243,48 @@ svg.chart{width:100%;height:auto;display:block;overflow:visible}
 .statline .v{font-size:22px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .statline .v small{font-size:13px;color:var(--faint);font-weight:600}
 
+/* ---------- location map ---------- */
+.mapgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.mapgrid{grid-template-columns:1fr}}
+#map{height:440px;border-radius:12px;background:var(--inset);z-index:0}
+#map:fullscreen{width:100%;height:100%;border-radius:0}
+#map.mapfull{position:fixed;inset:0;height:auto;z-index:2000;border-radius:0}  /* fallback where the Fullscreen API is missing (iPhone) */
+#map .leaflet-bar a.kfull{display:flex;align-items:center;justify-content:center;color:#333}
+#map .kfull svg{width:16px;height:16px}
+#map .leaflet-tooltip.sitelbl{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:700;font-size:11px;padding:2px 6px}
+#map .leaflet-tooltip.sitelbl::before{display:none}
+#map .kpop .leaflet-popup-content-wrapper,#map .kpop .leaflet-popup-tip{background:var(--card);color:var(--ink)}
+#map .kpop .leaflet-popup-content{margin:12px 14px;font:12.5px/1.45 "Inter",system-ui,sans-serif;max-height:320px;overflow:auto}
+.kpin{background:none;border:0}
+.kpin .pin{position:relative;width:24px;height:31px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.kpin .pin .drop{position:absolute;inset:0;width:100%;height:100%}
+.kpin .pin .drop path{fill:var(--c);stroke:#fff;stroke-width:2}
+.kpin .pin .g{position:absolute;left:5px;top:4.5px;width:14px;height:14px;display:flex}
+.kpin .clu{position:relative;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}
+.kpin .clu .g{display:flex;gap:1px}
+.kpin svg{width:14px;height:14px}
+.kpin .clu.mixed{background:linear-gradient(90deg,var(--c) 50%,color-mix(in srgb,var(--c) 75%,#000) 50%)}
+.kpin .ct{position:absolute;top:-5px;right:-5px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:var(--navy);color:#fff;font-size:9.5px;line-height:15px;text-align:center;border:1.5px solid #fff}
+.kpin .dim{opacity:.4}
+.maplegend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+.maplegend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.maplegend .lg{--c:var(--muted);display:inline-flex;width:16px;height:16px;border-radius:50%;background:var(--muted);margin-right:5px;vertical-align:-4px;padding:2px}
+.maplegend .lg svg{width:12px;height:12px}
+.sites{display:flex;flex-direction:column;gap:10px;max-height:470px;overflow:auto}
+.site{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card)}
+.site.on{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+.site .sh2{display:flex;align-items:center;gap:6px;width:100%;border:0;background:none;padding:2px 0 6px;cursor:pointer;text-align:left;font-weight:800;font-size:13.5px;color:var(--ink)}
+.site .sh2 svg{width:14px;height:14px;flex:none;color:var(--cyan)}
+.site .sh2 .num{margin-left:auto;font-weight:600;font-size:12px;color:var(--muted)}
+.site .sh2:hover span:first-of-type{color:var(--brand)}
+.stbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.stbl th{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px 6px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+.stbl td{padding:7px 8px 7px 0;border-bottom:1px solid var(--line);color:var(--ink-2);vertical-align:middle}
+.stbl tr:last-child td{border-bottom:0}
+.stbl .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stbl th:last-child,.stbl td:last-child{padding-right:0}
+.stbl a.nm{color:var(--ink);font-weight:700;text-decoration:none}
+.stbl a.nm:hover{color:var(--brand);text-decoration:underline}
 #tip{position:fixed;z-index:9999;pointer-events:none;background:var(--tip-bg);color:var(--tip-fg);font-size:12px;line-height:1.45;
   padding:7px 10px;border-radius:8px;max-width:280px;white-space:pre-line;opacity:0;transform:translateY(2px);
   transition:opacity .09s var(--ease),transform .09s var(--ease);font-variant-numeric:tabular-nums}
@@ -282,6 +330,15 @@ svg.chart{width:100%;height:auto;display:block;overflow:visible}
 
   <div class="rows" id="rows" aria-label="Projects"></div>
 
+  <section aria-labelledby="h-map">
+    <div class="sh"><h2 id="h-map">Project locations</h2></div>
+    <div class="card mapgrid">
+      <div><div id="map" role="region" aria-label="Map of project sites"></div>
+        <div class="maplegend"><span><i style="background:var(--good)"></i>On track</span><span><i style="background:var(--warn)"></i>Behind</span><span><i style="background:var(--bad)"></i>Critical</span><span><i style="background:var(--inert)"></i>No plan yet</span><span><span class="lg" data-glyph="Solar"></span>Solar</span><span><span class="lg" data-glyph="Wind"></span>Wind</span><span>Round badge = several projects (zoom in to split)</span></div></div>
+      <div class="sites" id="sites" aria-label="Site-wise projects"></div>
+    </div>
+  </section>
+
   <section aria-labelledby="h-epc">
     <div class="sh"><h2 id="h-epc">EPC-wise bifurcation</h2><p>Actual / Plan, capacity-weighted across the projects in view</p></div>
     <div class="epcsum" id="epc"></div>
@@ -300,6 +357,7 @@ svg.chart{width:100%;height:auto;display:block;overflow:visible}
       <div id="sc"></div>
     </div>
   </section>
+
 </main>
 <div id="tip" role="tooltip" aria-hidden="true"></div>
 
@@ -439,9 +497,11 @@ function spark(p){
   const line = idx.map((i,j)=>(j?"L":"M")+X(i).toFixed(1)+" "+Y(A[i]).toFixed(1)).join(" ");
   const area = idx.length ? `M${X(idx[0]).toFixed(1)} ${h-pad} ` + idx.map(i=>"L"+X(i).toFixed(1)+" "+Y(A[i]).toFixed(1)).join(" ") + ` L${X(idx[idx.length-1]).toFixed(1)} ${h-pad} Z` : "";
   const li = idx[idx.length-1];
+  const tY = v => isNum(v) ? 16 + Y(v)/h*48 - 5 : 0;   // label bottom sits just above its dot (16px headroom + 48px svg)
   const tip = `${p.name} · actual progress, last 6 months\nGained: Actual ${pts(d.aGain)} · Plan ${pts(d.pGain)}\n` + d.months.map((m,i)=>`${mLabel(m)}: Actual ${pct(A[i])} · Plan ${pct(d.plan[i])}`).join("\n");
   return `<div class="spark" tabindex="0" data-tip="${esc(tip)}">
-    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path class="ar" d="${area}"/><path class="ln" d="${line}"/>${li!==undefined?`<circle class="dt" cx="${X(li)}" cy="${Y(A[li])}" r="2.6"/>`:""}</svg>
+    <div class="sw"><b style="left:0;top:${tY(A[0])}px">${pct(A[0])}</b><b style="right:0;top:${tY(A[n-1])}px">${pct(A[n-1])}</b><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path class="ar" d="${area}"/><path class="ln" d="${line}"/>${idx.length>1?`<circle class="dt" cx="${X(idx[0])}" cy="${Y(A[idx[0]])}" r="2.6"/>`:""}${li!==undefined?`<circle class="dt" cx="${X(li)}" cy="${Y(A[li])}" r="2.6"/>`:""}</svg></div>
+    <div class="ends"><span>${mLabel(d.months[0])}</span><span>${mLabel(d.months[n-1])}</span></div>
     <div class="cap">Actual · last 6 months</div></div>`;
 }
 function metric(label, e){
@@ -478,6 +538,172 @@ function rowHTML(p){
     <a class="go" href="${esc(p.href)}" aria-label="Open ${esc(p.name)} dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
   </article>`;
 }
+
+/* ---------- location map ---------- */
+/* coordinates: lat / lng per project in scripts/projects/portfolio.json; Esri World Imagery tiles, no API key */
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+/* icons from solar_icon.svg and wind-turbine (1).svg (white on the pin colour) */
+const GLYPH = {
+  Solar: `<svg viewBox="78 78 194 194"><path d="M0 0 C11.52 8.59 19.33 17.42 22.41 31.8 C23.61 41 22.68 50.11 19.41 58.8 C19 59.93 18.58 61.06 18.14 62.22 C16.23 66.17 14.05 68.86 11.04 71.99 C10.57 72.5 10.1 73 9.62 73.53 C5.23 78.2 0.96 81.8 -4.9 84.43 C-5.78 84.83 -6.66 85.24 -7.57 85.65 C-19.07 90.04 -32.7 91.03 -44.17 86.05 C-57.81 78.97 -66.23 69.44 -71.62 55.05 C-75.58 42.43 -74.37 29.99 -68.52 18.3 C-61.69 6.24 -51.4 -2.01 -38.09 -6.14 C-25.13 -9.12 -11.19 -7.35 0 0 Z" fill="#fff" transform="translate(200.5859375,134.19921875)"/><path d="M0 0 C1.77 0.48 3.54 0.96 5.31 1.44 C6.3 1.7 7.28 1.97 8.3 2.25 C10.22 2.78 12.11 3.37 14 4 C12.47 11.51 10.31 18.7 8 26 C14.27 26 20.54 26 27 26 C25.59 28.83 24.42 30.94 22.57 33.4 C22.09 34.04 21.61 34.67 21.11 35.33 C20.6 36.01 20.09 36.68 19.56 37.38 C19.04 38.07 18.51 38.77 17.97 39.49 C12.74 46.4 7.39 53.21 2 60 C0.63 55.6 1.76 52.07 2.94 47.75 C3.13 47 3.33 46.26 3.53 45.49 C4.01 43.66 4.5 41.83 5 40 C-0.28 40 -5.56 40 -11 40 C-9.87 32.12 -9.87 32.12 -8.95 28.87 C-8.65 27.79 -8.65 27.79 -8.34 26.69 C-8.02 25.58 -8.02 25.58 -7.69 24.44 C-7.36 23.27 -7.36 23.27 -7.02 22.08 C-6.57 20.49 -6.11 18.9 -5.66 17.31 C-5.04 15.13 -4.42 12.94 -3.82 10.75 C-3.46 9.49 -3.11 8.23 -2.75 6.94 C-2.44 5.81 -2.12 4.69 -1.8 3.53 C-1 1 -1 1 0 0 Z" fill="var(--c)" transform="translate(168,145)"/><path d="M0 0 C1.72 2.19 1.72 2.19 3.06 5 C3.55 5.99 4.04 6.99 4.54 8.01 C5.02 9 5.5 9.98 6 11 C6.95 12.61 7.91 14.21 8.88 15.81 C10.84 19.34 11.7 21.9 11 26 C9 28 9 28 5.88 28.12 C4.45 28.06 4.45 28.06 3 28 C-2.86 17.75 -2.86 17.75 -3.92 15.88 C-4.65 14.61 -5.4 13.35 -6.16 12.11 C-8.22 8.71 -9.01 7.21 -8.88 3.12 C-8.59 2.09 -8.3 1.06 -8 0 C-5 -1.5 -3.17 -0.9 0 0 Z" fill="#fff" transform="translate(213,229)"/><path d="M0 0 C4.03 0.64 6.87 2.54 10.28 4.7 C10.92 5.1 11.56 5.49 12.22 5.9 C13.5 6.69 14.76 7.49 16.02 8.29 C17.22 9.05 18.42 9.8 19.63 10.53 C21.09 11.43 22.47 12.44 23.84 13.45 C24.29 16.67 24.3 18.54 22.84 21.45 C16.48 22.35 12.31 19.25 7.09 16.08 C6.23 15.57 5.37 15.06 4.48 14.54 C-1.82 10.8 -1.82 10.8 -4.16 8.45 C-4.56 4.56 -4.5 0.94 0 0 Z" fill="#fff" transform="translate(97.16015625,124.546875)"/><path d="M0 0 C3.26 0.63 3.26 0.63 5.26 1.63 C6.23 8.13 2.86 12.62 -0.37 17.95 C-0.89 18.86 -1.41 19.78 -1.95 20.73 C-5.9 27.33 -5.9 27.33 -10.02 28.8 C-12.74 28.63 -12.74 28.63 -14.68 27.57 C-16.32 24.58 -15.58 22.94 -14.74 19.63 C-13.23 16.22 -11.45 13 -9.62 9.76 C-9.16 8.88 -8.69 8 -8.22 7.09 C-4.65 0.79 -4.65 0.79 0 0 Z" fill="#fff" transform="translate(140.7421875,228.3671875)"/><path d="M0 0 C2.39 1.09 2.39 1.09 4.83 2.59 C5.71 3.13 6.59 3.66 7.5 4.22 C8.41 4.78 9.31 5.35 10.25 5.94 C11.17 6.5 12.1 7.07 13.05 7.65 C19.78 11.78 19.78 11.78 21 13 C21.29 15.8 21.34 17.44 19.88 19.88 C17 21.6 15.2 20.79 12 20 C8.75 18.26 8.75 18.26 5.44 16.12 C4.34 15.43 3.25 14.73 2.12 14.01 C1.09 13.35 0.06 12.68 -1 12 C-1.94 11.44 -2.87 10.88 -3.84 10.3 C-6 9 -6 9 -7 8 C-7.04 5.67 -7.04 3.33 -7 1 C-4.43 -0.28 -2.86 -0.24 0 0 Z" fill="#fff" transform="translate(236,204)"/><path d="M0 0 C1.41 2.82 1.11 5.17 1.1 8.32 C1.09 9.58 1.09 10.83 1.09 12.13 C1.08 13.45 1.07 14.77 1.06 16.12 C1.06 17.46 1.05 18.8 1.05 20.14 C1.04 23.43 1.02 26.71 1 30 C-1.79 31.39 -3.92 31.26 -7 31 C-10.26 26.12 -9.33 20.68 -9.31 14.94 C-9.33 13.73 -9.34 12.52 -9.36 11.27 C-9.36 10.12 -9.36 8.97 -9.36 7.78 C-9.37 6.72 -9.37 5.66 -9.37 4.57 C-9.25 3.72 -9.13 2.87 -9 2 C-5.56 -0.29 -4.01 -0.18 0 0 Z" fill="#fff" transform="translate(179,81)"/><path d="M0 0 C1.73 -0 1.73 -0 3.49 -0.01 C5.31 0 5.31 0 7.16 0.02 C8.37 0.01 9.57 0 10.81 -0.01 C11.97 -0.01 13.12 -0 14.31 0 C15.37 0 16.43 0 17.53 0.01 C20.22 0.27 20.22 0.27 23.22 2.27 C23.47 5.83 23.47 5.83 23.22 9.27 C20.45 12.03 12.02 10.5 8.29 10.52 C6.97 10.54 5.66 10.56 4.3 10.58 C3.05 10.58 1.8 10.59 0.51 10.59 C-0.65 10.6 -1.8 10.61 -3 10.62 C-3.91 10.5 -4.83 10.39 -5.78 10.27 C-7.93 7.04 -8.16 6 -7.78 2.27 C-5.1 -0.41 -3.74 0.01 0 0 Z" fill="#fff" transform="translate(88.77734375,169.734375)"/><path d="M0 0 C2.76 0.73 3.86 1.19 5.38 3.62 C4.94 7.33 3.79 10.04 1.91 13.23 C1.42 14.07 0.93 14.91 0.43 15.77 C-0.09 16.63 -0.6 17.49 -1.12 18.38 C-1.64 19.25 -2.15 20.13 -2.68 21.03 C-6.45 27.45 -6.45 27.45 -7.62 28.62 C-10.56 28.81 -10.56 28.81 -13.62 28.62 C-15.62 26.62 -15.62 26.62 -15.98 23.9 C-15.54 19.84 -14.16 17.61 -11.94 14.19 C-11.57 13.62 -11.2 13.06 -10.83 12.47 C-9.77 10.85 -8.7 9.24 -7.62 7.62 C-7.14 6.83 -6.66 6.04 -6.16 5.23 C-3.33 0.79 -3.33 0.79 0 0 Z" fill="#fff" transform="translate(219.625,92.375)"/><path d="M0 0 C1.73 -0 1.73 -0 3.49 -0.01 C5.31 0 5.31 0 7.16 0.02 C8.37 0.01 9.57 0 10.81 -0.01 C11.97 -0.01 13.12 -0 14.31 0 C15.37 0 16.43 0 17.53 0.01 C20.22 0.27 20.22 0.27 23.22 2.27 C23.54 5.27 23.54 5.27 23.22 8.27 C20.5 10.99 19 10.52 15.19 10.53 C13.99 10.53 12.79 10.54 11.55 10.54 C10.28 10.53 9.02 10.52 7.72 10.52 C6.46 10.52 5.2 10.53 3.9 10.54 C2.7 10.54 1.49 10.53 0.25 10.53 C-0.85 10.53 -1.96 10.53 -3.1 10.52 C-5.78 10.27 -5.78 10.27 -7.78 8.27 C-8.03 5.27 -8.03 5.27 -7.78 2.27 C-5.1 -0.41 -3.74 0.01 0 0 Z" fill="#fff" transform="translate(245.77734375,169.734375)"/><path d="M0 0 C2.56 0.25 2.56 0.25 5.56 2.25 C5.95 4.82 5.95 4.82 5.96 8.03 C5.96 9.18 5.97 10.33 5.97 11.52 C5.96 12.73 5.95 13.94 5.94 15.19 C5.95 16.39 5.96 17.6 5.97 18.84 C5.97 20 5.96 21.15 5.96 22.34 C5.96 23.4 5.95 24.46 5.95 25.55 C5.56 28.25 5.56 28.25 4.2 30.1 C1.87 31.74 0.34 31.68 -2.44 31.25 C-4.74 27.79 -4.69 26.42 -4.7 22.34 C-4.71 20.61 -4.71 20.61 -4.71 18.84 C-4.7 17.64 -4.7 16.43 -4.69 15.19 C-4.7 13.98 -4.7 12.77 -4.71 11.52 C-4.71 10.37 -4.71 9.22 -4.7 8.03 C-4.7 6.97 -4.7 5.91 -4.7 4.82 C-4.35 1.33 -3.51 0.36 0 0 Z" fill="#fff" transform="translate(174.4375,237.75)"/><path d="M0 0 C2 2 2 2 2.44 4.38 C1.81 8.13 0.06 8.8 -3 11 C-5.38 12.47 -7.8 13.84 -10.25 15.19 C-14.37 17.26 -14.37 17.26 -18 20 C-20.94 20.19 -20.94 20.19 -24 20 C-26 18 -26 18 -26.5 15.13 C-26 12 -26 12 -23.4 9.8 C-22.26 9.17 -21.12 8.53 -19.94 7.88 C-19.04 7.37 -19.04 7.37 -18.13 6.85 C-16.43 5.89 -14.71 4.94 -13 4 C-11.69 3.17 -10.37 2.34 -9.06 1.5 C-5.71 -0.14 -3.69 -0.51 0 0 Z" fill="#fff" transform="translate(119,204)"/><path d="M0 0 C2 2 2 2 2.44 4.38 C1.81 8.14 0.08 8.79 -3 11 C-5.62 12.67 -8.3 14.22 -11 15.75 C-11.7 16.16 -12.4 16.57 -13.12 17 C-19.77 20.78 -19.77 20.78 -24 20 C-26 18 -26 18 -26.5 15.13 C-26 12 -26 12 -23.4 9.8 C-22.26 9.17 -21.12 8.53 -19.94 7.88 C-19.04 7.37 -19.04 7.37 -18.13 6.85 C-16.43 5.89 -14.71 4.94 -13 4 C-11.69 3.17 -10.37 2.34 -9.06 1.5 C-5.71 -0.14 -3.69 -0.51 0 0 Z" fill="#fff" transform="translate(255,126)"/><path d="M0 0 C2.62 0.26 2.62 0.26 4.17 1.55 C15.84 18.29 15.84 18.29 15.37 24.6 C14.62 27.26 14.62 27.26 13.62 28.26 C11.62 28.3 9.62 28.3 7.62 28.26 C5.57 24.9 3.56 21.52 1.55 18.14 C0.97 17.19 0.39 16.23 -0.21 15.25 C-0.75 14.33 -1.29 13.4 -1.86 12.44 C-2.36 11.59 -2.87 10.74 -3.39 9.87 C-4.63 6.6 -4.26 4.6 -3.38 1.26 C-2.38 0.26 -2.38 0.26 0 0 Z" fill="#fff" transform="translate(130.3828125,92.73828125)"/><path d="M0 0 C2.94 0.44 2.94 0.44 4.94 2.44 C5.38 4.81 5.38 4.81 4.94 7.44 C1.94 10.44 -1.07 12.07 -5.06 13.44 C-5.06 12.45 -5.06 11.46 -5.06 10.44 C-5.72 10.11 -6.38 9.78 -7.06 9.44 C-6.19 4.72 -5.13 0.73 0 0 Z" fill="#fff" transform="translate(116.0625,203.5625)"/><path d="M0 0 C0.93 3.01 1.04 3.87 0 7 C-0.66 7 -1.32 7 -2 7 C-2 8.32 -2 9.64 -2 11 C0.22 12.3 0.22 12.3 4 12 C3.6 14.32 3.09 15.86 1.75 17.81 C0 19 0 19 -2.56 18.81 C-5 18 -5 18 -7 16 C-7 9.82 -3.24 5.01 0 0 Z" fill="#fff" transform="translate(132,238)"/><path d="M0 0 C4.75 0.75 4.75 0.75 7 3 C7.36 5.83 7.36 7.41 5.88 9.88 C4 11 4 11 1 10.88 C-1.97 10.01 -3.13 9.39 -5 7 C-3.81 5.81 -2.61 4.64 -1.38 3.5 C0.23 2.09 0.23 2.09 0 0 Z" fill="#fff" transform="translate(250,214)"/><path d="M0 0 C2 3 2 3 2 4 C2.33 4 2.66 4 3 4 C3.12 6.88 3.12 6.88 3 10 C1 12 1 12 -2.06 12.19 C-5 12 -5 12 -6 11 C-6.44 8.25 -6.44 8.25 -6 5 C-4.17 2.94 -2.27 1.61 0 0 Z" fill="#fff" transform="translate(211,109)"/><path d="M0 0 C0.33 0.66 0.66 1.32 1 2 C1.66 2.33 2.32 2.66 3 3 C2.48 5.76 1.89 8.33 1 11 C6.28 11.33 11.56 11.66 17 12 C16.67 12.66 16.34 13.32 16 14 C9.73 13.67 3.46 13.34 -3 13 C-1.12 3.38 -1.12 3.38 0 0 Z" fill="#fff" transform="translate(179,158)"/><path d="M0 0 C0.66 0.33 1.32 0.66 2 1 C2.62 3.56 2.62 3.56 3 6 C1.02 6.99 1.02 6.99 -1 8 C-2 7 -2 7 -2.19 4.56 C-2 2 -2 2 0 0 Z" fill="#fff" transform="translate(83,170)"/><path d="M0 0 C0 0.99 0 1.98 0 3 C-1.64 3.22 -1.64 3.22 -3.31 3.44 C-6.93 3.88 -6.93 3.88 -10 5 C-9 2 -9 2 -7.25 0.81 C-4.7 -0.11 -2.69 -0.15 0 0 Z" fill="#fff" transform="translate(254,126)"/><path d="M0 0 C0.93 3.01 1.04 3.87 0 7 C-1.88 8.84 -3.93 10.37 -6 12 C-4.43 7.69 -2.32 3.94 0 0 Z" fill="#fff" transform="translate(132,238)"/><path d="M0 0 C-1 2.99 -1.75 3.95 -4 6 C-5.32 5.34 -6.64 4.68 -8 4 C-2.25 0 -2.25 0 0 0 Z" fill="#fff" transform="translate(104,210)"/><path d="M0 0 C1.04 3.39 1.31 6.46 1 10 C-0.49 10.99 -0.49 10.99 -2 12 C-1.86 10.56 -1.71 9.12 -1.56 7.69 C-1.48 6.89 -1.4 6.09 -1.32 5.26 C-1 3 -1 3 0 0 Z" fill="var(--c)" transform="translate(171,193)"/><path d="M0 0 C0.69 1.81 0.69 1.81 1 4 C0.02 5.02 -0.98 6.02 -2 7 C-2.72 9.61 -2.72 9.61 -3 12 C-3.33 12 -3.66 12 -4 12 C-4.5 6.71 -3.19 4.19 0 0 Z" fill="#fff" transform="translate(208,107)"/></svg>`,
+  Wind: `<svg viewBox="0 0 512 512"><path fill="#fff" d="M261 16c7.02 3.84 9.43 11.28 11.87 18.61.76 2.7 1.43 5.41 2.07 8.14.25 1.06.49 2.13.75 3.22 12.01 53.74 18.17 111.89 18.81 166.91l.06 2.76c-.11 10.64-4.26 19.72-11.56 27.36-5.32 4.96-11.18 7.62-18 10 .66.4 1.33.8 2.01 1.21 6.93 4.46 11.09 8.81 13.61 16.73.46 2.47.48 4.8.44 7.31-.01.89-.02 1.78-.02 2.7L281 283c.48-.46.97-.92 1.47-1.39 9.79-8.96 18.13-11.13 31.21-10.87 11.06.49 19.25 6.48 28.01 12.64 2.58 1.81 5.16 3.59 7.75 5.37 11.22 7.75 22.34 15.64 33.37 23.66 2.28 1.65 4.56 3.29 6.85 4.93 8.91 6.4 17.68 12.92 26.34 19.66 1.57 1.2 3.14 2.39 4.71 3.59 7.62 5.82 15.06 11.86 22.47 17.93 1.58 1.28 3.16 2.55 4.75 3.82 33.4 26.69 33.4 26.69 35.48 39.11.26 4.41.08 7.57-2.72 11.11-4.28 3.88-8.14 3.91-13.7 3.83-18.25-1.33-36.28-9.53-52.99-16.39-1.06-.43-2.12-.87-3.21-1.32-27.66-11.39-54.79-23.96-81.8-36.79-2.56-1.21-5.13-2.43-7.7-3.64-42.05-19.81-42.05-19.81-48.29-36.25-2.77-8.27-1.84-16.47-1-25-.58.36-1.17.72-1.77 1.09-6.75 3.83-12.5 5.22-20.23 3.91-3.55-1.35-6.77-3-10-5 .14 1.45.14 1.45.29 2.93.93 10.93.87 20.61-5.29 30.07-.49.76-.98 1.52-1.49 2.3-11.22 14.59-32.84 21.49-49.06 29.08-3.88 1.82-7.74 3.67-11.61 5.53C69.87 416.2 69.87 416.2 42.75 416.31c-.97.02-1.95.04-2.95.05-4.19-.54-6.71-2.2-9.58-5.25-2.26-3.91-1.99-7.76-1.22-12.11 1.53-3.41 3.62-6.13 6-9 .63-.77 1.26-1.54 1.91-2.33C46.44 376.62 57.63 367.09 69 358c1.27-1.04 2.55-2.08 3.82-3.12 7.92-6.5 15.94-12.79 24.18-18.88l3.66-2.76c9.27-6.99 18.64-13.83 28.06-20.6 2.26-1.62 4.51-3.26 6.75-4.89A1089 1089 0 0 1 168 285q1.155-.78 2.34-1.59 3.39-2.28 6.78-4.53c.67-.45 1.33-.9 2.01-1.37 7.33-4.8 14.54-7.07 23.31-6.95.73.01 1.47.01 2.23.02 8.73.25 15.32 3.25 22.33 8.42.78.58 1.57 1.15 2.38 1.75.53.41 1.07.82 1.62 1.25-.03-.56-.07-1.11-.11-1.69-.29-8.23 1.8-14.88 7.11-21.31 2.89-2.18 5.9-4.13 9-6-.76-.27-1.52-.54-2.31-.81-11.57-4.39-19.45-10.81-24.69-22.19-2.19-6.12-2.31-11.76-2.25-18.22 0-1.1.01-2.19.01-3.32.15-12.68 1.17-25.27 2.3-37.9.11-1.25.22-2.5.33-3.79C227.14 89.5 227.14 89.5 235 52c.3-1.43.3-1.43.6-2.89 7.74-36.23 7.74-36.23 25.4-33.11"/></svg>`,
+};
+document.querySelectorAll("[data-glyph]").forEach(el => el.innerHTML = GLYPH[el.dataset.glyph]);
+const glyphs = items => [...new Set(items.map(p=>p.type))].sort((a,b)=>TYPE_ORDER.indexOf(a)-TYPE_ORDER.indexOf(b)).map(t=>GLYPH[t]||GLYPH.Solar).join("");
+/* one project: teardrop pin with sun / turbine */
+const pinIcon = (p, col, dim) => L.divIcon({className:"kpin", iconSize:[24,31], iconAnchor:[12,30], popupAnchor:[0,-27],
+  html:`<div class="pin${dim?" dim":""}" style="--c:${col}"><svg class="drop" viewBox="0 0 32 42" preserveAspectRatio="none"><path d="M16 1C7.7 1 1 7.6 1 15.8 1 27 16 41 16 41s15-14 15-25.2C31 7.6 24.3 1 16 1z"/></svg><span class="g">${glyphs([p])}</span></div>`});
+/* several projects close together: round badge with count, one glyph per type (sun + turbine when mixed) */
+const clusterIcon = (items, col, dim) => { const mixed = new Set(items.map(p=>p.type)).size > 1, d = mixed ? 38 : 30;
+  return L.divIcon({className:"kpin", iconSize:[d,d], iconAnchor:[d/2,d/2], popupAnchor:[0,-d/2],
+    html:`<div class="clu${mixed?" mixed":""}${dim?" dim":""}" style="--c:${col};width:${d}px;height:${d}px"><span class="g">${glyphs(items)}</span><b class="ct num">${items.length}</b></div>`}); };
+function popupHTML(p){
+  const [st, statusText] = spiStatus(p.spi), markerColor = cssVar("--"+st);
+  return `
+      <div style="min-width:220px;font-size:12.5px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:8px">
+          <strong style="font-size:14px;color:var(--ink);font-weight:800">${esc(p.name)}</strong>
+          <span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;background:${markerColor}22;color:${markerColor}">
+            ${statusText}
+          </span>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">
+          📍 ${esc(p.site)}, ${esc(p.state)} · <b>${mwF(p.mw)} MW</b> (${esc(p.type)})
+        </div>
+        <table style="width:100%;font-size:11.5px;border-collapse:collapse;margin-bottom:8px">
+          <tr style="border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+            <td style="padding:4px 0;color:var(--muted)">Actual</td>
+            <td style="padding:4px 0;text-align:right;font-weight:700">${pct(p.act)}</td>
+            <td style="padding:4px 0 4px 10px;color:var(--muted)">Plan</td>
+            <td style="padding:4px 0;text-align:right;font-weight:700">${pct(p.plan)}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line)">
+            <td style="padding:4px 0;color:var(--muted)">SPI</td>
+            <td style="padding:4px 0;text-align:right;font-weight:700;color:${markerColor}">${isNum(p.spi) ? p.spi.toFixed(2) : '—'}</td>
+            <td style="padding:4px 0 4px 10px;color:var(--muted)">COD</td>
+            <td style="padding:4px 0;text-align:right;font-weight:700">${esc(p.forecastFinish || '—')}</td>
+          </tr>
+        </table>
+      </div>
+    `;
+}
+let map, pinLayer, mapList = [], mapFitKey = "";
+const llOf = p => isNum(p.lat) && isNum(p.lng) ? [p.lat, p.lng] : null;
+/* pins closer than CLUSTER_PX on screen merge into one badge; re-run on every zoom, so Khavda splits into its 4 projects when zoomed in */
+const CLUSTER_PX = 46;
+function drawPins(){
+  pinLayer.clearLayers();
+  const sel = state.f.loc, groups = [];
+  mapList.forEach(p => { const pt = map.latLngToLayerPoint(llOf(p));
+    const g = groups.find(g => g.pt.distanceTo(pt) < CLUSTER_PX); g ? g.items.push(p) : groups.push({pt, items:[p]}); });
+  groups.forEach(({items}) => {
+    const lat = items.reduce((s,p)=>s+llOf(p)[0],0)/items.length, lng = items.reduce((s,p)=>s+llOf(p)[1],0)/items.length;
+    const [st] = spiStatus(items.length > 1 ? wavg(items, p=>p.spi) : items[0].spi), col = cssVar("--"+st);
+    const dim = sel && !items.some(p => p.site+", "+p.state === sel);
+    if(items.length === 1){
+      const p = items[0];
+      L.marker([lat,lng], {icon:pinIcon(p,col,dim), title:p.name, riseOnHover:true}).addTo(pinLayer)
+        .bindTooltip(`${esc(p.name)} · ${mwF(p.mw)} MW`, {direction:"top", offset:[0,-28], className:"sitelbl"})
+        .bindPopup(popupHTML(p), {className:"kpop"});
+      return;
+    }
+    const mw = items.reduce((s,p)=>s+p.mw,0), sites = [...new Set(items.map(p=>p.site))].join(" / ");
+    const m = L.marker([lat,lng], {icon:clusterIcon(items,col,dim), title:sites, riseOnHover:true}).addTo(pinLayer)
+      .bindTooltip(`${esc(sites)} · ${items.length} projects · ${mwF(mw)} MW`, {direction:"top", offset:[0,-20], className:"sitelbl"});
+    const b = L.latLngBounds(items.map(llOf));
+    // zoom in to split the group; if the pins share one spot, list them all in the popup instead
+    if(b.getNorthEast().distanceTo(b.getSouthWest()) > 50) m.on("click", () => map.fitBounds(b, {padding:[70,70], maxZoom:13}));
+    else m.bindPopup(items.map(popupHTML).join('<hr style="border:0;border-top:1px solid var(--line);margin:10px 0">'), {className:"kpop"});
+  });
+}
+function renderMap(){
+  // site list: projects matching every filter except Location, so the other sites stay clickable
+  const all = P.filter(p => matches(p,"loc")), bySite = {};
+  all.forEach(p => { const k = p.site+", "+p.state; (bySite[k] = bySite[k] || []).push(p); });
+  const keys = Object.keys(bySite).sort((a,b)=>bySite[b].reduce((s,p)=>s+p.mw,0)-bySite[a].reduce((s,p)=>s+p.mw,0));
+  const sel = state.f.loc;
+  document.getElementById("sites").innerHTML = keys.length ? keys.map(k => {
+    const G = bySite[k], mw = G.reduce((s,p)=>s+p.mw,0);
+    return `<div class="site${k===sel?" on":""}">
+      <button type="button" class="sh2" data-loc="${esc(k)}" aria-pressed="${k===sel}" title="${k===sel?"Clear":"Filter page to"} ${esc(k)}">${ICON_SITE}<span>${esc(k)}</span><span class="num">${G.length} project${G.length===1?"":"s"} · ${mwF(mw)} MW</span></button>
+      <table class="stbl"><thead><tr><th>Project</th><th class="n">MW</th><th class="n">Act / Plan</th><th class="n">Status</th></tr></thead><tbody>
+      ${G.map(p => { const [st,t] = spiStatus(p.spi);
+        return `<tr><td><a class="nm" href="${esc(p.href)}">${esc(p.name)}</a></td><td class="n">${mwF(p.mw)}</td><td class="n">${actPlan(p.act,p.plan)}</td><td class="n">${badge(st,t)}</td></tr>`; }).join("")}
+      </tbody></table>
+    </div>`; }).join("") : emptyMsg("sites");
+
+  if(!window.L){ document.getElementById("map").innerHTML = `<div class="empty">Map needs an internet connection (Esri World Imagery).</div>`; return; }
+  if(!map){
+    map = L.map("map", {scrollWheelZoom:false});
+    const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+    L.tileLayer(ESRI+"World_Imagery/MapServer/tile/{z}/{y}/{x}", {maxNativeZoom:18, maxZoom:19,
+      attribution:'Powered by <a href="https://www.esri.com">Esri</a> | Esri World Imagery: Esri, Maxar, Earthstar Geographics, and the GIS User Community'}).addTo(map);
+    // satellite has no labels: overlay Esri's place names and boundaries
+    L.tileLayer(ESRI+"Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {maxNativeZoom:18, maxZoom:19}).addTo(map);
+    pinLayer = L.layerGroup().addTo(map);
+    map.on("zoomend", drawPins);
+    const box = map.getContainer();
+    /* full-screen button under the zoom buttons: browser full screen (Esc exits); plain scroll zooms while expanded */
+    const EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+    const SHRINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+    const FIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+    const fsCtl = L.control({position:"topleft"});
+    let fsBtn;
+    fsCtl.onAdd = () => {
+      const d = L.DomUtil.create("div", "leaflet-bar leaflet-control");
+      d.innerHTML = `<a href="#" role="button" class="kfull" title="Full screen" aria-label="Full screen">${EXPAND}</a>`
+        + `<a href="#" role="button" class="kfull kfit" title="Fit to all projects" aria-label="Fit to all projects">${FIT}</a>`;
+      fsBtn = d.firstChild;
+      L.DomEvent.disableClickPropagation(d);
+      L.DomEvent.on(d.lastChild, "click", e => { L.DomEvent.preventDefault(e); fitView(true); });
+      L.DomEvent.on(fsBtn, "click", e => { L.DomEvent.preventDefault(e); toggleFull(); });
+      return d;
+    };
+    fsCtl.addTo(map);
+    const isFull = () => document.fullscreenElement === box || box.classList.contains("mapfull");
+    const onFull = () => {
+      const on = isFull();
+      fsBtn.innerHTML = on ? SHRINK : EXPAND;
+      fsBtn.title = on ? "Exit full screen (Esc)" : "Full screen";
+      fsBtn.setAttribute("aria-label", fsBtn.title);
+      on ? map.scrollWheelZoom.enable() : map.scrollWheelZoom.disable();
+      map.invalidateSize();
+    };
+    function toggleFull(){
+      if(box.requestFullscreen){ document.fullscreenElement ? document.exitFullscreen() : box.requestFullscreen(); }
+      else { box.classList.toggle("mapfull"); onFull(); }
+    }
+    document.addEventListener("fullscreenchange", onFull);
+    document.addEventListener("keydown", e => { if(e.key==="Escape" && box.classList.contains("mapfull")){ box.classList.remove("mapfull"); onFull(); } });
+    let wheelAt = 0, overMap = false;
+    box.addEventListener("wheel", e => {
+      if(!(e.ctrlKey || e.metaKey)) return;          // plain scroll keeps scrolling the page
+      if(isFull()){ e.preventDefault(); return; }    // full screen: Leaflet's own scroll zoom handles it
+      e.preventDefault();                             // stop the browser's own page zoom
+      const now = Date.now(); if(now - wheelAt < 180) return; wheelAt = now;   // one zoom step per wheel flick / pinch
+      map.setZoomAround(map.mouseEventToContainerPoint(e), map.getZoom() + (e.deltaY < 0 ? 1 : -1));
+    }, {passive:false});
+    box.addEventListener("mouseenter", () => overMap = true);
+    box.addEventListener("mouseleave", () => overMap = false);
+    document.addEventListener("keydown", e => {
+      if(!(e.ctrlKey || e.metaKey) || !(overMap || box.contains(document.activeElement))) return;
+      const d = (e.key==="+" || e.key==="=") ? 1 : (e.key==="-" || e.key==="_") ? -1 : 0;
+      if(d){ e.preventDefault(); map.setZoom(map.getZoom() + d); }
+    });
+  }
+  mapList = all.filter(llOf);
+  // refit only when the visible set or selected site changes (not on theme toggle)
+  const fitKey = mapList.map(p=>p.id).join() + "|" + sel;
+  if(fitKey !== mapFitKey){ mapFitKey = fitKey; fitView(false); }
+  drawPins();
+}
+/* default view: every pin in view, or the selected site's projects */
+function fitView(animate){
+  if(!mapList.length) return;
+  const sel = state.f.loc, focus = sel ? mapList.filter(p => p.site+", "+p.state === sel) : [];
+  map.fitBounds(L.latLngBounds((focus.length ? focus : mapList).map(llOf)), {padding:[60,60], maxZoom:sel?13:8, animate});
+}
+function toggleLoc(k){ state.f.loc = state.f.loc===k ? "" : k; render(); }
+document.getElementById("sites").addEventListener("click", e => { const b = e.target.closest(".sh2"); if(b) toggleLoc(b.dataset.loc); });
 
 /* ---------- EPC ---------- */
 function renderEPC(S){
@@ -637,6 +863,7 @@ function applyTheme(t){
   if(t==="auto")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
   document.documentElement.dataset.theme=t;
   document.getElementById("thm").setAttribute("aria-label",t==="dark"?"Switch to light theme":"Switch to dark theme");
+  if(map) renderMap();
 }
 document.getElementById("thm").addEventListener("click",()=>{
   const t=document.documentElement.dataset.theme==="dark"?"light":"dark";
@@ -653,7 +880,7 @@ const mainEl = document.querySelector("main");
 function render(){
   renderToolbar();
   const S = inView();
-  renderHero(S); renderRows(S); renderEPC(S); renderSC(S);
+  renderHero(S); renderRows(S); renderMap(); renderEPC(S); renderSC(S);
   mainEl.style.minHeight = Math.max(parseFloat(mainEl.style.minHeight)||0, mainEl.offsetHeight) + "px";
 }
 document.getElementById("asof").textContent = "Data as of " + dLong(P.map(p=>p.statusIso).sort()[0]);

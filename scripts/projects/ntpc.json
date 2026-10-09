@@ -22,6 +22,7 @@
   "clientShort": "NTPC",
   "capacity": "200 MWac",
   "location": "Bikaner, Rajasthan",
+  "coords": {"lat": 28.2214, "lng": 73.2127},
   "plant": "NTPC Bikaner — Block 8",
   "tech": "Solar · Tracker",
   "week": "6-day weeks",

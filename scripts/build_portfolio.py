@@ -210,7 +210,7 @@ def main():
                     "act": r2(P.act_pct_at(rows, SW))} for ph, rows in phases.items()}
 
         rec = {"id": pid, "name": pc["name"], "full": meta["project"]}
-        rec.update({k: pc[k] for k in ("type", "mw", "site", "state", "contract")})
+        rec.update({k: pc[k] for k in ("type", "mw", "site", "state", "contract", "lat", "lng")})
         rec.update({k: meta[k] for k in ("statusIso", "generatedAt", "startDate", "plan", "act",
                                          "spi", "codBaseline", "codForecast", "baselineFinish",
                                          "forecastFinish")})

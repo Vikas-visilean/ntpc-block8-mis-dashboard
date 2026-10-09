@@ -679,6 +679,7 @@ html{zoom:1.04}
 .llst{min-width:0}
 .lltbl td,.lltbl th{white-space:nowrap;padding-top:5px;padding-bottom:5px}
 .lltbl td:first-child{max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.lltbl .detrow>td{max-width:none;white-space:normal}
 .rsndonut{width:132px;height:132px;flex:0 0 auto}
 /* the donut grows with the card (up to 300px) and the legend sits right beside it,
    the pair centred - no dead band between them on wide screens */
@@ -2376,6 +2377,21 @@ function stageSets(rows){
   return order.filter(s=>set[s]).map(s=>[s,set[s]]);
 }
 // ---------- pipeline table: schedule-step columns ----------
+// child-activity table under an expanded package row (package pipeline, next deliveries)
+function actDetTable(rr){
+  // Var = Baseline end − Actual end, in working days: negative = finished late.
+  // Until an activity finishes there is no actual, so its forecast stands in,
+  // greyed and italic so the two kinds of number are never read as one.
+  let t=`<div class="detscroll"><table><tr><th>Activity</th><th>Status</th><th class="num">%</th><th class="num">${HASAQ?"Qty booked / planned":"Qty"}</th><th>Owner</th><th>Baseline end</th><th>Forecast end</th><th>Actual end</th><th class="num" title="Baseline end − Actual end, working days · negative = late · greyed = not finished yet, measured against the forecast end">Var</th></tr>`;
+  rr.forEach(r=>{const af=actF(r),v=r[C.bEF]-(af!=null?af:r[C.fEF]);
+    const vs=af!=null?(v<=-4?'color:var(--crit-text);font-weight:700':(v>0?'color:var(--good-text);font-weight:700':''))
+                     :'color:var(--mut);font-style:italic';
+    t+=`<tr><td>${esc(r[C.name])}</td><td>${rowChip(r)}</td><td class="num">${r[C.pct]}</td>
+     <td class="num">${qtyCell(r,1)}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")}</td>
+     <td>${wdate(r[C.bEF],1)}</td><td>${wdate(r[C.fEF],1)}</td><td>${af!=null?`<b>${dFin(af)}</b>`:`<span class="dim">—</span>`}</td>
+     <td class="num" style="${vs}" title="${af!=null?"against the actual end":"not finished — against the forecast end"}">${v>0?"+":""}${v}</td></tr>`});
+  return t+"</table></div>";
+}
 function sizeDetPins(){
   document.querySelectorAll(".twrap").forEach(w=>{
     const px=Math.max(320,w.clientWidth-2)+"px";
@@ -2542,18 +2558,8 @@ function pipeTable(rows,idp,engMode){
         let t=`<div class="dethd"><b>${esc(x.pkg)}</b>
           <span class="dim">${rr.length} ${rr.length===1?"activity":"activities"}</span>
           <button type="button" class="rsndrill detmore" data-g="${idp}-${gi}">&#9783; Full list · standard columns</button></div>`;
-        // Var = Baseline end − Actual end, in working days: negative = finished late.
-        // Until an activity finishes there is no actual, so its forecast stands in,
-        // greyed and italic so the two kinds of number are never read as one.
-        t+=`<div class="detscroll"><table><tr><th>Activity</th><th>Status</th><th class="num">%</th><th class="num">${HASAQ?"Qty booked / planned":"Qty"}</th><th>Owner</th><th>Baseline end</th><th>Forecast end</th><th>Actual end</th><th class="num" title="Baseline end − Actual end, working days · negative = late · greyed = not finished yet, measured against the forecast end">Var</th></tr>`;
-        rr.forEach(r=>{const af=actF(r),v=r[C.bEF]-(af!=null?af:r[C.fEF]);
-          const vs=af!=null?(v<=-4?'color:var(--crit-text);font-weight:700':(v>0?'color:var(--good-text);font-weight:700':''))
-                           :'color:var(--mut);font-style:italic';
-          t+=`<tr><td>${esc(r[C.name])}</td><td>${rowChip(r)}</td><td class="num">${r[C.pct]}</td>
-           <td class="num">${qtyCell(r,1)}</td><td>${esc(r[C.owner]||r[C.ownship]||"—")}</td>
-           <td>${wdate(r[C.bEF],1)}</td><td>${wdate(r[C.fEF],1)}</td><td>${af!=null?`<b>${dFin(af)}</b>`:`<span class="dim">—</span>`}</td>
-           <td class="num" style="${vs}" title="${af!=null?"against the actual end":"not finished — against the forecast end"}">${v>0?"+":""}${v}</td></tr>`});
-        pin.innerHTML=t+"</table></div>";
+        t+=actDetTable(rr);
+        pin.innerHTML=t;
         pin.querySelector(".detmore").addEventListener("click",ev=>{
           ev.stopPropagation();
           drillOpen({eyebrow:"Package pipeline",title:x.pkg,
@@ -3072,8 +3078,8 @@ function longLeadItems(){
 }
 function longLeadCard(span){
   const items=longLeadItems();
-  const late=items.filter(x=>x.d>0), ahead=items.filter(x=>x.d<0), ontime=items.filter(x=>!x.d);
-  const dlv=items.filter(x=>x.pc>=100);
+  const late=items.filter(x=>x.d>0), ontime=items.filter(x=>!x.d);
+  const dlv=items.filter(x=>x.pc>=100), due=items.filter(x=>x.b<=SW);
   const nxt=items.slice().sort((a,b)=>a.f-b.f).filter(x=>x.pc<100).slice(0,5);
   const stat=(lbl,n,cls,pc)=>`<div class="llst">
     <div class="eyebrow">${lbl}</div>
@@ -3085,15 +3091,23 @@ function longLeadCard(span){
   let h=`<div class="llstats">
     ${stat("Packages",items.length,"", fmt1(items.reduce((a,x)=>a+x.wp,0))+"% of project weight")}
     ${stat("Delivered",dlv.length,"", fmt1(items.length?100*dlv.length/items.length:0)+"% of packages")}
-    ${stat("Ahead of baseline",ahead.length,ahead.length?"--good-text":"","")}
+    ${stat("Due till today",due.length,"",due.filter(x=>x.pc>=100).length+" delivered · "+due.filter(x=>x.pc<100).length+" pending")}
     ${stat("On baseline",ontime.length,"","")}
     ${stat("Behind baseline",late.length,late.length?"--crit-text":"","")}</div>
     <div class="eyebrow" style="margin:14px 0 6px">Next ${nxt.length||""} deliveries</div>
     ${nxt.length?`<div class="twrap lltbl"><table><tr><th>Long-lead item</th><th class="num">Wt %</th><th>Baseline</th><th>Forecast</th><th class="num">Delay</th><th>Status</th></tr>`
-      +nxt.map(x=>`<tr><td title="${esc(x.p)}"><b>${esc(x.p)}</b></td><td class="num">${fmt1(x.wp)}</td><td>${wdate(x.b,1)}</td><td>${wdate(x.f,1)}</td><td class="num">${dly(x)}</td><td>${sts(x)}</td></tr>`).join("")
+      +nxt.map((x,i)=>`<tr class="llclick" data-i="${i}" style="cursor:pointer" title="Show / hide its activities"><td title="${esc(x.p)}"><b>${esc(x.p)}</b></td><td class="num">${fmt1(x.wp)}</td><td>${wdate(x.b,1)}</td><td>${wdate(x.f,1)}</td><td class="num">${dly(x)}</td><td>${sts(x)}</td></tr>
+        <tr class="detrow" style="display:none"><td colspan="6"><div class="detpin"></div></td></tr>`).join("")
       +`</table></div>`:`<div class="small dim">nothing outstanding</div>`}`;
   setTimeout(()=>{const b=document.getElementById("ll-drill");
-    if(b)b.addEventListener("click",openLongLead)},0);
+    if(b)b.addEventListener("click",openLongLead);
+    document.querySelectorAll(".llclick").forEach(el=>el.addEventListener("click",()=>{
+      const box=el.nextElementSibling,vis=box.style.display!=="none",pin=box.querySelector(".detpin");
+      box.style.display=vis?"none":"";
+      if(!vis&&!pin.innerHTML){const x=nxt[+el.dataset.i];
+        pin.innerHTML=actDetTable(L.filter(r=>r[C.type]===AT.SUP&&r[C.pkg]===x.p).sort((a,b)=>a[C.fES]-b[C.fES]))}
+      if(!vis)sizeDetPins();
+    }))},0);
   return card(span||"span12","Long Lead Item Delivery Status",
     "all Procurement - Supply packages · baseline / forecast delivery as per VisiLean package summary",h,
     `<button id="ll-drill" class="rsndrill" title="Open the package-by-package table">&#9783; ${items.length} packages</button>`);

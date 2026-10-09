@@ -1,12 +1,12 @@
 {
   "_comment": "Portfolio page - values KP supplied that the project pages do not carry. Order = default order on the page. id = published folder; NTPC reads v3/ (same data as v2/, newer theme).",
   "projects": [
-    {"id": "adani",    "name": "Adani S6a",      "type": "Solar", "mw": 234,   "site": "Khavda",     "state": "Gujarat",   "contract": "EPC"},
-    {"id": "adani-s7", "name": "Adani S7",       "type": "Solar", "mw": 300,   "site": "Khavda",     "state": "Gujarat",   "contract": "EPC"},
-    {"id": "talaja",   "name": "ABREL Talaja",   "type": "Wind",  "mw": 83.75, "site": "Talaja",     "state": "Gujarat",   "contract": "EPC"},
-    {"id": "v3",       "name": "NTPC Bikaner",   "type": "Solar", "mw": 200,   "site": "Bikaner",    "state": "Rajasthan", "contract": "EPC"},
-    {"id": "sjvn",     "name": "SJVN Khavda",    "type": "Solar", "mw": 200,   "site": "Khavda",     "state": "Gujarat",   "contract": "EPC"},
-    {"id": "floating", "name": "Floating Solar", "type": "Solar", "mw": 110,   "site": "Kadana Dam", "state": "Gujarat",   "contract": "EPC"},
-    {"id": "inox",     "name": "INOX Wind",      "type": "Wind",  "mw": 99,    "site": "Khavda",     "state": "Gujarat",   "contract": "EPC"}
+    {"id": "adani",    "name": "Adani S6a",      "type": "Solar", "mw": 234,   "site": "Khavda",     "state": "Gujarat",   "contract": "EPC", "lat": 24.106599197090105, "lng": 69.32672371893678},
+    {"id": "adani-s7", "name": "Adani S7",       "type": "Solar", "mw": 300,   "site": "Khavda",     "state": "Gujarat",   "contract": "EPC", "lat": 24.134222882114702, "lng": 69.40871622579029},
+    {"id": "talaja",   "name": "ABREL Talaja",   "type": "Wind",  "mw": 83.75, "site": "Talaja",     "state": "Gujarat",   "contract": "EPC", "lat": 21.2611, "lng": 72.0355},
+    {"id": "v3",       "name": "NTPC Bikaner",   "type": "Solar", "mw": 200,   "site": "Bikaner",    "state": "Rajasthan", "contract": "EPC", "lat": 28.2214, "lng": 73.2127},
+    {"id": "sjvn",     "name": "SJVN Khavda",    "type": "Solar", "mw": 200,   "site": "Khavda",     "state": "Gujarat",   "contract": "EPC", "lat": 24.0799, "lng": 69.5641},
+    {"id": "floating", "name": "Floating Solar", "type": "Solar", "mw": 110,   "site": "Kadana Dam", "state": "Gujarat",   "contract": "EPC", "lat": 23.307632700491585, "lng": 73.82774034153556},
+    {"id": "inox",     "name": "INOX Wind",      "type": "Wind",  "mw": 99,    "site": "Bhuj",       "state": "Gujarat",   "contract": "EPC", "lat": 23.351231455743097, "lng": 69.28179860088234}
   ]
 }
