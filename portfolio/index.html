@@ -469,8 +469,6 @@ function renderHero(S){
     <div class="glassrow">
       <div class="glass" tabindex="0" data-tip="Capacity-weighted\nActual ${pct(act)} · Plan ${pct(plan)}\nGap ${pts(isNum(act)&&isNum(plan)?act-plan:null)}"><div class="eyebrow">Actual progress</div><div class="v">${pct(act)}</div><div class="s">Plan ${pct(plan)}</div></div>
       <div class="glass" tabindex="0" data-tip="Actual ÷ Plan, capacity-weighted"><div class="eyebrow">Portfolio SPI</div><div class="v">${isNum(plan)&&plan>.05?(act/plan).toFixed(2):"—"}</div><div class="s">schedule performance</div></div>
-      <div class="glass" tabindex="0" data-tip="${g6?`Progress gained since ${mLabel(g6.from)}, capacity-weighted\nActual ${pts(g6.aGain)} · Plan ${pts(g6.pGain)}`:"No progress data"}"><div class="eyebrow">Gained · 6 mo</div><div class="v">${g6?pts(g6.aGain).replace("%",""):"—"}<small style="font-size:13px">%</small></div><div class="s">${g6?"Plan "+pts(g6.pGain):"—"}</div></div>
-      <div class="glass" tabindex="0" data-tip="Projects with SPI under 0.95"><div class="eyebrow">Need attention</div><div class="v">${attn}</div><div class="s">SPI under 0.95</div></div>
     </div>`;
 }
 
