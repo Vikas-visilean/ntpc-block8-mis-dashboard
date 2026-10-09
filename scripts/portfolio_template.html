@@ -467,8 +467,9 @@ function renderHero(S){
       <h2><span style="font-size:inherit;color:inherit;font-weight:inherit;letter-spacing:inherit">${S.length} project${S.length===1?"":"s"}</span><span>${mwF(mw)} MW · ${n0(acts)} activities</span></h2>
     </div>
     <div class="glassrow">
-      <div class="glass" tabindex="0" data-tip="Capacity-weighted\nActual ${pct(act)} · Plan ${pct(plan)}\nGap ${pts(isNum(act)&&isNum(plan)?act-plan:null)}"><div class="eyebrow">Actual progress</div><div class="v">${pct(act)}</div><div class="s">Plan ${pct(plan)}</div></div>
-      <div class="glass" tabindex="0" data-tip="Actual ÷ Plan, capacity-weighted"><div class="eyebrow">Portfolio SPI</div><div class="v">${isNum(plan)&&plan>.05?(act/plan).toFixed(2):"—"}</div><div class="s">schedule performance</div></div>
+      <div class="glass" tabindex="0" data-tip="Capacity-weighted\nGap ${pts(isNum(act)&&isNum(plan)?act-plan:null)}"><div class="eyebrow">Plan progress</div><div class="v">${pct(plan)}</div></div>
+      <div class="glass" tabindex="0" data-tip="Capacity-weighted\nGap ${pts(isNum(act)&&isNum(plan)?act-plan:null)}"><div class="eyebrow">Actual progress</div><div class="v">${pct(act)}</div></div>
+      <div class="glass" tabindex="0" data-tip="Actual ÷ Plan, capacity-weighted"><div class="eyebrow">Schedule Efficiency</div><div class="v">${isNum(plan)&&plan>.05?((act/plan)*100).toFixed(0)+"%":"—"}</div></div>
     </div>`;
 }
 
