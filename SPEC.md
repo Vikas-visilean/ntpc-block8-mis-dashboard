@@ -1,6 +1,6 @@
 # NTPC Bikaner Block 8 (200 MW) — MIS Dashboard Specification
 
-**Live URL:** https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/v2/
+**Live URL:** https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/v3/
 **Repository:** https://github.com/Vikas-visilean/ntpc-block8-mis-dashboard
 **Project:** KPIGEL-NTPC Bikaner Block 8 (200 MW) Project-SAT · KPI Green Energy / KP Group
 **Owner:** VisiLean (Vikas Patel)
@@ -13,15 +13,13 @@
 > `sync-health.yml` reports what is not fed. `python scripts/check_sync.py` reports every
 > dashboard's build age and whether its sync is alive.
 
-The working dashboard is **v2**, live from the VisiLean PowerBI APIs and embedded in VisiLean's
-Custom Analytics. **Start at [section 10A](#10a-v2--v3--live-from-the-visilean-apis-the-current-system)**
+The working dashboard is **v3**, live from the VisiLean PowerBI APIs. **Start at [section 10A](#10a-v2--v3--live-from-the-visilean-apis-the-current-system)**
 — that describes the system as it runs today, including every rule KP has agreed.
 
 Sections 1–9 describe the **locked v1.0 baseline** (`v1.0-baseline-2026-08-17`), which is driven by a
 static MSP export and is kept only for reference and restore. Where the two disagree, 10A is correct.
 
-> **Change control on v1.0:** the tagged baseline is not modified. All live work happens in `/v2/`
-> and `/v3/`, and the tag always restores the v1.0 state exactly.
+> **Change control on v1.0:** the tagged baseline is not modified. All live work happens in `/v3/`, and the tag always restores the v1.0 state exactly.
 
 ---
 
@@ -290,13 +288,7 @@ computed in the adapter, or be replaced by VisiLean's own dates if preferred.
 | Path | What it is | Status |
 |---|---|---|
 | `/` (`index.html`) | v1.0 baseline, MSP-driven, tagged `v1.0-baseline-2026-08-17` | **locked, do not edit** |
-| `/v2/` | live from the VisiLean APIs | **this is the one KP uses** — embedded in VisiLean Custom Analytics |
-| `/v3/` | identical logic, VisiLean brand palette and rounder surfaces | built every cycle, awaiting KP's word to promote |
-
-v2 and v3 share the *same* data JSON and differ only in their template's design tokens. **Every
-functional change must be applied to both templates.** Nothing enforces this — the builds do not
-compare them — so the patch scripts in this repo's history always edit the two files in one pass,
-asserting each anchor matches exactly once. If you change one template by hand, change the other.
+| `/v3/` | live from the VisiLean APIs, VisiLean brand palette | **the working dashboard** (the old `/v2/` build was removed in Oct 2026) |
 
 ### Data source & tokens
 
@@ -538,7 +530,7 @@ So the schedule only has to *start* a worker:
   worker cleanly replaces the running one, so extra triggers cost nothing.
 * The worker loops **every 5 minutes for ~340 minutes** (`timeout-minutes: 350`, under the 6-hour
   ceiling), so a delayed or dropped trigger is still covered by the previous worker.
-* Each cycle builds **both v2 and v3** and publishes only when `v2/.datahash` changes (the hash
+* Each cycle builds **v3** and publishes only when `v3/.datahash` or `v3/.tplhash` changes (the hash
   excludes `generatedAt`). A failed cycle logs, reverts the tree and continues.
 * `workflow_dispatch` with `once: true` runs a single refresh — useful for a manual catch-up.
 * A VisiLean outage exits the cycle cleanly (`sys.exit(0)`) rather than publishing a broken build.
@@ -551,21 +543,20 @@ when a new build lands.
 
 ```bash
 python scripts/ntpc_dash_data_v2.py     # VisiLean APIs -> scripts/ntpc_dashboard_data_v2.json
-python scripts/build_ntpc_dash_v2.py    # + template + logo -> v2/index.html, meta.json, .datahash
-python scripts/build_ntpc_dash_v3.py    # same data, v3 template -> v3/index.html
+python scripts/build_ntpc_dash_v3.py    # + template + logo -> v3/index.html, meta.json, .datahash
 ```
 
 The working copy lives at `C:\Users\vikas\ntpc-mis-dash` — **not** under `%TEMP%`, where Windows
 cleanup previously deleted tracked files and corrupted the local git objects.
 
-**After any rebase or stash involving `v2/` or `v3/`, grep the outputs for `<<<<<<<`.** Merge-conflict
+**After any rebase or stash involving `v3/`, grep the outputs for `<<<<<<<`.** Merge-conflict
 markers have been committed into `index.html` and `meta.json` before, which serves an invalid build.
 The auto-refresh worker commits to the same files every few minutes, so conflicts are routine:
 
 ```bash
 gh run cancel <in-progress-id>
-git checkout --theirs v2/index.html v2/meta.json v2/.datahash v3/index.html v3/meta.json v3/.datahash
-git add v2 v3 && git rebase --continue && git push origin master
+git checkout --theirs v3/index.html v3/meta.json v3/.datahash
+git add v3 && git rebase --continue && git push origin master
 gh workflow run refresh-v2.yml
 ```
 
@@ -581,7 +572,7 @@ gh workflow run refresh-v2.yml
 | 4 | **VisiLean's Critical Activity flag is set on only 5 activities** | The `Critical (VisiLean)` filter and column are near-empty as a result. Float-based criticality is computed separately from the logic network. |
 | 5 | **Three revision rows still carry a copied weightage in VisiLean** | `52155` / `52156` / `52157`. The dashboard ignores them, but they are misleading in VisiLean's own views — worth clearing, with a note to the client that revision activities should not have a weightage typed at all. |
 | 6 | **`vl_relations.json` is a static capture** | Regenerate from the MSP whenever the schedule is re-imported; watch `meta.logicCoverage`. |
-| 7 | **v3 promotion** | v3 is built every cycle and is functionally identical. Promoting it to `/v2/` (or repointing the VisiLean embed) awaits KP's word. |
+| 7 | **v3 promotion** | Done Oct 2026: `/v2/` removed, `/v3/` is the only NTPC build. |
 
 ---
 
@@ -592,8 +583,7 @@ gh workflow run refresh-v2.yml
 * **Frozen snapshot folder:** `Downloads\Baseline Schedule KP\Dashboard Baseline v1.0 (17-Aug-2026)\`
   — index.html, template, data JSON, all build scripts, the PDF export, this spec, and the API adapter
   stub — plus a ZIP of the same.
-* **Change policy:** v1.0 at the repository root is not modified. All live work happens in `/v2/`
-  and `/v3/`.
+* **Change policy:** v1.0 at the repository root is not modified. All live work happens in `/v3/`.
 
 ## 12. File inventory
 
@@ -602,14 +592,13 @@ gh workflow run refresh-v2.yml
 | File | Role |
 |---|---|
 | `scripts/ntpc_dash_data_v2.py` | **the adapter** — fetches the three VisiLean APIs, classifies, computes float/forecast/reasons, emits the data JSON |
-| `scripts/ntpc_dash_template_v2.html` | v2 UI template (all pages, calculations, drill engine, property panel) |
-| `scripts/ntpc_dash_template_v3.html` | v3 template — same logic, VisiLean brand palette |
-| `scripts/build_ntpc_dash_v2.py` / `_v3.py` | template + data + logo → `v2/index.html`, `meta.json`, `.datahash` |
+| `scripts/ntpc_dash_template_v3.html` | UI template (all pages, calculations, drill engine, property panel), VisiLean brand palette |
+| `scripts/build_ntpc_dash_v3.py` | template + data + logo → `v3/index.html`, `meta.json`, `.datahash` |
 | `scripts/vl_relations.json` | logic network `[predUid, succUid, type, lag]` from the MSP (7,608 pairs) |
 | `scripts/vl_tokens.json` | API tokens — **gitignored, never commit** |
 | `scripts/kp_logo.b64` | embedded KP logo |
 | `.github/workflows/refresh-v2.yml` | the refresh worker |
-| `v2/index.html`, `v2/meta.json`, `v2/.datahash` | published build |
+| `v3/index.html`, `v3/meta.json`, `v3/.datahash` | published build |
 | `v3/index.html`, `v3/meta.json`, `v3/.datahash` | published build |
 
 ### Locked v1.0 baseline

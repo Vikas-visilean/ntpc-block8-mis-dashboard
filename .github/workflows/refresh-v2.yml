@@ -1,7 +1,7 @@
 name: Refresh v2 dashboard from VisiLean
 
 # Runs twice a day (10:00 and 16:00 IST) and whenever someone presses "Run workflow"
-# in the Actions tab. Each run is ONE refresh: fetch VisiLean, rebuild v2 + v3, commit
+# in the Actions tab. Each run is ONE refresh: fetch VisiLean, rebuild v3, commit
 # and push only if the data or the template changed.
 #
 # GitHub fires scheduled runs on a best-effort basis, so a 10:00 run may actually
@@ -58,14 +58,14 @@ jobs:
           built=false
           for attempt in 1 2 3 ; do
             echo "::group::attempt $attempt  $(date -u '+%H:%M:%S UTC')"
-            if python scripts/ntpc_dash_data_v2.py && python scripts/build_ntpc_dash_v2.py && python scripts/build_ntpc_dash_v3.py ; then
+            if python scripts/ntpc_dash_data_v2.py && python scripts/build_ntpc_dash_v3.py ; then
               built=true
               echo "::endgroup::"
               break
             fi
             echo "attempt $attempt failed (VisiLean unreachable or build error)"
             echo "::endgroup::"
-            git checkout -- v2 v3 2>/dev/null || true
+            git checkout -- v3 2>/dev/null || true
             [ "$attempt" -lt 3 ] && sleep 120
           done
 
@@ -77,7 +77,7 @@ jobs:
             exit 1
           fi
 
-          if git diff --quiet -- v2/.datahash v2/.tplhash ; then
+          if git diff --quiet -- v3/.datahash v3/.tplhash ; then
             echo "no data change - nothing published"
             echo "No change in VisiLean data since the last build; nothing published." >> "$GITHUB_STEP_SUMMARY"
             exit 0
@@ -92,8 +92,8 @@ jobs:
           for try in 1 2 3 ; do
             git fetch -q origin master
             git reset -q --mixed origin/master      # keep the built files, move onto master
-            git add v2 v3          # this workflow builds BOTH NTPC themes
-            git commit -q -m "v2 auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || {
+            git add v3
+            git commit -q -m "ntpc auto-refresh $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')" || {
               echo "nothing left to publish after $(git rev-parse --short origin/master)"; exit 0; }
             git push -q && { echo "published"; echo "Published a new build at $(TZ=Asia/Kolkata date '+%d-%b %H:%M IST')." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
             echo "push retry $try"; sleep 5

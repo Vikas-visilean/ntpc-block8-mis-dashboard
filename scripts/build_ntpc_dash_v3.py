@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Assemble v2: template + live data + logo -> ../v2/index.html + meta.json + .datahash"""
+"""Assemble NTPC: v3 template + live data + logo -> ../v3/index.html + meta.json + .datahash"""
 import json, os, hashlib
 SCR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(SCR)

@@ -6,7 +6,7 @@ name: Refresh portfolio page
 on:
   workflow_run:
     workflows:                # exact `name:` lines of the seven feeding workflows
-      - "Refresh v2 dashboard from VisiLean"           # NTPC - builds v2 AND v3; the portfolio reads v3/
+      - "Refresh v2 dashboard from VisiLean"           # NTPC - builds v3/, which the portfolio reads
       - "Refresh SJVN dashboard from VisiLean"
       - "Refresh Adani S6a dashboard from VisiLean"
       - "Refresh Adani S7 dashboard from VisiLean"

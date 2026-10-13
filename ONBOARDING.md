@@ -11,7 +11,7 @@ git clone https://github.com/Vikas-visilean/ntpc-block8-mis-dashboard
 
 | Dashboard | Published at | Built by | Workflow |
 |---|---|---|---|
-| NTPC Bikaner Block 8 · 200 MW | `/v2/` and `/v3/` | `ntpc_dash_data_v2.py` + `build_ntpc_dash_v2/v3.py` | `refresh-v2.yml` |
+| NTPC Bikaner Block 8 · 200 MW | `/v3/` | `ntpc_dash_data_v2.py` + `build_ntpc_dash_v3.py` | `refresh-v2.yml` |
 | SJVN Khavda · 200 MW | `/sjvn/` | `dash_data.py sjvn` + `build_dash.py sjvn` | `refresh-sjvn.yml` |
 | Adani Green S6a · 234 MW | `/adani/` | `… adani` | `refresh-adani.yml` |
 | Adani Green S7 · 300 MW | `/adani-s7/` | `… adanis7` | `refresh-adani-s7.yml` |
@@ -43,8 +43,6 @@ secret as a fallback the worker switches to if VisiLean rejects the first.
 
 These are all real failures from this repo, not hypotheticals.
 
-- **A template change must be made in BOTH `ntpc_dash_template_v2.html` and
-  `_v3.html`.** Nothing enforces it; the builds don't compare them.
 - **The workers publish on `.datahash` OR `.tplhash`.** Data-only gating meant template
   fixes never reached the published pages until the data happened to change.
 - **The dashboards run inside VisiLean's Custom Analytics iframe**, where
@@ -61,23 +59,23 @@ These are all real failures from this repo, not hypotheticals.
 
 ## Working at the same time
 
-The refresh workflows commit to `v2/`, `v3/`, `sjvn/` … at 10:00 and 16:00 IST (and on
+The refresh workflows commit to `v3/`, `sjvn/` … at 10:00 and 16:00 IST (and on
 manual runs), so you can hit conflicts on build outputs if you push around those times.
 They are never interesting — take your own build and move on:
 
 ```bash
 gh run cancel <the in_progress run>        # optional, stops it racing you
-git checkout --theirs v2/index.html v2/meta.json v2/.datahash    # …and v3/, etc.
-git add v2 v3 && git rebase --continue
+git checkout --theirs v3/index.html v3/meta.json v3/.datahash    # …and sjvn/, etc.
+git add v3 && git rebase --continue
 git push origin master
-gh workflow run refresh-v2.yml             # re-run the refresh you cancelled (v2 runs once, at 10:00/16:00 IST or on demand)
+gh workflow run refresh-v2.yml             # re-run the refresh you cancelled (it runs once, at 10:00/16:00 IST or on demand)
 ```
 
 **After any rebase or stash touching a published folder, grep for `<<<<<<<`.**
 Conflict markers have been committed into `index.html` and `meta.json` before, which
 serves a broken page.
 
-Source changes go in `scripts/`. Don't hand-edit anything under `v2/`, `v3/`, `sjvn/`
+Source changes go in `scripts/`. Don't hand-edit anything under `v3/`, `sjvn/`
 etc. — those are build outputs and the worker will overwrite them.
 
 ## Reference

@@ -2548,7 +2548,9 @@ function pipeTable(rows,idp,engMode){
   h+="</table></div>";
   setTimeout(()=>{document.querySelectorAll(".prowclick").forEach(el=>{
     el.style.cursor="pointer";
-    el.addEventListener("click",()=>{
+    // onclick, not addEventListener: two renders in quick succession (search as you
+    // type) run this twice on the same rows, and a second listener closed the row again
+    el.onclick=()=>{
       const id=el.dataset.g,box=document.getElementById("det-"+id);
       const vis=box.style.display!=="none";box.style.display=vis?"none":"";
       const pin=box.querySelector(".detpin");
@@ -2574,14 +2576,15 @@ function pipeTable(rows,idp,engMode){
       // the panel is pinned to the left of the stage grid, so size it to what is
       // on screen - a Supply package spans ~30 stage columns and thousands of pixels
       if(!vis)sizeDetPins();
-      });});
+      };});
     sizeDetPins();},0);
   const colpop=`<details class="colsel" id="${idp}-cs" ${pipeColOpen[idp]?"open":""}><summary>Stages ${cols.length}/${allCols.length} ▾</summary>
     <div class="colpop"><div class="cact"><button data-ca="all" data-p="${idp}">Select all</button><button data-ca="none" data-p="${idp}">Clear</button></div>
     ${allCols.map(cn=>{const lbl=engMode?(ENG_COL_LBL[cn]||cn):cn;
       return `<label title="${esc(lbl)}"><input type="checkbox" data-cc="${esc(cn)}" data-p="${idp}" ${(!sel||!sel.size||sel.has(cn))?"checked":""}> ${esc(lbl.length>34?lbl.slice(0,33)+"…":lbl)}</label>`}).join("")}
     </div></details>`;
-  return sc+`<div style="display:flex;gap:7px;align-items:center;margin-bottom:5px;flex-wrap:wrap">
+  // stage cards hidden on the Engineering pipeline (D&E page) - filters + table move up
+  return (engMode?"":sc)+`<div style="display:flex;gap:7px;align-items:center;margin-bottom:5px;flex-wrap:wrap">
     <select onchange="pipeL1['${idp}']=this.value;pipeL2['${idp}']='';render()">${["",...new Set(rows.map(r=>r[C.sec]))].map(v=>`<option value="${esc(v)}" title="${esc(String(v||""))}" ${pipeL1[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"All sections"}</option>`).join("")}</select>
     <select onchange="pipeL2['${idp}']=this.value;render()">${["",...new Set(rows.filter(r=>!pipeL1[idp]||r[C.sec]===pipeL1[idp]).map(r=>r[C.pkg]))].map(v=>`<option value="${esc(v)}" title="${esc(String(v||""))}" ${pipeL2[idp]===v?"selected":""}>${v?esc(String(v).slice(0,34)):"All packages"}</option>`).join("")}</select>
     <input type="search" id="${idp}-q" placeholder="Search packages or drawings…" value="${esc(pipeSearch)}">
@@ -2747,7 +2750,7 @@ function areaFacts(k,rr){
   const a=actPctAt(rr,SW),p=planPct(rr,SW),dl=rr.filter(isBehind).length,cr=rr.filter(isCrit).length;
   const spi=p>0.05?a/p:null;
   let t=`<b>${esc(k)}</b><br>Actual <b>${fmt1(a)}%</b> \u00b7 plan ${fmt1(p)}%`
-       +(spi===null?"":` \u00b7 SPI ${spi.toFixed(2)}`)
+       +(spi===null?"":` \u00b7 Schedule Performance Index (SPI) ${spi.toFixed(2)}`)
        +`<br><span class="t2">${rr.length} activities`+(dl?` \u00b7 ${dl} delayed`:``)+(cr?` \u00b7 ${cr} critical`:``)+`</span>`;
   FCATS.forEach(([cn,fn])=>{
     const cr2=rr.filter(fn);if(!cr2.length)return;
@@ -2876,7 +2879,7 @@ function feederTiles(rows){
   return h+"</div>";
 }
 function scorecard(rows){
-  let h=`<div class="twrap"><table><tr><th>Area / Block</th><th class="num">Activities</th><th class="num">Plan %</th><th class="num">Actual %</th><th class="num">SPI</th><th class="num">Delayed</th><th class="num">Critical</th><th>Status</th></tr>`;
+  let h=`<div class="twrap"><table><tr><th>Area / Block</th><th class="num">Activities</th><th class="num">Plan %</th><th class="num">Actual %</th><th class="num">Schedule Performance Index (SPI)</th><th class="num">Delayed</th><th class="num">Critical</th><th>Status</th></tr>`;
   areaList(rows).forEach(([k,rr])=>{
     const a=actPctAt(rr,SW),p=planPct(rr,SW),spi=p>0.05?a/p:null,dl=rr.filter(isBehind).length,cr2=rr.filter(isCrit).length;
     h+=`<tr><td>${esc(k)}</td><td class="num">${rr.length}</td><td class="num">${fmt1(p)}</td><td class="num">${fmt1(a)}</td>
@@ -3101,13 +3104,13 @@ function longLeadCard(span){
       +`</table></div>`:`<div class="small dim">nothing outstanding</div>`}`;
   setTimeout(()=>{const b=document.getElementById("ll-drill");
     if(b)b.addEventListener("click",openLongLead);
-    document.querySelectorAll(".llclick").forEach(el=>el.addEventListener("click",()=>{
+    document.querySelectorAll(".llclick").forEach(el=>el.onclick=()=>{
       const box=el.nextElementSibling,vis=box.style.display!=="none",pin=box.querySelector(".detpin");
       box.style.display=vis?"none":"";
       if(!vis&&!pin.innerHTML){const x=nxt[+el.dataset.i];
         pin.innerHTML=actDetTable(L.filter(r=>r[C.type]===AT.SUP&&r[C.pkg]===x.p).sort((a,b)=>a[C.fES]-b[C.fES]))}
       if(!vis)sizeDetPins();
-    }))},0);
+    })},0);
   return card(span||"span12","Long Lead Item Delivery Status",
     "all Procurement - Supply packages · baseline / forecast delivery as per VisiLean package summary",h,
     `<button id="ll-drill" class="rsndrill" title="Open the package-by-package table">&#9783; ${items.length} packages</button>`);
@@ -5078,7 +5081,7 @@ function psHero(rows,o){
   const tiles=o.tiles?o.tiles.map(x=>gl(...x)).join("")
     :gl(state.at===SW?"Actual progress":"Progress as of "+wdate(state.at,1),fmt1(a)+"<small>%</small>","Plan "+fmt1(p)+"%",k)
       +gl("Variance",pts1(a-p)+"<small>%</small>","Actual − Plan",a-p>=0?"good":"bad")
-      +gl("SPI",spi?spi.toFixed(2):"—","Actual ÷ Plan")
+      +gl("Schedule Performance Index (SPI)",spi?spi.toFixed(2):"—","Actual ÷ Plan")
       +(sum?gl("Days to COD",d2cod+"<small>days</small>","forecast "+esc(M.forecastFinish)+(M.delayDays?` · ${M.delayDays>0?"+":""}${M.delayDays}d vs baseline`:""))
            :gl("Completed",done.toLocaleString()+`<small>/ ${rows.length.toLocaleString()}</small>`,fmt1(100*done/Math.max(1,rows.length))+"% of activities"));
   return `<div class="ps-hero"><div class="pshd"><div><div class="eyebrow">${esc(o.eyebrow||"Project summary")}</div>

@@ -481,7 +481,7 @@ function gauge(p){
   const arc = v => { const f = clamp(isNum(v)?v:0,0,100)/100; if(f<=0) return ""; const [x,y] = pt(f);
     return `M${cx-r} ${cy} A${r} ${r} 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)}`; };
   const fp = clamp(isNum(p.plan)?p.plan:0,0,100)/100, [px,py] = pt(fp);
-  return `<div class="gauge" tabindex="0" data-tip="${esc(`${p.name}\nActual ${pct(p.act)} · Plan ${pct(p.plan)}\nGap ${pts(isNum(p.act)&&isNum(p.plan)?p.act-p.plan:null)} · SPI ${isNum(p.spi)?p.spi.toFixed(2):"—"}\n${spiStatus(p.spi)[1]}`)}">
+  return `<div class="gauge" tabindex="0" data-tip="${esc(`${p.name}\nActual ${pct(p.act)} · Plan ${pct(p.plan)}\nGap ${pts(isNum(p.act)&&isNum(p.plan)?p.act-p.plan:null)} · Schedule Performance Index (SPI) ${isNum(p.spi)?p.spi.toFixed(2):"—"}\n${spiStatus(p.spi)[1]}`)}">
     <svg viewBox="0 0 120 64" aria-hidden="true"><path class="bg" d="${arc(100)}"/><path class="pl" d="${arc(p.plan)}"/>${fp>0?`<circle class="cap" cx="${px.toFixed(2)}" cy="${py.toFixed(2)}" r="5.5"/>`:""}<path class="ac ${k}" d="${arc(p.act)}"/>
       <text class="v" x="${cx}" y="${cy-4}" text-anchor="middle">${pct(p.act)}</text></svg>
     <div class="gl num"><span><i class="ac ${k}"></i>Actual <b>${pct(p.act)}</b></span><span><i class="pl"></i>Plan <b>${pct(p.plan)}</b></span></div></div>`;
@@ -576,7 +576,7 @@ function popupHTML(p){
             <td style="padding:4px 0;text-align:right;font-weight:700">${pct(p.plan)}</td>
           </tr>
           <tr style="border-bottom:1px solid var(--line)">
-            <td style="padding:4px 0;color:var(--muted)">SPI</td>
+            <td style="padding:4px 0;color:var(--muted)">Schedule Performance Index (SPI)</td>
             <td style="padding:4px 0;text-align:right;font-weight:700;color:${markerColor}">${isNum(p.spi) ? p.spi.toFixed(2) : '—'}</td>
             <td style="padding:4px 0 4px 10px;color:var(--muted)">COD</td>
             <td style="padding:4px 0;text-align:right;font-weight:700">${esc(p.forecastFinish || '—')}</td>

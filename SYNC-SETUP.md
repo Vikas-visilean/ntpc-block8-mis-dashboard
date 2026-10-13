@@ -10,7 +10,7 @@ offset a few minutes from the next so the pushes do not collide:
 
 | Workflow | Feeds | Scheduled (IST) |
 |---|---|---|
-| `refresh-v2.yml` | `/v2/`, `/v3/` | 10:00, 16:00 |
+| `refresh-v2.yml` | `/v3/` | 10:00, 16:00 |
 | `refresh-sjvn.yml` | `/sjvn/` | 10:03, 16:03 |
 | `refresh-adani.yml` | `/adani/` | 10:06, 16:06 |
 | `refresh-adani-s7.yml` | `/adani-s7/` | 10:09, 16:09 |
@@ -41,7 +41,7 @@ step, and it is done once.**
 
 | Project | Repository secret | Feeds |
 |---|---|---|
-| NTPC Bikaner Block 8 | `VL_TOKEN_NTPC` | `/v2/`, `/v3/`, and the Adoption tracker |
+| NTPC Bikaner Block 8 | `VL_TOKEN_NTPC` | `/v3/` and the Adoption tracker |
 | SJVN Khavda | `VL_TOKEN_SJVN` | `/sjvn/` |
 | Adani S6a | `VL_TOKEN_ADANI` | `/adani/` |
 | Adani S7 | `VL_TOKEN_ADANIS7` | `/adani-s7/` |

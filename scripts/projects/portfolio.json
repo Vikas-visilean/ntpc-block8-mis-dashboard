@@ -1,5 +1,5 @@
 {
-  "_comment": "Portfolio page - values KP supplied that the project pages do not carry. Order = default order on the page. id = published folder; NTPC reads v3/ (same data as v2/, newer theme).",
+  "_comment": "Portfolio page - values KP supplied that the project pages do not carry. Order = default order on the page. id = published folder; NTPC reads v3/.",
   "projects": [
     {"id": "adani",    "name": "Adani S6a",      "type": "Solar", "mw": 234,   "site": "Khavda",     "state": "Gujarat",   "contract": "EPC", "lat": 24.106599197090105, "lng": 69.32672371893678},
     {"id": "adani-s7", "name": "Adani S7",       "type": "Solar", "mw": 300,   "site": "Khavda",     "state": "Gujarat",   "contract": "EPC", "lat": 24.134222882114702, "lng": 69.40871622579029},

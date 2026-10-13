@@ -80,7 +80,7 @@ Create `scripts/projects/portfolio.json`. The project pages don't carry these va
 
 `id` is the published folder name. The page links each row to `../<id>/index.html`.
 
-**NTPC uses `v3`:** `refresh-v2.yml` builds both `v2/` and `v3/` from the same VisiLean data, so their figures are identical. The portfolio reads and links to `v3/`, the newer theme. If KP promotes a different NTPC page later, change only this `id`.
+**NTPC uses `v3`:** `refresh-v2.yml` builds `v3/` (the old `v2/` build was removed). The portfolio reads and links to `v3/`, the newer theme. If KP promotes a different NTPC page later, change only this `id`.
 
 ### Step 3: Write `scripts/build_portfolio.py`
 
@@ -138,7 +138,7 @@ name: Refresh portfolio page
 on:
   workflow_run:
     workflows:                # exact `name:` lines of the six feeding workflows
-      - "Refresh v2 dashboard from VisiLean"           # NTPC - builds v2 AND v3; the portfolio reads v3/
+      - "Refresh v2 dashboard from VisiLean"           # NTPC - builds v3/, which the portfolio reads
       - "Refresh SJVN dashboard from VisiLean"
       - "Refresh Adani S6a dashboard from VisiLean"
       - "Refresh Adani S7 dashboard from VisiLean"
@@ -293,7 +293,7 @@ The daily `sync-health.yml` then reports the portfolio's build age and whether i
 ### Step 6: Decide on links
 
 - **Root page:** the root `index.html` is the locked v1.0 baseline. **Do not add a link there.** Share `/portfolio/` directly.
-- **Project pages:** to add a "← Portfolio" link to each project page, make the change in **both** `ntpc_dash_template_v2.html` and `ntpc_dash_template_v3.html`, as ONBOARDING requires for template changes. This is optional and can come later.
+- **Project pages:** to add a "← Portfolio" link to each project page, make the change in `ntpc_dash_template_v3.html`. This is optional and can come later.
 
 ---
 

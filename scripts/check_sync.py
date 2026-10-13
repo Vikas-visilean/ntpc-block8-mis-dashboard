@@ -17,8 +17,7 @@ PAGES = "https://vikas-visilean.github.io/ntpc-block8-mis-dashboard"
 
 # dashboard -> (published path, workflow that feeds it)
 DASH = [
-    ("NTPC Bikaner Block 8 · 200 MW", "v2", "refresh-v2.yml"),
-    ("NTPC (v3 theme)", "v3", "refresh-v2.yml"),
+    ("NTPC Bikaner Block 8 · 200 MW", "v3", "refresh-v2.yml"),
     ("SJVN Khavda · 200 MW", "sjvn", "refresh-sjvn.yml"),
     ("Adani Green S6a · 234 MW", "adani", "refresh-adani.yml"),
     ("Adani Green S7 · 300 MW", "adani-s7", "refresh-adani-s7.yml"),

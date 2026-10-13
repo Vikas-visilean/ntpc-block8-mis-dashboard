@@ -26,7 +26,7 @@ VisiLean token.
 
 | Code | Project | VisiLean project GUID | Page | Workflow | Token secret |
 |---|---|---|---|---|---|
-| `ntpc` | NTPC Bikaner Block 8 · 200 MW | `7A2842F6-7E5F-DB7C-3E7F-0EE7EF60698F` | [/v2/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/v2/), [/v3/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/v3/) | `refresh-v2.yml` | `VL_TOKEN_NTPC` |
+| `ntpc` | NTPC Bikaner Block 8 · 200 MW | `7A2842F6-7E5F-DB7C-3E7F-0EE7EF60698F` | [/v3/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/v3/) | `refresh-v2.yml` | `VL_TOKEN_NTPC` |
 | `sjvn` | SJVN Khavda · 200 MW | `7DAD8CE4-4DD0-62DA-9D8D-9D10A2E11289` | [/sjvn/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/sjvn/) | `refresh-sjvn.yml` | `VL_TOKEN_SJVN` |
 | `adani` | Adani Green Energy S6a · 234 MW | `8E1DC8F3-B98D-7466-372B-A885DE53F1BB` | [/adani/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/adani/) | `refresh-adani.yml` | `VL_TOKEN_ADANI` |
 | `adanis7` | Adani Green Energy S7 · 300 MW | `11127A8C-E796-06BF-8B4A-82CF074A6C4E` | [/adani-s7/](https://vikas-visilean.github.io/ntpc-block8-mis-dashboard/adani-s7/) | `refresh-adani-s7.yml` | `VL_TOKEN_ADANIS7` |
@@ -150,10 +150,8 @@ Condensed from **[SPEC.md](SPEC.md)**. **Section 10A is the authoritative descri
 the live system.** Sections 1–9 describe the locked v1.0 baseline, which was driven by a
 static MSP export, and are kept for reference only.
 
-- **Builds.** `/v2/` is the page KP uses, embedded in VisiLean's Custom Analytics. `/v3/`
-  has identical logic in the VisiLean brand palette. Every functional change must be made
-  in both `ntpc_dash_template_v2.html` and `ntpc_dash_template_v3.html`; nothing enforces
-  it.
+- **Builds.** `/v3/` is the NTPC page, built from `ntpc_dash_template_v3.html` (the
+  old `/v2/` build and its template were removed in Oct 2026).
 - **Counting rules**, reconciled with VisiLean's own dashboard: Total is every leaf task.
   Completed is 100% progress. Delayed is past planned start at 0%, or past planned finish
   and not complete. Actual % is weightage-weighted. Activities with trade "Not
